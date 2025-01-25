@@ -2,45 +2,67 @@
 // Created by gaeta on 2024-03-31.
 //
 
-#ifndef LIBUSBDEMO_RXFRAME_H
-#define LIBUSBDEMO_RXFRAME_H
+#ifndef RX_FRAME_H
+#define RX_FRAME_H
 
 #include <array>
 #include <span>
 #include <vector>
 
-enum class RadioPort { /* define your RadioPort enum */ };
+enum class RadioPort { /* define your RadioPort enum */
+};
 
 class RxFrame {
 private:
     std::span<uint8_t> _data;
-    static constexpr std::array<uint8_t, 2> _dataHeader
-        = { uint8_t(0x08), uint8_t(0x01) }; // Frame control value for QoS Data
+    static constexpr std::array<uint8_t, 2> _dataHeader = {uint8_t(0x08),
+                                                           uint8_t(0x01)}; // Frame control value for QoS Data
 
 public:
-    RxFrame(const std::span<uint8_t> &data)
-        : _data(data) {
+    RxFrame(const std::span<uint8_t> &data) : _data(data) {
         DataAsMemory = _data;
     }
 
     std::span<uint8_t> DataAsMemory; // useless in c++
 
-    std::span<uint8_t> ControlField() const { return { _data.data(), 2 }; }
-    std::span<uint8_t> Duration() const { return { _data.data() + 2, 2 }; }
-    std::span<uint8_t> MacAp() const { return { _data.data() + 4, 6 }; } // receiverAddress
-    std::span<uint8_t> MacSrcUniqueIdPart() const { return { _data.data() + 10, 1 }; } // transmitterAddress
-    std::span<uint8_t> MacSrcNoncePart1() const { return { _data.data() + 11, 4 }; }
-    std::span<uint8_t> MacSrcRadioPort() const { return { _data.data() + 15, 1 }; }
-    std::span<uint8_t> MacDstUniqueIdPart() const { return { _data.data() + 16, 1 }; } // destinationAddress
-    std::span<uint8_t> MacDstNoncePart2() const { return { _data.data() + 17, 4 }; }
-    std::span<uint8_t> MacDstRadioPort() const { return { _data.data() + 21, 1 }; }
-    std::span<uint8_t> SequenceControl() const { return { _data.data() + 22, 2 }; }
-    std::span<uint8_t> PayloadSpan() const { return { _data.data() + 24, _data.size() - 28 }; }
+    std::span<uint8_t> ControlField() const {
+        return {_data.data(), 2};
+    }
+    std::span<uint8_t> Duration() const {
+        return {_data.data() + 2, 2};
+    }
+    std::span<uint8_t> MacAp() const {
+        return {_data.data() + 4, 6};
+    } // receiverAddress
+    std::span<uint8_t> MacSrcUniqueIdPart() const {
+        return {_data.data() + 10, 1};
+    } // transmitterAddress
+    std::span<uint8_t> MacSrcNoncePart1() const {
+        return {_data.data() + 11, 4};
+    }
+    std::span<uint8_t> MacSrcRadioPort() const {
+        return {_data.data() + 15, 1};
+    }
+    std::span<uint8_t> MacDstUniqueIdPart() const {
+        return {_data.data() + 16, 1};
+    } // destinationAddress
+    std::span<uint8_t> MacDstNoncePart2() const {
+        return {_data.data() + 17, 4};
+    }
+    std::span<uint8_t> MacDstRadioPort() const {
+        return {_data.data() + 21, 1};
+    }
+    std::span<uint8_t> SequenceControl() const {
+        return {_data.data() + 22, 2};
+    }
+    std::span<uint8_t> PayloadSpan() const {
+        return {_data.data() + 24, _data.size() - 28};
+    }
     std::span<uint8_t> GetNonce() const {
         std::array<uint8_t, 8> data;
         std::copy(_data.begin() + 11, _data.begin() + 15, data.begin());
         std::copy(_data.begin() + 17, _data.begin() + 21, data.begin() + 4);
-        return { data.data(), data.size() };
+        return {data.data(), data.size()};
     }
 
     //    RadioPort get_valid_radio_port() const {
@@ -48,36 +70,39 @@ public:
     //    }
 
     bool IsValidWfbFrame() const {
-        if (_data.empty())
-            return false;
-        if (!IsDataFrame())
-            return false;
-        if (PayloadSpan().empty())
-            return false;
-        if (!HasValidAirGndId())
-            return false;
-        if (!HasValidRadioPort())
-            return false;
+        if (_data.empty()) return false;
+        if (!IsDataFrame()) return false;
+        if (PayloadSpan().empty()) return false;
+        if (!HasValidAirGndId()) return false;
+        if (!HasValidRadioPort()) return false;
         // TODO: add `frame.PayloadSpan().size() > RAW_WIFI_FRAME_MAX_PAYLOAD_SIZE`
         return true;
     }
 
-    uint8_t GetValidAirGndId() const { return _data[10]; }
+    uint8_t GetValidAirGndId() const {
+        return _data[10];
+    }
 
     bool MatchesChannelID(const uint8_t *channel_id) const {
         //        0x57, 0x42, 0xaa, 0xbb, 0xcc, 0xdd,   // last four bytes are replaced by channel_id (x2)
-        return _data[10] == 0x57 && _data[11] == 0x42 && _data[12] == channel_id[0] && _data[13] == channel_id[1]
-            && _data[14] == channel_id[2] && _data[15] == channel_id[3] && _data[16] == 0x57 && _data[17] == 0x42
-            && _data[18] == channel_id[0] && _data[19] == channel_id[1] && _data[20] == channel_id[2]
-            && _data[21] == channel_id[3];
+        return _data[10] == 0x57 && _data[11] == 0x42 && _data[12] == channel_id[0] && _data[13] == channel_id[1] &&
+               _data[14] == channel_id[2] && _data[15] == channel_id[3] && _data[16] == 0x57 && _data[17] == 0x42 &&
+               _data[18] == channel_id[0] && _data[19] == channel_id[1] && _data[20] == channel_id[2] &&
+               _data[21] == channel_id[3];
     }
 
 private:
-    bool IsDataFrame() const { return _data.size() >= 2 && _data[0] == _dataHeader[0] && _data[1] == _dataHeader[1]; }
+    bool IsDataFrame() const {
+        return _data.size() >= 2 && _data[0] == _dataHeader[0] && _data[1] == _dataHeader[1];
+    }
 
-    bool HasValidAirGndId() const { return _data.size() >= 18 && _data[10] == _data[16]; }
+    bool HasValidAirGndId() const {
+        return _data.size() >= 18 && _data[10] == _data[16];
+    }
 
-    bool HasValidRadioPort() const { return _data.size() >= 22 && _data[15] == _data[21]; }
+    bool HasValidRadioPort() const {
+        return _data.size() >= 22 && _data[15] == _data[21];
+    }
 };
 
 class WifiFrame {
@@ -125,4 +150,4 @@ public:
     uint32_t frameCheckSequence;
 };
 
-#endif // LIBUSBDEMO_RXFRAME_H
+#endif // RX_FRAME_H

@@ -16,9 +16,21 @@
 #include "WiFiDriver.h"
 #include "logger.h"
 
-#pragma comment(lib, "ws2_32.lib")
+#ifdef _WIN32
+    #include <winsock2.h>
+
+    #pragma comment(lib, "ws2_32.lib")
+#else
+    /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
+    #include <arpa/inet.h>
+    #include <netdb.h> /* Needed for getaddrinfo() and freeaddrinfo() */
+    #include <sys/socket.h>
+    #include <unistd.h> /* Needed for close() */
+#endif
 
 std::vector<std::string> WFBReceiver::GetDongleList() {
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Refresh USB devices");
+
     std::vector<std::string> list;
 
     // Initialize libusb
@@ -43,9 +55,15 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
                 ss << std::setw(4) << std::setfill('0') << std::hex << desc.idVendor << ":";
                 ss << std::setw(4) << std::setfill('0') << std::hex << desc.idProduct;
                 list.push_back(ss.str());
+
+                GuiInterface::Instance().PutLog(LogLevel::Info,
+                                                "Device VID PID: {} | USB version: {:x}",
+                                                ss.str(),
+                                                desc.bcdUSB);
             }
         }
     }
+
     std::sort(list.begin(), list.end(), [](std::string &a, std::string &b) {
         static std::vector<std::string> specialStrings = {"0b05:17d2", "0bda:8812", "0bda:881a"};
         auto itA = std::find(specialStrings.begin(), specialStrings.end(), a);
@@ -90,7 +108,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
 
     int rc = libusb_init(&ctx);
     if (rc < 0) {
-        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to initialize libusb");
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to initialize a libusb context");
         return false;
     }
 
@@ -259,17 +277,26 @@ void WFBReceiver::Stop() const {
 }
 
 WFBReceiver::WFBReceiver() {
+#ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
+#endif
+
     sendFd = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
 WFBReceiver::~WFBReceiver() {
+#ifdef _WIN32
     closesocket(sendFd);
     sendFd = INVALID_SOCKET;
+
     WSACleanup();
+#else
+    close(sendFd);
+#endif
+
     Stop();
 }
