@@ -918,6 +918,23 @@ AggregatorUDPv4::AggregatorUDPv4(const std::string &client_addr, int client_port
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = inet_addr(client_addr.c_str());
     saddr.sin_port = htons((unsigned short)client_port);
+
+    sockfd2 = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd2 < 0) throw std::runtime_error(string_format("Error opening socket: %s", strerror(errno)));
+
+    if (snd_buf_size > 0)
+    {
+        if(setsockopt(sockfd2, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
+        {
+            close(sockfd2);
+            throw runtime_error(string_format("Unable to set SO_SNDBUF: %s", strerror(errno)));
+        }
+    }
+
+    memset(&saddr2, '\0', sizeof(saddr2));
+    saddr2.sin_family = AF_INET;
+    saddr2.sin_addr.s_addr = inet_addr(client_addr.c_str());
+    saddr2.sin_port = htons((unsigned short)5600);
 }
 
 AggregatorUDPv4::~AggregatorUDPv4()
@@ -928,6 +945,8 @@ AggregatorUDPv4::~AggregatorUDPv4()
 void AggregatorUDPv4::send_to_socket(const uint8_t *payload, uint16_t packet_size)
 {
     sendto(sockfd, payload, packet_size, MSG_DONTWAIT, (sockaddr*)&saddr, sizeof(saddr));
+    sendto(sockfd2, payload, packet_size, MSG_DONTWAIT, (sockaddr*)&saddr2, sizeof(saddr2));
+
 }
 
 AggregatorUNIX::AggregatorUNIX(const std::string &socket_path, const std::string &keypair, uint64_t epoch, uint32_t channel_id, int snd_buf_size) : \

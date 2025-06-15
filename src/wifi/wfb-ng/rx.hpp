@@ -255,6 +255,9 @@ private:
 protected:
     int sockfd;
     struct sockaddr_in saddr;
+
+    int sockfd2;
+    struct sockaddr_in saddr2;
 };
 
 

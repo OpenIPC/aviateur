@@ -26,6 +26,7 @@
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
 
 static int socketFd = INVALID_SOCKET;
+static int socketFd2 = INVALID_SOCKET;
 static std::atomic playing = false;
 
 constexpr u8 WFB_TX_PORT = 160;
@@ -82,6 +83,8 @@ protected:
 
         // Send payload via socket.
         sendto(sockfd, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
+
+        sendto(sockfd2, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&saddr2, sizeof(saddr2));
     }
 
 private:
@@ -653,6 +656,21 @@ void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
            0,
            (sockaddr *)&serverAddr,
            sizeof(serverAddr));
+
+    {
+        sockaddr_in serverAddr{};
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_port = htons(5600);
+        serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+        // Send payload via socket.
+        sendto(socketFd2,
+               reinterpret_cast<const char *>(payload),
+               packet_size,
+               0,
+               (sockaddr *)&serverAddr,
+               sizeof(serverAddr));
+    }
 }
 #endif
 
@@ -723,6 +741,8 @@ WfbngLink::WfbngLink() {
 #endif
 
     socketFd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    socketFd2 = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
 WfbngLink::~WfbngLink() {
