@@ -341,7 +341,7 @@ UdpTransmitter::UdpTransmitter(int k,
                                uint64_t epoch,
                                uint32_t channelId)
     : Transmitter(k, n, keypair, epoch, channelId), sockFd_(-1), basePort_(basePort) {
-    sockFd_ = ::socket(AF_INET, SOCK_DGRAM, 0);
+    sockFd_ = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockFd_ < 0) {
         throw std::runtime_error(string_format("Error opening UDP socket: %s", std::strerror(errno)));
     }
@@ -397,15 +397,16 @@ UsbTransmitter::UsbTransmitter(int k,
                                const std::string &keypair,
                                uint64_t epoch,
                                uint32_t channelId,
-                               const std::vector<std::string> &wlans,
                                uint8_t *radiotapHeader,
                                size_t radiotapHeaderLen,
                                uint8_t frameType,
                                Rtl8812aDevice *device)
     : Transmitter(k, n, keypair, epoch, channelId), channelId_(channelId), currentOutput_(0), ieee80211Sequence_(0),
       radiotapHeader_(radiotapHeader), radiotapHeaderLen_(radiotapHeaderLen), frameType_(frameType),
-      rtlDevice_(device) {
-    (void)wlans; // Not used directly here
+      rtlDevice_(device) {}
+
+void UsbTransmitter::selectOutput(int idx) {
+    currentOutput_ = idx;
 }
 
 void UsbTransmitter::dumpStats(FILE *fp,
@@ -468,9 +469,9 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
     std::memcpy(buffer.get() + radiotapHeaderLen_, ieeeHdr, sizeof(ieeeHdr));
     std::memcpy(buffer.get() + radiotapHeaderLen_ + sizeof(ieeeHdr), buf, size);
 
-    bool result = static_cast<bool>(rtlDevice_->send_packet(buffer.get(), totalSize));
+    bool result = rtlDevice_->send_packet(buffer.get(), totalSize);
     if (!result) {
-        printf("rtlDevice_::send_packet result: %d", result);
+        printf("Rtl8812aDevice::send_packet failed!");
     }
 
     uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;

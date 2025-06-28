@@ -146,7 +146,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
         }
 
         if (fecTimeout > 0) {
-            int ft = static_cast<int>((fecCloseTs > curTs) ? (fecCloseTs - curTs) : 0);
+            int ft = static_cast<int>(fecCloseTs > curTs ? fecCloseTs - curTs : 0);
             if (pollTimeout == 0 || ft < pollTimeout) {
                 pollTimeout = ft;
             }
@@ -465,7 +465,7 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
     rxFds.push_back(udpFd);
 
     if (arg->udp_port == 0) {
-        std::fprintf(stderr, "Listening on invalid UDP port: %d\n", bindPort);
+        std::fprintf(stderr, "Invalid UDP port: %d\n", bindPort);
     }
 
     try {
@@ -488,7 +488,6 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
                                                            arg->keypair,
                                                            arg->epoch,
                                                            channelId,
-                                                           std::vector<std::string>{}, // wlans not used in USB
                                                            rtHeader.get(),
                                                            rtHeaderLen,
                                                            frameType,

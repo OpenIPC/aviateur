@@ -164,13 +164,14 @@ public:
     uint32_t countPacketsInjected;
     uint32_t countBytesInjected;
     uint32_t countPacketsDropped;
+
     uint64_t latencySum;
     uint64_t latencyMin;
     uint64_t latencyMax;
 };
 
 /// Map: key = (antennaIndex << 8) | 0xff, value = TxAntennaItem
-using TxAntennaStat = std::unordered_map<uint64_t, TxAntennaItem>;
+typedef std::unordered_map<uint64_t, TxAntennaItem> TxAntennaStat;
 
 /**
  * @class RawSocketTransmitter
@@ -233,12 +234,12 @@ public:
 
     ~UdpTransmitter() override;
 
-    void dumpStats(FILE * /*fp*/,
-                   uint64_t /*ts*/,
-                   uint32_t & /*injectedPackets*/,
-                   uint32_t & /*droppedPackets*/,
-                   uint32_t & /*injectedBytes*/) override {
-        // No stats for UDP in this example
+    void dumpStats(FILE *fp,
+                   uint64_t ts,
+                   uint32_t &injectedPackets,
+                   uint32_t &droppedPackets,
+                   uint32_t &injectedBytes) override {
+        // No stats for UDP
     }
 
     void selectOutput(int idx) override;
@@ -263,7 +264,6 @@ public:
                    const std::string &keypair,
                    uint64_t epoch,
                    uint32_t channelId,
-                   const std::vector<std::string> &wlans,
                    uint8_t *radiotapHeader,
                    size_t radiotapHeaderLen,
                    uint8_t frameType,
@@ -271,9 +271,7 @@ public:
 
     ~UsbTransmitter() override = default;
 
-    void selectOutput(int idx) override {
-        currentOutput_ = idx;
-    }
+    void selectOutput(int idx) override;
 
     void dumpStats(FILE *fp,
                    uint64_t ts,
