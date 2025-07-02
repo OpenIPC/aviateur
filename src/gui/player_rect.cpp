@@ -1,6 +1,7 @@
 #include "player_rect.h"
 
 #include "../gui_interface.h"
+#include "pathfinder/gpu/gl/device.h"
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER
     #include "src/player/gst_decoder.h"
@@ -343,11 +344,16 @@ void PlayerRect::custom_draw() {
     if (!playing_) {
         return;
     }
-    auto render_image = (revector::RenderImage *)texture.get();
 
     if (!GuiInterface::Instance().use_gstreamer_) {
+        auto render_image = (revector::RenderImage *)texture.get();
         player_->yuvRenderer_->render(render_image->get_texture());
     }
+#ifdef AVIATEUR_ENABLE_GSTREAMER
+    else if (gst_decoder_) {
+        texture = std::make_shared<revector::RenderImage>(gst_decoder_->pull_texture());
+    }
+#endif
 }
 
 void PlayerRect::start_playing(const std::string &url) {
@@ -364,7 +370,6 @@ void PlayerRect::start_playing(const std::string &url) {
         }
 
         collapse_panel_->set_visibility(false);
-
     } else
 #endif
     {
