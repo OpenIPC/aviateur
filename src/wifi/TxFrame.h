@@ -34,7 +34,6 @@ extern "C" {
 //-------------------------------------------------------------
 // A custom deleter for FEC pointer usage in unique_ptr
 
-
 /**
  * @struct TxArgs
  * @brief Command-line or user-provided arguments controlling the transmitter setup.
@@ -47,7 +46,7 @@ struct TxArgs {
     uint8_t radio_port = 0;
     uint32_t link_id = 0x0;
     uint64_t epoch = 0;
-    int udp_port = 5600; // Port to receive data
+    int udp_port = 5600; // Local port to receive data
     int log_interval = 1000;
 
     int bandwidth = 20;

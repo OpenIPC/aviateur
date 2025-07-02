@@ -873,11 +873,14 @@ void Aggregator::apply_fec(int ring_idx)
 
     for(int i=0; i < fec_k; i++)
     {
+        // Did we receive this packet?
         if(rx_ring[ring_idx].fragment_map[i])
         {
+            // Fill in input blocks
             in_blocks[i] = rx_ring[ring_idx].fragments[i];
             index[i] = i;
         }
+        // We lost this packet.
         else
         {
             while(j < fec_n && ! rx_ring[ring_idx].fragment_map[j])

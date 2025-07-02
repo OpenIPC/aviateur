@@ -35,10 +35,13 @@ if (WIN32)
 
         set(GST_LIB_ROOT "${GST_ROOT}\\lib")
 
-        set(GST_INCLUDE_DIRS "${GST_ROOT}\\include\\gstreamer-1.0")
+        set(GST_INCLUDE_DIRS "${GST_ROOT}\\include\\gstreamer-1.0" "${GST_LIB_ROOT}\\gstreamer-1.0\\include")
         set(GST_LIBRARIES "${GST_LIB_ROOT}\\gstreamer-1.0.lib")
         set(GST_SDP_LIBRARIES "${GST_LIB_ROOT}\\gstsdp-1.0.lib")
         set(GST_WEBRTC_LIBRARIES "${GST_LIB_ROOT}\\gstwebrtc-1.0.lib")
+        set(GST_GL_LIBRARIES "${GST_LIB_ROOT}\\gstgl-1.0.lib")
+        set(GST_APP_LIBRARIES "${GST_LIB_ROOT}\\gstapp-1.0.lib" "${GST_LIB_ROOT}\\gstvideo-1.0.lib")
+        set(GST_VIDEO_LIBRARIES "${GST_LIB_ROOT}\\gstvideo-1.0.lib")
 
         set(GLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\glib-2.0" "${GST_LIB_ROOT}\\glib-2.0\\include")
         set(GLIB_LIBRARIES "${GST_LIB_ROOT}\\gobject-2.0.lib" "${GST_LIB_ROOT}\\glib-2.0.lib")
@@ -148,6 +151,9 @@ if (AVIATEUR_ENABLE_GSTREAMER)
             ${GST_LIBRARIES}
             ${GST_SDP_LIBRARIES}
             ${GST_WEBRTC_LIBRARIES}
+            ${GST_GL_LIBRARIES}
+            ${GST_APP_LIBRARIES}
+            ${GST_VIDEO_LIBRARIES}
             ${GLIB_LIBRARIES}
             ${GIO_LIBRARIES}
     )

@@ -5,9 +5,8 @@
     #include <gst/gl/gl.h>
     #include <gst/gst.h>
 
+    #include <memory>
     #include <string>
-
-    #include "hb-ot-layout-gsubgpos.hh"
 
 namespace Pathfinder {
 class Texture;

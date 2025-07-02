@@ -351,7 +351,10 @@ void PlayerRect::custom_draw() {
     }
 #ifdef AVIATEUR_ENABLE_GSTREAMER
     else if (gst_decoder_) {
-        texture = std::make_shared<revector::RenderImage>(gst_decoder_->pull_texture());
+        auto new_tex = gst_decoder_->pull_texture();
+        if (new_tex) {
+            texture = std::make_shared<revector::RenderImage>(gst_decoder_->pull_texture());
+        }
     }
 #endif
 }

@@ -5,8 +5,8 @@
     #include <gst/app/gstappsink.h>
     #include <gst/gl/gl.h>
     #include <gst/video/video.h>
+    #include <pathfinder/gpu/gl/device.h>
 
-    #include "pathfinder/gpu/gl/device.h"
     #include "src/gui_interface.h"
 
 static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data) {
@@ -89,21 +89,21 @@ static GstFlowReturn on_new_sample_cb(GstAppSink *appsink, gpointer user_data) {
     //	g_signal_emit_by_name(webrtcbin, "get-stats", NULL, promise);
 
     // TODO record the frame ID, get frame pose
-    struct timespec ts;
-    int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-    if (ret != 0) {
-        // ALOGE("%s: clock_gettime failed, which is very bizarre.", __FUNCTION__);
-        return GST_FLOW_ERROR;
-    }
+    // struct timespec ts;
+    // int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
+    // if (ret != 0) {
+    //     // ALOGE("%s: clock_gettime failed, which is very bizarre.", __FUNCTION__);
+    //     return GST_FLOW_ERROR;
+    // }
 
     GstSample *prevSample = NULL;
     GstSample *sample = gst_app_sink_pull_sample(appsink);
     g_assert_nonnull(sample);
     {
-        g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&decoder->sample_mutex);
+        GMutexLocker *locker = g_mutex_locker_new(&decoder->sample_mutex);
         prevSample = decoder->sample;
         decoder->sample = sample;
-        decoder->sample_decode_end_ts = ts;
+        // decoder->sample_decode_end_ts = ts;
         decoder->received_first_frame = true;
     }
     if (prevSample) {
@@ -145,7 +145,7 @@ void GstDecoder::create_pipeline() {
         "rtpjitterbuffer latency=5 ! "
         "%s ! "
         "decodebin3 ! "
-        "glsink name=glsink sync=false",
+        "glsinkbin name=glsink sync=false",
         codec.c_str(),
         depay.c_str());
 
@@ -164,7 +164,7 @@ void GstDecoder::create_pipeline() {
         // get created internally (using the provided gstgl contexts above) so that the appsink
         // can basically pull the samples out using an GLConsumer (this is just for context, as
         // all of those constructs will be hidden from you, but are turned on by that CAPS).
-        g_autoptr(GstCaps) caps = gst_caps_from_string(SINK_CAPS);
+        GstCaps *caps = gst_caps_from_string(SINK_CAPS);
 
         // FRED: We create the appsink 'manually' here because glsink's ALREADY a sink and so if we stick
         //       glsinkbin ! appsink in our pipeline_string for automatic linking, gst_parse will NOT like this,
@@ -189,7 +189,7 @@ void GstDecoder::create_pipeline() {
         gst_app_sink_set_callbacks(GST_APP_SINK(appsink_), &callbacks, this, NULL);
         received_first_frame = false;
 
-        g_autoptr(GstElement) glsinkbin = gst_bin_get_by_name(GST_BIN(pipeline_), "glsink");
+        GstElement *glsinkbin = gst_bin_get_by_name(GST_BIN(pipeline_), "glsink");
         g_object_set(glsinkbin, "sink", appsink_, NULL);
         // Disable clock sync to reduce latency
         g_object_set(glsinkbin, "sync", FALSE, NULL);
@@ -211,10 +211,11 @@ struct MySample *try_pull_sample(GstDecoder *dec, struct timespec *out_decode_en
     GstSample *sample = NULL;
     struct timespec decode_end;
     {
-        g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&dec->sample_mutex);
+        g_mutex_lock(&dec->sample_mutex);
         sample = dec->sample;
         dec->sample = NULL;
         decode_end = dec->sample_decode_end_ts;
+        g_mutex_unlock(&dec->sample_mutex);
     }
 
     if (sample == NULL) {
@@ -312,6 +313,10 @@ std::shared_ptr<Pathfinder::Texture> GstDecoder::pull_texture() {
 
     timespec decode_end_time;
     MySample *sample = try_pull_sample(this, &decode_end_time);
+
+    if (!sample) {
+        return nullptr;
+    }
 
     auto *device_gl = (Pathfinder::DeviceGl *)revector::RenderServer::get_singleton()->device_.get();
 
