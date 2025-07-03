@@ -1,12 +1,9 @@
-﻿//
-// Created by liangzhuohua on 2022/3/1.
-//
+﻿#pragma once
 
-#pragma once
-
-#include "ffmpegInclude.h"
 #include <memory>
 #include <string>
+
+#include "ffmpeg_include.h"
 
 class Mp4Encoder {
 public:

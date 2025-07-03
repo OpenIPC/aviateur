@@ -10,11 +10,11 @@
 #include <thread>
 #include <vector>
 
-#include "FecChangeController.h"
 #include "FrameParser.h"
 #include "Rtl8812aDevice.h"
+#include "fec_controller.h"
 #ifdef __linux__
-    #include "TxFrame.h"
+    #include "tx_frame.h"
 #endif
 
 struct DeviceId {
@@ -76,7 +76,7 @@ protected:
     bool alink_should_stop = false;
     int alink_tx_power = 30;
     std::unique_ptr<std::thread> link_quality_thread;
-    FecChangeController fec;
+    FecController fec_controller;
 
     void init_thread(std::unique_ptr<std::thread> &thread,
                      const std::function<std::unique_ptr<std::thread>()> &init_func) {

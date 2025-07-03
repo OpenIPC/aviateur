@@ -1,7 +1,5 @@
 #ifdef __linux__
 
-    #include "TxFrame.h"
-
     #include <linux/ip.h>
     #include <linux/random.h>
     #include <linux/udp.h>
@@ -9,6 +7,8 @@
 
     #include <cinttypes>
     #include <cstring>
+
+    #include "tx_frame.h"
 
 TxFrame::TxFrame() = default;
 TxFrame::~TxFrame() = default;

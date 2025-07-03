@@ -1,4 +1,4 @@
-﻿#include "WfbngLink.h"
+﻿#include "wfbng_link.h"
 
 #include <iomanip>
 #include <mutex>
@@ -6,16 +6,16 @@
 #include <sstream>
 
 #include "../gui_interface.h"
-#include "Rtp.h"
-#include "RxFrame.h"
-#include "SignalQualityCalculator.h"
+#include "rtp.h"
+#include "rx_frame.h"
+#include "signal_quality.h"
 #ifdef __linux__
-    #include "TxFrame.h"
+    #include "tx_frame.h"
     #include "wfb-ng/rx.hpp"
 #endif
-#include "WfbngProcessor.h"
 #include "WiFiDriver.h"
 #include "logger.h"
+#include "wfbng_processor.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -369,7 +369,7 @@ void WfbngLink::start_link_quality_thread() {
     auto thread_func = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        fec.setEnabled(true);
+        fec_controller.setEnabled(true);
 
         const char *ip = "127.0.0.1";
         int port = 8001;

@@ -3,7 +3,7 @@
 #include <chrono>
 #include <mutex>
 
-class FecChangeController {
+class FecController {
 public:
     /// Query the current (possibly decayed) fec_change value.
     /// Call this as often as you like; the class handles its own timing.

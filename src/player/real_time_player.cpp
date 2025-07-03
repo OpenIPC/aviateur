@@ -1,13 +1,12 @@
-﻿#include "RealTimePlayer.h"
-
-#include <SDL3/SDL.h>
+﻿#include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
 
 #include <future>
 #include <sstream>
 
 #include "../gui_interface.h"
-#include "JpegEncoder.h"
+#include "jpeg_encoder.h"
+#include "real_time_player.h"
 
 // GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10

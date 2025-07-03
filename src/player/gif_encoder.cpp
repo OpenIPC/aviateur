@@ -1,10 +1,6 @@
-﻿//
-// Created by liangzhuohua on 2022/4/22.
-//
+﻿#include <chrono>
 
-#include "GifEncoder.h"
-
-#include <chrono>
+#include "gif_encoder.h"
 
 bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const std::string &outputPath) {
     _formatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);

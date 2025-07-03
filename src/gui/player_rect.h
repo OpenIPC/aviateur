@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../player/RealTimePlayer.h"
+#include "../player/real_time_player.h"
 #include "app.h"
 #include "tip_label.h"
 

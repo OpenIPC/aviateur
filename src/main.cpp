@@ -6,7 +6,7 @@
 #include "gui/control_panel.h"
 #include "gui/player_rect.h"
 #include "gui_interface.h"
-#include "wifi/WfbngLink.h"
+#include "wifi/wfbng_link.h"
 
 static revector::App* app;
 

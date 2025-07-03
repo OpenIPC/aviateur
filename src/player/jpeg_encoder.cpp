@@ -1,10 +1,7 @@
-﻿//
-// Created by liangzhuohua on 2022/2/28.
-//
+﻿#include <memory>
 
-#include "JpegEncoder.h"
+#include "jpeg_encoder.h"
 
-#include <memory>
 inline bool convertToYUV420P(const std::shared_ptr<AVFrame> &frame, std::shared_ptr<AVFrame> &yuvFrame) {
     int width = frame->width;
     int height = frame->height;
@@ -57,8 +54,7 @@ bool JpegEncoder::encodeJpeg(const std::string &outFilePath, const std::shared_p
         return false;
     }
 
-    std::shared_ptr<AVFormatContext> pFormatCtx =
-        std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+    auto pFormatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
 
     pFormatCtx->oformat = av_guess_format("mjpeg", nullptr, nullptr);
 
@@ -76,9 +72,8 @@ bool JpegEncoder::encodeJpeg(const std::string &outFilePath, const std::shared_p
         return false;
     }
 
-    std::shared_ptr<AVCodecContext> codecCtx =
-        std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(pCodec),
-                                        [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
+    auto codecCtx = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(pCodec),
+                                                    [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
     codecCtx->codec_id = pFormatCtx->oformat->video_codec;
     codecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     codecCtx->pix_fmt = static_cast<AVPixelFormat>(frame->format);
@@ -103,15 +98,20 @@ bool JpegEncoder::encodeJpeg(const std::string &outFilePath, const std::shared_p
 
     avcodec_parameters_from_context(pAVStream->codecpar, codecCtx.get());
 
-    avformat_write_header(pFormatCtx.get(), nullptr);
+    int ret{};
+
+    ret = avformat_write_header(pFormatCtx.get(), nullptr);
+    if (ret < 0) {
+        return false;
+    }
+
     int y_size = codecCtx->width * codecCtx->height;
 
     // Resize packet
-    std::shared_ptr<AVPacket> pkt =
-        std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
+    auto pkt = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
     av_new_packet(pkt.get(), y_size);
 
-    int ret = avcodec_send_frame(codecCtx.get(), yuvFrame.get());
+    ret = avcodec_send_frame(codecCtx.get(), yuvFrame.get());
     if (ret < 0) {
         return false;
     }

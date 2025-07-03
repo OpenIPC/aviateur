@@ -1,15 +1,11 @@
-﻿//
-// Created by liangzhuohua on 2022/4/22.
-//
-
-#pragma once
+﻿#pragma once
 
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include "ffmpegInclude.h"
+#include "ffmpeg_include.h"
 
 class GifEncoder {
 public:

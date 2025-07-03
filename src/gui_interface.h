@@ -15,7 +15,7 @@
 #endif
 
 #include "app.h"
-#include "wifi/WfbngLink.h"
+#include "wifi/wfbng_link.h"
 
 #define CONFIG_FILE "config.ini"
 

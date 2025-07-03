@@ -5,7 +5,7 @@
 #include <mutex>
 #include <string>
 
-#include "ffmpegInclude.h"
+#include "ffmpeg_include.h"
 
 class ReadFrameException : public std::runtime_error {
 public:

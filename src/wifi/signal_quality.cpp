@@ -1,7 +1,7 @@
-#include "SignalQualityCalculator.h"
-
 #include <chrono>
 #include <random>
+
+#include "signal_quality.h"
 
 namespace {
 

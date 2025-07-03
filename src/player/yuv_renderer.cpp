@@ -1,7 +1,6 @@
-﻿#include "YuvRenderer.h"
-
-#include "libavutil/pixfmt.h"
+﻿#include "libavutil/pixfmt.h"
 #include "resources/resource.h"
+#include "yuv_renderer.h"
 
 std::string vertCode = R"(#version 310 es
 

@@ -6,10 +6,10 @@
 #include <queue>
 #include <thread>
 
-#include "GifEncoder.h"
-#include "Mp4Encoder.h"
-#include "YuvRenderer.h"
-#include "ffmpegDecode.h"
+#include "ffmpeg_decoder.h"
+#include "gif_encoder.h"
+#include "mp4_encoder.h"
+#include "yuv_renderer.h"
 
 struct SDL_AudioStream;
 

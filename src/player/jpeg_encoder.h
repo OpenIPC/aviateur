@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-#include "ffmpegInclude.h"
+#include "ffmpeg_include.h"
 
 class JpegEncoder {
 public:

@@ -1,4 +1,4 @@
-﻿#include "WfbngProcessor.h"
+﻿#include "wfbng_processor.h"
 
 #ifdef _WIN32
 

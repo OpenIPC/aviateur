@@ -1,8 +1,4 @@
-﻿//
-// Created by liangzhuohua on 2022/3/1.
-//
-
-#include "Mp4Encoder.h"
+﻿#include "mp4_encoder.h"
 
 Mp4Encoder::Mp4Encoder(const std::string &saveFilePath) {
     formatCtx_ = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
