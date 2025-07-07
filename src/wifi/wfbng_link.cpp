@@ -439,26 +439,26 @@ void WfbngLink::start_link_quality_thread() {
 
                 // Change FEC
                 if (quality.lost_last_second > 2)
-                    fec.bump(5);
+                    fec_controller.bump(5);
                 else {
                     if (quality.recovered_last_second > 30) {
-                        fec.bump(5);
+                        fec_controller.bump(5);
                     }
                     if (quality.recovered_last_second > 24) {
-                        fec.bump(3);
+                        fec_controller.bump(3);
                     }
                     if (quality.recovered_last_second > 22) {
-                        fec.bump(2);
+                        fec_controller.bump(2);
                     }
                     if (quality.recovered_last_second > 18) {
-                        fec.bump(1);
+                        fec_controller.bump(1);
                     }
                     if (quality.recovered_last_second < 18) {
-                        fec.bump(0);
+                        fec_controller.bump(0);
                     }
                 }
 
-                int fec_lvl = fec.value();
+                int fec_lvl = fec_controller.value();
                 GuiInterface::Instance().drone_fec_level_ = fec_lvl;
 
                 // Prepare the TX message
