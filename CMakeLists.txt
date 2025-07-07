@@ -40,7 +40,7 @@ if (WIN32)
         set(GST_SDP_LIBRARIES "${GST_LIB_ROOT}\\gstsdp-1.0.lib")
         set(GST_WEBRTC_LIBRARIES "${GST_LIB_ROOT}\\gstwebrtc-1.0.lib")
         set(GST_GL_LIBRARIES "${GST_LIB_ROOT}\\gstgl-1.0.lib")
-        set(GST_APP_LIBRARIES "${GST_LIB_ROOT}\\gstapp-1.0.lib" "${GST_LIB_ROOT}\\gstvideo-1.0.lib")
+        set(GST_APP_LIBRARIES "${GST_LIB_ROOT}\\gstapp-1.0.lib")
         set(GST_VIDEO_LIBRARIES "${GST_LIB_ROOT}\\gstvideo-1.0.lib")
 
         set(GLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\glib-2.0" "${GST_LIB_ROOT}\\glib-2.0\\include")
@@ -78,6 +78,9 @@ else ()
         pkg_check_modules(GST REQUIRED gstreamer-1.0)
         pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
         pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
+        pkg_check_modules(GST_GL REQUIRED gstreamer-gl-1.0)
+        pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+        pkg_check_modules(GST_VIDEO REQUIRED gstreamer-video-1.0)
     endif ()
 endif ()
 
@@ -161,6 +164,7 @@ if (AVIATEUR_ENABLE_GSTREAMER)
     target_include_directories(
             ${PROJECT_NAME} PRIVATE
             ${GST_INCLUDE_DIRS}
+            ${GST_GL_INCLUDE_DIRS}
             ${GIO_INCLUDE_DIRS}
             PUBLIC
             ${GLIB_INCLUDE_DIRS}
