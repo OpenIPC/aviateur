@@ -130,7 +130,7 @@ void ControlPanel::custom_ready() {
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<revector::Button>();
-            auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("Refresh.svg"));
+            auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("Refresh.svg"), true);
             refresh_dongle_button_->set_icon_normal(icon);
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);

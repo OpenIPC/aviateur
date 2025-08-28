@@ -69,7 +69,7 @@ void PlayerRect::custom_ready() {
     collapse_panel_ = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Default);
     collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
-    collapse_panel_->set_color(revector::ColorU(84, 138, 247));
+    collapse_panel_->set_color(revector::ColorU(106, 171, 114));
     collapse_panel_->set_anchor_flag(revector::AnchorFlag::TopRight);
     collapse_panel_->set_visibility(false);
     add_child(collapse_panel_);
@@ -187,7 +187,7 @@ void PlayerRect::custom_ready() {
     auto capture_button = std::make_shared<revector::Button>();
     vbox->add_child(capture_button);
     capture_button->set_text(FTR("capture frame"));
-    auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("CaptureImage.svg"));
+    auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("CaptureImage.svg"), true);
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this] {
         auto output_file = player_->captureJpeg();
@@ -201,7 +201,7 @@ void PlayerRect::custom_ready() {
 
     record_button_ = std::make_shared<revector::Button>();
     vbox->add_child(record_button_);
-    auto icon2 = std::make_shared<revector::VectorImage>(revector::get_asset_dir("RecordVideo.svg"));
+    auto icon2 = std::make_shared<revector::VectorImage>(revector::get_asset_dir("RecordVideo.svg"), true);
     record_button_->set_icon_normal(icon2);
     record_button_->set_text(FTR("record mp4") + " (F10)");
 
