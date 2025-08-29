@@ -19,24 +19,27 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 > [!NOTE]
 > No MAVLink support.
 
-### How to run
+### How to run on Windows
 
-1. (**Windows**) Install the GStreamer runtime (the development installer is not necessary)
-   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows)
-2. (**Windows**) Download [Zadig](https://zadig.akeo.ie/)
-3. (**Windows**) Install the libusb driver for your adapter.
-   Go *Options* → *List All Devices*[Screenshot.cpp](../../Downloads/Screenshot.cpp).
+1. Install the GStreamer runtime (the development installer is not necessary)
+   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows).
+2. Add `C:\Program Files\gstreamer\1.0\msvc_x86_64\bin` to your PATH environment variable.
+3. Download [Zadig](https://zadig.akeo.ie/).
+4. Install the libusb driver for your adapter.
+   Go *Options* → *List All Devices*
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
    ![](tutorials/zadig2.jpg)
-4. (**Linux**) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
+5. Run Aviateur.
+6. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
+
+### How to run on Linux
+
+1. (Optional) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
    `SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", MODE="0666"` in it.
-5. (**Linux**) Call `sudo udevadm control --reload-rules`, then reboot (required).
-6. Run Aviateur (on **Linux**, if you skip step 3 & 4, root privileges are needed to access the adapter).
-7. Select the adapter of the correct USB ID.
-8. Select your drone channel.
-9. Select your WFB-NG key.
-10. *Start* & Fly!
+2. (Optional) Call `sudo udevadm control --reload-rules`, then reboot (this is definitely required).
+3. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
+4. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
 
 ### Common run issues
 
