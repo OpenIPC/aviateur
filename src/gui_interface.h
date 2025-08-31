@@ -148,6 +148,10 @@ public:
             set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
             use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] == "gstreamer";
             use_vulkan_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] == "vulkan";
+#ifdef __APPLE__
+            // No OpenGL on macOS
+            use_vulkan_ = true;
+#endif
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
@@ -158,8 +162,11 @@ public:
     }
 
     static std::string GetAppDataDir() {
-#ifdef _WIN32
+#if defined(_MSC_VER)
         auto dir = std::string(getenv("APPDATA")) + "\\Aviateur\\";
+#elif defined(__APPLE__)
+        std::string home_dir = getenv("HOME");
+        auto dir = std::string(home_dir + "/Library/Application Support/Aviateur/");
 #elif defined(__linux__)
         passwd *pw = getpwuid(getuid());
         const char *home_dir = pw->pw_dir;
@@ -169,8 +176,11 @@ public:
     }
 
     static std::string GetCaptureDir() {
-#ifdef _WIN32
+#if defined(_WIN32)
         auto dir = std::string(getenv("USERPROFILE")) + R"(\Videos\Aviateur Captures\)";
+#elif defined(__APPLE__)
+        std::string home_dir = getenv("HOME");
+        auto dir = std::string(home_dir + "/Pictures/Aviateur Captures/");
 #else
         passwd *pw = getpwuid(getuid());
         const char *home_dir = pw->pw_dir;
@@ -448,7 +458,11 @@ public:
     // Use gstreamer for decoding instead of ffmpeg
     bool use_gstreamer_ = false;
 
+#ifdef __APPLE__
+    bool use_vulkan_ = true;
+#else
     bool use_vulkan_ = false;
+#endif
 
     // Signals.
     std::vector<revector::AnyCallable<void>> logCallbacks;

@@ -93,6 +93,16 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 2. Open as a CMake project and build.
 
+### How to build on macOS
+
+1. Install dependencies.
+   ```bash
+   git submodule update --init --recursive
+   brew install libusb ffmpeg libsodium opencv libpcap
+   ```
+
+2. Open as a CMake project and build.
+
 ### Common build issues
 
 On Windows

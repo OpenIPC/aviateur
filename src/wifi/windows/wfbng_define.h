@@ -10,7 +10,7 @@
 #undef min
 #undef max
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 
 inline uint32_t htobe32(uint32_t host_32bits) {
     // 检查主机字节序是否为小端模式

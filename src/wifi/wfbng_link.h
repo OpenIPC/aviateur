@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
     #include <libusb.h>
 #else
     #include <libusb-1.0/libusb.h>
@@ -54,7 +54,7 @@ public:
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
     /// Send a RTP payload via socket.
     void handle_rtp(uint8_t *payload, uint16_t packet_size);
 #endif

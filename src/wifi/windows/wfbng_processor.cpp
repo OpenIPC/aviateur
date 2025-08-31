@@ -1,6 +1,6 @@
 ﻿#include "wfbng_processor.h"
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 
     #include <cassert>
     #include <cinttypes>
@@ -252,7 +252,7 @@ void Aggregator::process_packet(const uint8_t *buf,
                                              sizeof(wblock_hdr_t),
                                              (uint8_t *)(&(block_hdr->data_nonce)),
                                              session_key) != 0) {
-        fprintf(stderr, "Unable to decrypt packet #0x%" PRIx64 "\n", be64toh(block_hdr->data_nonce));
+        fprintf(stderr, "libsodium: unable to decrypt packet #0x%" PRIx64 "\n", be64toh(block_hdr->data_nonce));
         count_p_dec_err += 1;
         return;
     }

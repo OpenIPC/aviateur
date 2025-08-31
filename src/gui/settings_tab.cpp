@@ -5,8 +5,11 @@ const std::string AVIATEUR_VERSION = "0.1.4";
 void open_explorer(const std::string& dir) {
 #ifdef _WIN32
     ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+#elif defined(__APPLE__)
+    std::string cmd = "open \"" + dir + "\"";
+    system(cmd.c_str());
 #else
-    const std::string cmd = "xdg-open " + dir;
+    const std::string cmd = "xdg-open \"" + dir + "\"";
     std::system(cmd.c_str());
 #endif
 }
@@ -82,6 +85,7 @@ void SettingsContainer::custom_ready() {
     }
 #endif
 
+#ifndef __APPLE__
     {
         auto render_backend_btn = std::make_shared<revector::CheckButton>();
         render_backend_btn->set_text(FTR("use vulkan"));
@@ -93,6 +97,7 @@ void SettingsContainer::custom_ready() {
         };
         render_backend_btn->connect_signal("toggled", callback);
     }
+#endif
 
     {
         auto dark_mode_btn = std::make_shared<revector::CheckButton>();

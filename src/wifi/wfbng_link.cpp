@@ -16,12 +16,21 @@
     #include "linux/tun.h"
     #include "linux/tx_frame.h"
     #include "wfb-ng/rx.hpp"
-
-    #define INVALID_SOCKET (-1)
 #else
     #include "windows/wfbng_processor.h"
+    #define INVALID_SOCKET (-1)
 
-    #pragma comment(lib, "ws2_32.lib")
+    #ifdef __APPLE__
+        #include "macos/endian.h"
+    #endif
+
+    #ifdef _WIN32
+        #pragma comment(lib, "ws2_32.lib")
+    #endif
+#endif
+
+#if defined(_WIN32) || defined(__APPLE__)
+    #define INVALID_SOCKET (-1)
 #endif
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
@@ -663,7 +672,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     }
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();

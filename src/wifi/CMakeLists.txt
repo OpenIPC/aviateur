@@ -4,7 +4,7 @@ file(GLOB WIFI_SRC_LIST
 
 target_sources(${PROJECT_NAME} PRIVATE ${WIFI_SRC_LIST})
 
-if (WIN32)
+if (WIN32 OR APPLE)
     file(GLOB_RECURSE WINDOWS_SRC_LIST
             windows/*.cpp
             wfb-ng/zfex.c

@@ -10,6 +10,10 @@ project(aviateur
         VERSION 0.1
         LANGUAGES C CXX)
 
+if (APPLE)
+    enable_language(OBJC)
+endif ()
+
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -71,6 +75,7 @@ file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 add_executable(${PROJECT_NAME}
         src/main.cpp
         src/gui_interface.h
+        src/wifi/macos/endian.h
 )
 
 if (AVIATEUR_ENABLE_GSTREAMER)
