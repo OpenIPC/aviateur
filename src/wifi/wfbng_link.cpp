@@ -21,6 +21,8 @@
     #define INVALID_SOCKET (-1)
 
     #ifdef __APPLE__
+        #include <unistd.h>
+
         #include "macos/endian.h"
     #endif
 
@@ -706,12 +708,15 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
     }
 
     // Send payload via socket.
-    sendto(socketFd,
-           reinterpret_cast<const char *>(payload),
-           packet_size,
-           0,
-           (sockaddr *)&serverAddr,
-           sizeof(serverAddr));
+    auto ret = sendto(socketFd,
+                      reinterpret_cast<const char *>(payload),
+                      packet_size,
+                      0,
+                      (sockaddr *)&serverAddr,
+                      sizeof(serverAddr));
+    if (ret == -1) {
+        fprintf(stderr, "sendto failed: %s\n", strerror(errno));
+    }
 }
 #endif
 
@@ -782,12 +787,14 @@ void WfbngLink::set_alink_tx_power(int tx_power) {
 }
 
 WfbngLink::WfbngLink() {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
+    #if defined(_WIN32)
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
+    #endif
 
     socketFd = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
@@ -796,9 +803,14 @@ WfbngLink::WfbngLink() {
 WfbngLink::~WfbngLink() {
 #ifdef _WIN32
     closesocket(socketFd);
-    socketFd = INVALID_SOCKET;
     WSACleanup();
 #endif
+
+#ifdef __APPLE__
+    close(socketFd);
+#endif
+
+    socketFd = INVALID_SOCKET;
 
     stop();
 }
