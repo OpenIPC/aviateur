@@ -101,7 +101,28 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
    brew install libusb ffmpeg libsodium opencv libpcap
    ```
 
-2. Open as a CMake project and build.
+2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version to your own version).
+   ```
+   VULKAN_SDK="/Users/zzz/VulkanSDK/1.4.321.0/macOS"
+   export VULKAN_SDK
+   PATH="$PATH:$VULKAN_SDK/bin"
+   export PATH
+   DYLD_LIBRARY_PATH="$VULKAN_SDK/lib:${DYLD_LIBRARY_PATH:-}"
+   export DYLD_LIBRARY_PATH
+   echo "This script is now using VK_ADD_LAYER_PATH instead of VK_LAYER_PATH"
+   VK_ADD_LAYER_PATH="$VULKAN_SDK/share/vulkan/explicit_layer.d"
+   export VK_ADD_LAYER_PATH
+   VK_ICD_FILENAMES="$VULKAN_SDK/share/vulkan/icd.d/MoltenVK_icd.json"
+   export VK_ICD_FILENAMES
+   VK_DRIVER_FILES="$VULKAN_SDK/share/vulkan/icd.d/MoltenVK_icd.json"
+   export VK_DRIVER_FILES
+   PKG_CONFIG_PATH="$VULKAN_SDK/lib/pkgconfig:$PKG_CONFIG_PATH"
+   export PKG_CONFIG_PATH
+   ```
+
+3. Log out and in for the above change to take effect.
+
+4. Open as a CMake project and build.
 
 ### Common build issues
 
