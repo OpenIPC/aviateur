@@ -7,6 +7,10 @@
 #include <string>
 #include <unordered_map>
 
+#ifdef __APPLE__
+    #include <libkern/OSByteOrder.h>
+#endif
+
 #undef min
 #undef max
 
@@ -32,7 +36,10 @@ inline uint64_t be64toh(uint64_t big_endian_64bits) {
     #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台
     return _byteswap_uint64(big_endian_64bits);
+    #elif defined(__APPLE__)
+    return OSSwapBigToHostInt64(big_endian_64bits);
     #else
+    printf("No implementation for big endian to little endian conversion, so no conversion is applied. Make sure this is what you want")
     // 如果是其他平台，假设是大端或者已经有对应的函数实现
     return big_endian_64bits;
     #endif
@@ -44,7 +51,10 @@ inline uint32_t be32toh(uint32_t big_endian_32bits) {
     #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台，使用 _byteswap_ulong 函数
     return _byteswap_ulong(big_endian_32bits);
+    #elif defined(__APPLE__)
+    return OSSwapBigToHostInt32(big_endian_32bits);
     #else
+    printf("No implementation for big endian to little endian conversion, so no conversion is applied. Make sure this is what you want")
     // 如果是其他平台，假设是大端或者已经有对应的函数实现
     return big_endian_32bits;
     #endif
@@ -56,7 +66,10 @@ inline uint16_t be16toh(uint16_t big_endian_16bits) {
     #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台，使用 _byteswap_ushort 函数
     return _byteswap_ushort(big_endian_16bits);
+    #elif defined(__APPLE__)
+    return OSSwapBigToHostInt16(big_endian_16bits);
     #else
+    printf("No implementation for big endian to little endian conversion, so no conversion is applied. Make sure this is what you want")
     // 如果是其他平台，假设是大端或者已经有对应的函数实现
     return big_endian_16bits;
     #endif
@@ -119,7 +132,7 @@ typedef struct {
     uint8_t has_fragments;
 } rx_ring_item_t;
 
-static inline int modN(int x, int base) {
+inline int modN(int x, int base) {
     return (base + (x % base)) % base;
 }
 
