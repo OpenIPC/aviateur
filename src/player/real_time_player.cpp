@@ -17,7 +17,7 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
     yuvRenderer_->init();
 
     // If the decoder fails, try to replay.
-    connectionLostCallbacks.push_back([this] {
+    connectionLostCallbacks.emplace_back([this] {
         stop();
         play(url, forceSoftwareDecoding_);
     });

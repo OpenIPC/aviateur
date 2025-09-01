@@ -75,7 +75,6 @@ file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 add_executable(${PROJECT_NAME}
         src/main.cpp
         src/gui_interface.h
-        src/wifi/macos/endian.h
 )
 
 if (AVIATEUR_ENABLE_GSTREAMER)

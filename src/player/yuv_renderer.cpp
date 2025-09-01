@@ -36,7 +36,7 @@ void YuvRenderer::init() {
 
 void YuvRenderer::initGeometry() {
     // Set up vertex data (and buffer(s)) and configure vertex attributes.
-    float vertices[] = {
+    constexpr float vertices[] = {
         // Positions, UVs.
         -1.0, -1.0, 0.0, 0.0, // 0
         1.0,  -1.0, 1.0, 0.0, // 1
@@ -146,7 +146,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
     if (mStabilize) {
-        cv::Mat frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
+        const auto frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
 
         if (mPreviousFrame.has_value()) {
             auto stabXform = mStabilizer.stabilize(mPreviousFrame.value(), frameY);
