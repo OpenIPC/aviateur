@@ -17,13 +17,13 @@
     #include "linux/tx_frame.h"
     #include "wfb-ng/rx.hpp"
 #else
-    #include "windows/wfbng_processor.h"
+    #include "cross/endian.h"
+    #include "cross/wfbng_processor.h"
+
     #define INVALID_SOCKET (-1)
 
     #ifdef __APPLE__
         #include <unistd.h>
-
-        #include "macos/endian.h"
     #endif
 
     #ifdef _WIN32
