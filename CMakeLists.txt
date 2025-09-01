@@ -72,10 +72,21 @@ endif ()
 
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
-add_executable(${PROJECT_NAME}
-        src/main.cpp
-        src/gui_interface.h
-)
+if (APPLE)
+    file(COPY ${CMAKE_BINARY_DIR}/bin/assets
+            DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
+    )
+
+    add_executable(${PROJECT_NAME} MACOSX_BUNDLE
+            src/main.cpp
+            src/gui_interface.h
+    )
+else ()
+    add_executable(${PROJECT_NAME}
+            src/main.cpp
+            src/gui_interface.h
+    )
+endif ()
 
 if (AVIATEUR_ENABLE_GSTREAMER)
     target_compile_definitions(
