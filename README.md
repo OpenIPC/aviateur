@@ -1,17 +1,17 @@
 # Aviateur
 
-<p align="center">
+<p style="text-align: center;">
   <a href="https://github.com/OpenIPC/aviateur">
     <img src="assets/logo.png" width="96" alt="Aviateur logo">
   </a>
 </p>
 
-OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win).
+OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win).
 
 ![](tutorials/interface.png)
 
 > [!NOTE]
-> Adaptive Link support is only for Linux.
+> Adaptive Link support is only available for Linux.
 
 > [!NOTE]
 > Only RTL8812AU Wi-Fi adapter is supported.
@@ -40,6 +40,8 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 2. (Optional) Call `sudo udevadm control --reload-rules`, then reboot (this is definitely required).
 3. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
 4. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
+
+### How to run on macOS (WIP)
 
 ### Common run issues
 
