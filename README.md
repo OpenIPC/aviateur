@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">
   <a href="https://github.com/OpenIPC/aviateur">
-    <img src="assets/logo.png" width="96" alt="Aviateur logo">
+    <img src="assets/logo.svg" width="100" alt="Aviateur logo">
   </a>
 </p>
 
