@@ -118,7 +118,6 @@ void ControlPanel::custom_ready() {
 
             dongle_menu_button_ = std::make_shared<revector::MenuButton>();
             dongle_menu_button_->set_custom_minimum_size({0, 32});
-            dongle_menu_button_->container_sizing.expand_h = true;
             dongle_menu_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
 
@@ -148,7 +147,6 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(label);
 
             channel_button_ = std::make_shared<revector::MenuButton>();
-            channel_button_->container_sizing.expand_h = true;
             channel_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_button_);
 
@@ -179,7 +177,6 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(label);
 
             channel_width_button_ = std::make_shared<revector::MenuButton>();
-            channel_width_button_->container_sizing.expand_h = true;
             channel_width_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_width_button_);
 
@@ -221,7 +218,6 @@ void ControlPanel::custom_ready() {
             } else {
                 text_edit->set_text(std::filesystem::path(keyPath).filename().string());
             }
-            text_edit->container_sizing.expand_h = true;
             text_edit->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
 
@@ -265,7 +261,6 @@ void ControlPanel::custom_ready() {
             alink_con->add_child(vbox_container2);
 
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
-            hbox_container->container_sizing.expand_h = true;
             hbox_container->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             vbox_container2->add_child(hbox_container);
 
@@ -274,7 +269,6 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(label);
 
             tx_pwr_btn_ = std::make_shared<revector::MenuButton>();
-            tx_pwr_btn_->container_sizing.expand_h = true;
             tx_pwr_btn_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(tx_pwr_btn_);
 
@@ -314,7 +308,6 @@ void ControlPanel::custom_ready() {
         {
             play_button_ = std::make_shared<revector::Button>();
             play_button_->set_custom_minimum_size({0, 48});
-            play_button_->container_sizing.expand_h = true;
             play_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_adapter_start_button_looking(true);
 
@@ -388,7 +381,6 @@ void ControlPanel::custom_ready() {
         local_listener_port_edit_->set_editable(true);
         local_listener_port_edit_->set_numbers_only(true);
         local_listener_port_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT]);
-        local_listener_port_edit_->container_sizing.expand_h = true;
         local_listener_port_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         hbox_container->add_child(local_listener_port_edit_);
 
@@ -402,8 +394,6 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(label);
 
             auto codec_menu_button = std::make_shared<revector::MenuButton>();
-
-            codec_menu_button->container_sizing.expand_h = true;
             codec_menu_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             codec_menu_button->set_text(GuiInterface::Instance().rtp_codec_);
             hbox_container->add_child(codec_menu_button);
@@ -433,7 +423,6 @@ void ControlPanel::custom_ready() {
         {
             play_port_button_ = std::make_shared<revector::Button>();
             play_port_button_->set_custom_minimum_size({0, 48});
-            play_port_button_->container_sizing.expand_h = true;
             play_port_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_url_start_button_looking(true);
 
@@ -480,8 +469,6 @@ void ControlPanel::custom_ready() {
 }
 
 void ControlPanel::custom_input(revector::InputEvent &event) {
-    auto input_server = revector::InputServer::get_singleton();
-
     if (event.type == revector::InputEventType::Key) {
         auto key_args = event.args.key;
 

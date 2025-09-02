@@ -30,15 +30,12 @@ int main() {
         app->get_tree_root()->add_child(split_container);
 
         auto player_rect = std::make_shared<PlayerRect>();
-        player_rect->container_sizing.expand_h = true;
-        player_rect->container_sizing.expand_v = true;
         player_rect->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         player_rect->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
         split_container->add_child(player_rect);
 
         auto control_panel = std::make_shared<ControlPanel>();
         control_panel->set_custom_minimum_size({280, 0});
-        control_panel->container_sizing.expand_v = true;
         control_panel->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
         split_container->add_child(control_panel);
 

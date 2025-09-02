@@ -32,7 +32,6 @@ void SettingsContainer::custom_ready() {
 
         auto lang_menu_button = std::make_shared<revector::MenuButton>();
 
-        lang_menu_button->container_sizing.expand_h = true;
         lang_menu_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         hbox_container->add_child(lang_menu_button);
 
@@ -114,7 +113,6 @@ void SettingsContainer::custom_ready() {
     {
         auto open_capture_folder_button = std::make_shared<revector::MenuButton>();
 
-        open_capture_folder_button->container_sizing.expand_h = true;
         open_capture_folder_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(FTR("capture folder"));
@@ -126,7 +124,6 @@ void SettingsContainer::custom_ready() {
     {
         auto open_appdata_button = std::make_shared<revector::Button>();
 
-        open_appdata_button->container_sizing.expand_h = true;
         open_appdata_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_appdata_button);
         open_appdata_button->set_text(FTR("config folder"));
@@ -139,7 +136,6 @@ void SettingsContainer::custom_ready() {
     {
         auto open_crash_dumps_button = std::make_shared<revector::Button>();
 
-        open_crash_dumps_button->container_sizing.expand_h = true;
         open_crash_dumps_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_crash_dumps_button);
         open_crash_dumps_button->set_text(FTR("open crash dump folder"));
@@ -160,7 +156,6 @@ void SettingsContainer::custom_ready() {
     {
         auto show_console_btn = std::make_shared<revector::CheckButton>();
 
-        show_console_btn->container_sizing.expand_h = true;
         show_console_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(show_console_btn);
         show_console_btn->set_text(FTR("show console"));
@@ -179,9 +174,7 @@ void SettingsContainer::custom_ready() {
 
     {
         auto button = std::make_shared<revector::Button>();
-
         button->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkCenter;
-        button->container_sizing.expand_v = true;
         button->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkEnd;
         vbox_container->add_child(button);
         auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("icon-github.svg"));
@@ -198,7 +191,6 @@ void SettingsContainer::custom_ready() {
 
     {
         auto version_label = std::make_shared<revector::Label>();
-        version_label->container_sizing.expand_h = true;
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
         version_label->set_text(FTR("version") + " " + AVIATEUR_VERSION);

@@ -117,8 +117,6 @@ void PlayerRect::custom_ready() {
         lq_bar_->set_custom_minimum_size({0, 8});
         lq_bar_->set_visibility(false);
         lq_bar_->set_anchor_flag(revector::AnchorFlag::BottomWide);
-        lq_bar_->container_sizing.expand_v = false;
-        lq_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
     }
 
     {
@@ -180,7 +178,6 @@ void PlayerRect::custom_ready() {
 
     record_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(record_status_label_);
-    record_status_label_->container_sizing.expand_h = true;
     record_status_label_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
     record_status_label_->set_text("");
 
