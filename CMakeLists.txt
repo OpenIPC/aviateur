@@ -62,11 +62,19 @@ else ()
     find_package(OpenCV REQUIRED)
 
     if (AVIATEUR_ENABLE_GSTREAMER)
-        pkg_check_modules(GLIB REQUIRED glib-2.0)
-        pkg_check_modules(GST REQUIRED gstreamer-1.0)
-        pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
-        pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
-        pkg_check_modules(GIO REQUIRED gio-2.0)
+        if (APPLE)
+            find_library(GST_FRAMEWORK GStreamer
+                    PATHS /System/Library/Frameworks/
+                    /Library/Frameworks/
+                    macOS_BUNDLE_DIRECTORY
+            )
+        else ()
+            pkg_check_modules(GLIB REQUIRED glib-2.0)
+            pkg_check_modules(GST REQUIRED gstreamer-1.0)
+            pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
+            pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
+            pkg_check_modules(GIO REQUIRED gio-2.0)
+        endif ()
     endif ()
 endif ()
 
@@ -155,17 +163,24 @@ else ()
 endif ()
 
 if (AVIATEUR_ENABLE_GSTREAMER)
-    target_link_libraries(
-            ${PROJECT_NAME} PRIVATE
-            ${GST_LIBRARIES}
-            ${GLIB_LIBRARIES}
-            ${GIO_LIBRARIES}
-    )
+    if (APPLE)
+        target_link_libraries(
+                ${PROJECT_NAME} PRIVATE
+                ${GST_FRAMEWORK}
+        )
+    else ()
+        target_link_libraries(
+                ${PROJECT_NAME} PRIVATE
+                ${GST_LIBRARIES}
+                ${GLIB_LIBRARIES}
+                ${GIO_LIBRARIES}
+        )
 
-    target_include_directories(
-            ${PROJECT_NAME} PRIVATE
-            ${GST_INCLUDE_DIRS}
-            ${GLIB_INCLUDE_DIRS}
-            ${GIO_INCLUDE_DIRS}
-    )
+        target_include_directories(
+                ${PROJECT_NAME} PRIVATE
+                ${GST_INCLUDE_DIRS}
+                ${GLIB_INCLUDE_DIRS}
+                ${GIO_INCLUDE_DIRS}
+        )
+    endif ()
 endif ()
