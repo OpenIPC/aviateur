@@ -31,13 +31,13 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
 
     if (!start_status) {
         play_button_->theme_normal.bg_color = RED;
-        play_button_->theme_hovered.bg_color = RED;
+        play_button_->theme_hovered = {};
         play_button_->theme_pressed.bg_color = RED;
         play_button_->set_text(FTR("stop") + " (F5)");
         adapter_prop_block_->set_visibility(true);
     } else {
         play_button_->theme_normal.bg_color = GREEN;
-        play_button_->theme_hovered.bg_color = GREEN;
+        play_button_->theme_hovered = {};
         play_button_->theme_pressed.bg_color = GREEN;
         play_button_->set_text(FTR("start") + " (F5)");
         adapter_prop_block_->set_visibility(false);
@@ -49,12 +49,12 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 
     if (!start_status) {
         play_port_button_->theme_normal.bg_color = RED;
-        play_port_button_->theme_hovered.bg_color = RED;
+        play_port_button_->theme_hovered = {};
         play_port_button_->theme_pressed.bg_color = RED;
         play_port_button_->set_text(FTR("stop") + " (F5)");
     } else {
         play_port_button_->theme_normal.bg_color = GREEN;
-        play_port_button_->theme_hovered.bg_color = GREEN;
+        play_port_button_->theme_hovered = {};
         play_port_button_->theme_pressed.bg_color = GREEN;
         play_port_button_->set_text(FTR("start") + " (F5)");
     }
