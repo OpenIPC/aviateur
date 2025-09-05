@@ -308,12 +308,6 @@ void PlayerRect::custom_update(double dt) {
 
     hw_status_label_->set_text(FTR("hw decoder") + ": " + decoder_name);
 
-    if (!GuiInterface::Instance().use_gstreamer_) {
-        bitrate_label_->set_visibility(true);
-    } else {
-        bitrate_label_->set_visibility(false);
-    }
-
     render_fps_label_->set_text(FTR("render fps") + ": " +
                                 std::to_string(revector::Engine::get_singleton()->get_fps_int()));
 

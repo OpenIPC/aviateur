@@ -86,6 +86,47 @@ static void on_decodebin3_pad_added(GstElement *decodebin, GstPad *pad, gpointer
     }
 }
 
+static GstPadProbeReturn bitrate_probe(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+    GstBuffer *buffer = gst_pad_probe_info_get_buffer(info);
+    gsize bytes = gst_buffer_get_size(buffer);
+
+    auto *calc = static_cast<BitrateCalculator *>(user_data);
+    calc->feed_bytes(bytes);
+
+    return GST_PAD_PROBE_OK;
+}
+
+BitrateCalculator::BitrateCalculator() {
+    g_mutex_init(&mutex);
+}
+
+void BitrateCalculator::feed_bytes(guint64 bytes) {
+    g_mutex_lock(&mutex);
+
+    if (start_time == 0) {
+        start_time = g_get_monotonic_time();
+    }
+
+    total_bytes += bytes;
+
+    gint64 current_time = g_get_monotonic_time();
+    gdouble elapsed_seconds = (gdouble)(current_time - start_time) / GST_MSECOND;
+
+    if (elapsed_seconds >= 1) {
+        const gdouble bitrate_bps = (gdouble)(total_bytes * 8) / elapsed_seconds;
+        // g_print("Current Bitrate: %.2f kbps\n", bitrate_bps / 1000.0);
+
+        total_bytes = 0;
+        start_time = g_get_monotonic_time();
+
+        if (bitrate_cb) {
+            bitrate_cb(bitrate_bps);
+        }
+    }
+
+    g_mutex_unlock(&mutex);
+}
+
 void GstDecoder::init() {
     if (initialized_) {
         return;
@@ -100,6 +141,12 @@ void GstDecoder::init() {
     gst_init(NULL, NULL);
 
     gst_debug_set_default_threshold(GST_LEVEL_WARNING);
+
+    bitrate_calculator_ = std::make_shared<BitrateCalculator>();
+
+    bitrate_calculator_->bitrate_cb = [](const uint64_t bitrate) {
+        GuiInterface::Instance().EmitBitrateUpdate(bitrate);
+    };
 }
 
 void GstDecoder::create_pipeline(const std::string &codec) {
@@ -118,7 +165,7 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
         "rtpjitterbuffer latency=50 ! "
-        "%s ! "
+        "%s name=depay ! "
         "decodebin3 name=decbin ! "
         "autovideosink name=glsink sync=false",
         codec.c_str(),
@@ -145,6 +192,12 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         g_signal_connect(decodebin3, "pad-added", G_CALLBACK(on_decodebin3_pad_added), this);
 
         gst_object_unref(decodebin3);
+    }
+
+    {
+        GstPad *pad = gst_element_get_static_pad(gst_bin_get_by_name(GST_BIN(pipeline_), "depay"), "sink");
+        gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER, bitrate_probe, bitrate_calculator_.get(), NULL);
+        gst_object_unref(pad);
     }
 }
 
