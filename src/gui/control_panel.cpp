@@ -477,7 +477,7 @@ void ControlPanel::custom_input(revector::InputEvent &event) {
                 if (tab_container_->get_current_tab().has_value()) {
                     if (tab_container_->get_current_tab().value() == 0) {
                         play_button_->trigger();
-                    } else {
+                    } else if (tab_container_->get_current_tab().value() == 1) {
                         play_port_button_->trigger();
                     }
                 }
