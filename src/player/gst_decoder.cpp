@@ -53,13 +53,44 @@ static void on_decodebin3_pad_added(GstElement *decodebin, GstPad *pad, gpointer
     GstPad *dec_pad = gst_ghost_pad_get_target(GST_GHOST_PAD(pad));
 
     if (dec_pad) {
-        GstCaps *caps = gst_pad_get_current_caps(dec_pad);
-        if (caps) {
-            gchar *str = gst_caps_serialize(caps, GST_SERIALIZE_FLAG_NONE);
-            GuiInterface::Instance().PutLog(LogLevel::Info, "Pad caps: {}", str);
-            g_free(str);
-            gst_caps_unref(caps);
+        const GstCaps *caps = NULL;
+
+        // When using decodebin
+        if (gst_pad_has_current_caps(pad)) {
+            caps = gst_pad_get_current_caps(pad);
         }
+        // When using decodebin3
+        else {
+            gst_print("Pad '%s' has no caps, use gst_pad_get_stream to get caps\n", GST_PAD_NAME(pad));
+
+            GstStream *stream = gst_pad_get_stream(pad);
+            caps = gst_stream_get_caps(stream);
+            gst_clear_object(&stream);
+        }
+
+        const GstStructure *s = gst_caps_get_structure(caps, 0);
+
+        gint width, height;
+        gboolean res = gst_structure_get_int(s, "width", &width);
+        if (!res) {
+            g_print("Could not get width from caps.\n");
+            return;
+        }
+
+        res = gst_structure_get_int(s, "height", &height);
+        if (!res) {
+            g_print("Could not get height from caps.\n");
+            return;
+        }
+
+        gint numerator, denominator;
+        res = gst_structure_get_fraction(s, "framerate", &numerator, &denominator);
+        if (!res) {
+            g_print("Could not get framerate from caps.\n");
+            return;
+        }
+
+        GuiInterface::Instance().EmitDecoderReady(width, height, (gdouble)numerator / denominator);
 
         // Step 2: Get the parent element from the target pad (the actual decoder)
         GstElement *decoder = gst_pad_get_parent_element(dec_pad);
