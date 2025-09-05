@@ -23,7 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ ubuntu-24.04, windows-2025 ]
+        os: [ ubuntu-24.04, windows-2025, macos-latest ]
         build_type: [ Release ]
         c_compiler: [ gcc, clang, cl ]
         include:
@@ -36,12 +36,20 @@ jobs:
           - os: ubuntu-24.04
             c_compiler: clang
             cpp_compiler: clang++
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+          - os: macos-latest
+            c_compiler: gcc
+            cpp_compiler: g++
         exclude:
           - os: windows-2025
             c_compiler: gcc
           - os: windows-2025
             c_compiler: clang
           - os: ubuntu-24.04
+            c_compiler: cl
+          - os: macos-latest
             c_compiler: cl
 
     steps:
@@ -72,12 +80,15 @@ jobs:
           git submodule update --init --recursive
           sudo apt update
           sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev xorg-dev libpcap-dev
-#          sudo apt install gstreamer1.0-plugins-good gstreamer1.0-nice gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad libgstreamer-plugins-bad1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev glslang-tools libbsd-dev libgl1-mesa-dev libsystemd-dev libx11-dev libx11-xcb-dev libxxf86vm-dev pkg-config gstreamer1.0-libav libglib2.0-dev
+
+      - name: Install dependency libraries (macOS)
+        if: runner.os == 'macOS'
+        run:
+          git submodule update --init --recursive
+          brew install libusb ffmpeg libsodium libpcap
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
-        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -89,8 +100,6 @@ jobs:
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
-        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -98,6 +107,17 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DAVIATEUR_ENABLE_GSTREAMER=OFF
           -DREVECTOR_VULKAN=OFF
+          -S ${{ github.workspace }}
+
+      - name: Configure CMake (macOS)
+        if: runner.os == 'macOS'
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DAVIATEUR_ENABLE_GSTREAMER=OFF
+          -DREVECTOR_VULKAN=ON
           -S ${{ github.workspace }}
 
       - name: Build
