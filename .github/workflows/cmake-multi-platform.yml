@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake on multiple platforms
 
 on:
@@ -16,14 +14,8 @@ jobs:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
 
-      # Set up a matrix to run the following 3 configurations:
-      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
-      # 2. <Linux, Release, latest GCC compiler toolchain on the default runner image, default generator>
-      # 3. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
-      #
-      # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ ubuntu-24.04, windows-2025, macos-latest ]
+        os: [ ubuntu-24.04, windows-2025 ]
         build_type: [ Release ]
         c_compiler: [ gcc, clang, cl ]
         include:
@@ -36,12 +28,6 @@ jobs:
           - os: ubuntu-24.04
             c_compiler: clang
             cpp_compiler: clang++
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-          - os: macos-latest
-            c_compiler: gcc
-            cpp_compiler: g++
         exclude:
           - os: windows-2025
             c_compiler: gcc
@@ -49,11 +35,11 @@ jobs:
             c_compiler: clang
           - os: ubuntu-24.04
             c_compiler: cl
-          - os: macos-latest
-            c_compiler: cl
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -66,7 +52,6 @@ jobs:
         id: vars
         if: runner.os == 'Windows'
         run: |
-          git submodule update --init --recursive
           git clone https://github.com/Microsoft/vcpkg.git
           cd vcpkg
           .\bootstrap-vcpkg.bat
@@ -77,15 +62,8 @@ jobs:
       - name: Install dependency libraries (Linux)
         if: runner.os == 'Linux'
         run: |
-          git submodule update --init --recursive
           sudo apt update
           sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev xorg-dev libpcap-dev
-
-      - name: Install dependency libraries (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          git submodule update --init --recursive
-          brew install libusb ffmpeg libsodium libpcap
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
@@ -107,17 +85,6 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DAVIATEUR_ENABLE_GSTREAMER=OFF
           -DREVECTOR_VULKAN=OFF
-          -S ${{ github.workspace }}
-
-      - name: Configure CMake (macOS)
-        if: runner.os == 'macOS'
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DAVIATEUR_ENABLE_GSTREAMER=OFF
-          -DREVECTOR_VULKAN=ON
           -S ${{ github.workspace }}
 
       - name: Build
