@@ -99,7 +99,12 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
             return;
         }
 
-        GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetFps());
+        std::string decoder_name = decoder->hwDecoderName.has_value() ? decoder->hwDecoderName.value() : "N/A";
+
+        GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(),
+                                                  decoder->GetHeight(),
+                                                  decoder->GetFps(),
+                                                  decoder_name);
 
         if (!isMuted && decoder->HasAudio()) {
             enableAudio();
@@ -111,8 +116,6 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
 
         // Bitrate callback.
         decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
-
-        hwDecoderName_ = decoder->hwDecoderName;
 
         decodeThread = std::thread([this] {
             decodeResMtx.lock();
@@ -329,10 +332,6 @@ int RealTimePlayer::getVideoHeight() const {
 
 void RealTimePlayer::forceSoftwareDecoding(bool force) {
     forceSoftwareDecoding_ = force;
-}
-
-std::optional<std::string> RealTimePlayer::getHwDecoderName() const {
-    return hwDecoderName_;
 }
 
 std::shared_ptr<FfmpegDecoder> RealTimePlayer::getDecoder() const {

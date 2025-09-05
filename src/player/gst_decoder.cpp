@@ -90,8 +90,6 @@ static void on_decodebin3_pad_added(GstElement *decodebin, GstPad *pad, gpointer
             return;
         }
 
-        GuiInterface::Instance().EmitDecoderReady(width, height, (gdouble)numerator / denominator);
-
         // Step 2: Get the parent element from the target pad (the actual decoder)
         GstElement *decoder = gst_pad_get_parent_element(dec_pad);
 
@@ -102,13 +100,18 @@ static void on_decodebin3_pad_added(GstElement *decodebin, GstPad *pad, gpointer
 
             GuiInterface::Instance().PutLog(LogLevel::Info, "The actual decoder type is: {}", type_name);
 
-            self->decoder_name_ = std::string(type_name);
+            GuiInterface::Instance().EmitDecoderReady(width,
+                                                      height,
+                                                      (gdouble)numerator / denominator,
+                                                      std::string(type_name));
 
             // Clean up references
             g_free(decoder_name);
             gst_object_unref(decoder);
         } else {
             g_print("Could not get the parent element of the target pad.\n");
+
+            GuiInterface::Instance().EmitDecoderReady(width, height, (gdouble)numerator / denominator, "unknown");
         }
 
         gst_object_unref(dec_pad);

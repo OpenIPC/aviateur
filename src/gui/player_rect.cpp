@@ -125,11 +125,14 @@ void PlayerRect::custom_ready() {
         video_info_label_->set_text("");
         video_info_label_->set_visibility(false);
 
-        auto on_deocder_ready = [this](uint32_t width, uint32_t height, float fps) {
+        auto on_deocder_ready = [this](uint32_t width, uint32_t height, float fps, std::string decoder_name) {
             std::stringstream ss;
             ss << width << "x" << height << "@" << int(round(fps));
             video_info_label_->set_text(ss.str());
             video_info_label_->set_visibility(true);
+
+            hw_status_label_->set_text(FTR("hw decoder") + ": " + decoder_name);
+            hw_status_label_->set_visibility(true);
         };
         GuiInterface::Instance().decoderReadyCallbacks.emplace_back(on_deocder_ready);
     }
@@ -143,6 +146,7 @@ void PlayerRect::custom_ready() {
 
     hw_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(hw_status_label_);
+    hw_status_label_->set_visibility(false);
 
 #ifdef __linux__
     pl_label_ = std::make_shared<revector::Label>();
@@ -294,19 +298,6 @@ void PlayerRect::custom_ready() {
 
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
-
-    std::string decoder_name;
-#ifdef AVIATEUR_USE_GSTREAMER
-    if (GuiInterface::Instance().use_gstreamer_) {
-        decoder_name = gst_decoder_->decoder_name_;
-    } else
-#endif
-    {
-        auto hw_decoder_name = player_->getHwDecoderName();
-        decoder_name = hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"));
-    }
-
-    hw_status_label_->set_text(FTR("hw decoder") + ": " + decoder_name);
 
     render_fps_label_->set_text(FTR("render fps") + ": " +
                                 std::to_string(revector::Engine::get_singleton()->get_fps_int()));
