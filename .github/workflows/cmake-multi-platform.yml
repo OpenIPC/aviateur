@@ -83,7 +83,7 @@ jobs:
 
       - name: Install dependency libraries (macOS)
         if: runner.os == 'macOS'
-        run:
+        run: |
           git submodule update --init --recursive
           brew install libusb ffmpeg libsodium libpcap
 
