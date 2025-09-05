@@ -249,28 +249,28 @@ void PlayerRect::custom_ready() {
         button->connect_signal("toggled", callback);
     }
 
-    {
-        video_stabilization_button_ = std::make_shared<revector::CheckButton>();
-        video_stabilization_button_->set_text(FTR("video stab"));
-        vbox->add_child(video_stabilization_button_);
+    // {
+    //     video_stabilization_button_ = std::make_shared<revector::CheckButton>();
+    //     video_stabilization_button_->set_text(FTR("video stab"));
+    //     vbox->add_child(video_stabilization_button_);
+    //
+    //     auto callback = [this](bool toggled) {
+    //         player_->yuvRenderer_->mStabilize = toggled;
+    //         if (toggled) {
+    //             show_red_tip(FTR("video stab warning"));
+    //         }
+    //     };
+    //     video_stabilization_button_->connect_signal("toggled", callback);
+    // }
 
-        auto callback = [this](bool toggled) {
-            player_->yuvRenderer_->mStabilize = toggled;
-            if (toggled) {
-                show_red_tip(FTR("video stab warning"));
-            }
-        };
-        video_stabilization_button_->connect_signal("toggled", callback);
-    }
-
-    {
-        low_light_enhancement_button_ = std::make_shared<revector::CheckButton>();
-        low_light_enhancement_button_->set_text(FTR("low light enhancement"));
-        vbox->add_child(low_light_enhancement_button_);
-
-        auto callback = [this](bool toggled) { player_->yuvRenderer_->mLowLightEnhancement = toggled; };
-        low_light_enhancement_button_->connect_signal("toggled", callback);
-    }
+    // {
+    //     low_light_enhancement_button_ = std::make_shared<revector::CheckButton>();
+    //     low_light_enhancement_button_->set_text(FTR("low light enhancement"));
+    //     vbox->add_child(low_light_enhancement_button_);
+    //
+    //     auto callback = [this](bool toggled) { player_->yuvRenderer_->mLowLightEnhancement = toggled; };
+    //     low_light_enhancement_button_->connect_signal("toggled", callback);
+    // }
 
     auto onBitrateUpdate = [this](uint64_t bitrate) {
         std::string text = FTR("bit rate") + ": ";

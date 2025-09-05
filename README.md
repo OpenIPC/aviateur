@@ -72,7 +72,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 2. Install dependencies.
    ```powershell
    .\vcpkg integrate install
-   .\vcpkg install libusb ffmpeg libsodium opencv
+   .\vcpkg install libusb ffmpeg libsodium
    ```
 
 3. Add VCPKG_ROOT to environment. (Change the value to your vcpkg path.)
@@ -90,7 +90,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 1. Install dependencies.
    ```bash
    git submodule update --init --recursive
-   sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
+   sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev xorg-dev libpcap-dev
    ```
 
 2. Open as a CMake project and build.
@@ -100,7 +100,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 1. Install dependencies.
    ```bash
    git submodule update --init --recursive
-   brew install libusb ffmpeg libsodium opencv libpcap
+   brew install libusb ffmpeg libsodium libpcap
    ```
 
 2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version to your own version).
