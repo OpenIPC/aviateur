@@ -4,4 +4,4 @@ file(GLOB FEATURE_SRC_LIST
         *.h
 )
 
-#target_sources(${PROJECT_NAME} PRIVATE ${FEATURE_SRC_LIST})
+target_sources(${PROJECT_NAME} PRIVATE ${FEATURE_SRC_LIST})

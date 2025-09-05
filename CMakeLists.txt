@@ -29,7 +29,7 @@ if (WIN32)
 
     find_package(FFmpeg REQUIRED)
     find_package(unofficial-sodium CONFIG REQUIRED)
-#    find_package(OpenCV REQUIRED)
+    find_package(OpenCV REQUIRED)
 
     if (AVIATEUR_ENABLE_GSTREAMER)
         # To ensure dll linking, add "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin" to your PATH
@@ -59,7 +59,7 @@ else ()
 
     pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
 
-#    find_package(OpenCV REQUIRED)
+    find_package(OpenCV REQUIRED)
 
     if (AVIATEUR_ENABLE_GSTREAMER)
         if (APPLE)
@@ -145,7 +145,7 @@ if (WIN32)
             ${FFMPEG_LIBRARIES}
             PkgConfig::LIBUSB
             unofficial-sodium::sodium
-#            ${OpenCV_LIBS}
+            ${OpenCV_LIBS}
             WiFiDriver
             revector
             SDL3::SDL3-static
@@ -154,7 +154,7 @@ else ()
     target_link_libraries(${PROJECT_NAME} PRIVATE
             PkgConfig::LIBAV
             PkgConfig::LIBSODIUM
-#            ${OpenCV_LIBS}
+            ${OpenCV_LIBS}
             WiFiDriver
             revector
             SDL3::SDL3-static

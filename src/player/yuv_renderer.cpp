@@ -143,92 +143,91 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mTextureAllocated = true;
 }
 
-void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData) {
+void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData) {
     if (mTexY == nullptr) {
         return;
     }
 
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
-    // if (mStabilize) {
-    //     const auto frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
-    //
-    //     if (mPreviousFrame.has_value()) {
-    //         auto stabXform = mStabilizer.stabilize(mPreviousFrame.value(), frameY);
-    //
-    //         mStabXform = Pathfinder::Mat3(1);
-    //         mStabXform.v[0] = stabXform.at<double>(0, 0);
-    //         mStabXform.v[3] = stabXform.at<double>(0, 1);
-    //         mStabXform.v[1] = stabXform.at<double>(1, 0);
-    //         mStabXform.v[4] = stabXform.at<double>(1, 1);
-    //         mStabXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
-    //         mStabXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
-    //
-    //         mStabXform = mStabXform.scale(
-    //             Pathfinder::Vec2F(1.0f + static_cast<float>(HORIZONTAL_BORDER_CROP) / mTexY->get_size().x));
-    //     }
-    //
-    //     mPreviousFrame = frameY.clone();
-    //
-    //     if (!mPrevFrameData) {
-    //         mPrevFrameData = curFrameData;
-    //     }
-    //
-    //     // Keep the cv frame alive until we call `submit_and_wait`
-    //     cv::Mat enhancedFrameY;
-    //
-    //     if (mPrevFrameData->linesize[0]) {
-    //         const void* texYData = mPrevFrameData->data[0];
-    //
-    //         encoder->write_texture(mTexY, {}, texYData);
-    //     }
-    //     if (mPrevFrameData->linesize[1]) {
-    //         encoder->write_texture(mTexU, {}, mPrevFrameData->data[1]);
-    //     }
-    //     if (mPrevFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
-    //         encoder->write_texture(mTexV, {}, mPrevFrameData->data[2]);
-    //     }
-    //
-    //     mQueue->submit_and_wait(encoder);
-    //
-    //     // Do this after submitting.
-    //     mPrevFrameData = curFrameData;
-    // } else
-    {
-        // if (mPreviousFrame.has_value()) {
-        //     mPreviousFrame.reset();
-        // }
-        // if (mPrevFrameData) {
-        //     mPrevFrameData.reset();
-        // }
+    if (mStabilize) {
+        const auto frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, newFrameData->data[0]);
+
+        if (mPreviousFrameY.has_value()) {
+            auto stabXform = mStabilizer.stabilize(mPreviousFrameY.value(), frameY);
+
+            mXform = Pathfinder::Mat3(1);
+            mXform.v[0] = stabXform.at<double>(0, 0);
+            mXform.v[3] = stabXform.at<double>(0, 1);
+            mXform.v[1] = stabXform.at<double>(1, 0);
+            mXform.v[4] = stabXform.at<double>(1, 1);
+            mXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
+            mXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
+
+            mXform = mXform.scale(
+                Pathfinder::Vec2F(1.0f + static_cast<float>(HORIZONTAL_BORDER_CROP) / mTexY->get_size().x));
+        }
+
+        mPreviousFrameY = frameY.clone();
+
+        if (!mPrevFrameData) {
+            mPrevFrameData = newFrameData;
+        }
+
+        // Keep the cv frame alive until we call `submit_and_wait`
+        cv::Mat enhancedFrameY;
+
+        if (mPrevFrameData->linesize[0]) {
+            const void* texYData = mPrevFrameData->data[0];
+
+            encoder->write_texture(mTexY, {}, texYData);
+        }
+        if (mPrevFrameData->linesize[1]) {
+            encoder->write_texture(mTexU, {}, mPrevFrameData->data[1]);
+        }
+        if (mPrevFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
+            encoder->write_texture(mTexV, {}, mPrevFrameData->data[2]);
+        }
+
+        mQueue->submit_and_wait(encoder);
+
+        // Do this after submitting.
+        mPrevFrameData = newFrameData;
+    } else {
+        if (mPreviousFrameY.has_value()) {
+            mPreviousFrameY.reset();
+        }
+        if (mPrevFrameData) {
+            mPrevFrameData.reset();
+        }
 
         mXform = Pathfinder::Mat3(1);
 
         // Keep the cv frame alive until we call `submit_and_wait`
-        // cv::Mat enhancedFrameY;
+        cv::Mat enhancedFrameY;
 
-        if (curFrameData->linesize[0]) {
-            const void* texYData = curFrameData->data[0];
+        if (newFrameData->linesize[0]) {
+            const void* texYData = newFrameData->data[0];
 
-            // if (mLowLightEnhancement) {
-            //     if (!mLowLightEnhancer.has_value()) {
-            //         mLowLightEnhancer = LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
-            //     }
-            //
-            //     cv::Mat originalFrameY =
-            //         cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
-            //
-            //     enhancedFrameY = mLowLightEnhancer->detect(originalFrameY);
-            //
-            //     texYData = enhancedFrameY.data;
-            // }
+            if (mLowLightEnhancement) {
+                if (!mLowLightEnhancer.has_value()) {
+                    mLowLightEnhancer = LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
+                }
+
+                cv::Mat originalFrameY =
+                    cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, newFrameData->data[0]);
+
+                enhancedFrameY = mLowLightEnhancer->detect(originalFrameY);
+
+                texYData = enhancedFrameY.data;
+            }
             encoder->write_texture(mTexY, {}, texYData);
         }
-        if (curFrameData->linesize[1]) {
-            encoder->write_texture(mTexU, {}, curFrameData->data[1]);
+        if (newFrameData->linesize[1]) {
+            encoder->write_texture(mTexU, {}, newFrameData->data[1]);
         }
-        if (curFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
-            encoder->write_texture(mTexV, {}, curFrameData->data[2]);
+        if (newFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
+            encoder->write_texture(mTexV, {}, newFrameData->data[2]);
         }
 
         mQueue->submit_and_wait(encoder);
@@ -248,7 +247,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
 
     // Update uniform buffers.
     {
-        const FragUniformBlock uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
+        FragUniformBlock uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
 
         // We don't need to preserve the data until the upload commands are implemented because
         // these uniform buffers are host-visible/coherent.

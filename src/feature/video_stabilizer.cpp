@@ -12,6 +12,7 @@ email:chenjia2013@foxmail.com
 
 #include <cassert>
 #include <cmath>
+#include <opencv2/core/ocl.hpp>
 #include <opencv2/opencv.hpp>
 
 using namespace std;
@@ -30,6 +31,17 @@ double pstd = 4e-3;             // can be changed
 double cstd = 0.25;             // can be changed
 Trajectory Q(pstd, pstd, pstd); // process noise covariance
 Trajectory R(cstd, cstd, cstd); // measurement noise covariance
+
+VideoStabilizer::VideoStabilizer() {
+    if (cv::ocl::haveOpenCL()) {
+        std::cout << "OpenCL is available and enabled." << std::endl;
+        // Optionally, ensure it's set to be used
+        cv::ocl::setUseOpenCL(true);
+    } else {
+        std::cout << "OpenCL is not available." << std::endl;
+        cv::ocl::setUseOpenCL(false);
+    }
+}
 
 cv::Mat VideoStabilizer::stabilize(cv::Mat prev, cv::Mat cur_grey) {
     auto timestamp = revector::Timestamp("Aviateur");

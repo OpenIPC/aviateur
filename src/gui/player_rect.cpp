@@ -262,7 +262,7 @@ void PlayerRect::custom_ready() {
     //     };
     //     video_stabilization_button_->connect_signal("toggled", callback);
     // }
-
+    //
     // {
     //     low_light_enhancement_button_ = std::make_shared<revector::CheckButton>();
     //     low_light_enhancement_button_->set_text(FTR("low light enhancement"));

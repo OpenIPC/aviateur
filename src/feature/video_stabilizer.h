@@ -45,7 +45,7 @@ struct Trajectory {
 
 class VideoStabilizer {
 public:
-    VideoStabilizer() = default;
+    VideoStabilizer();
 
     cv::Mat stabilize(cv::Mat prev, cv::Mat cur_grey);
 

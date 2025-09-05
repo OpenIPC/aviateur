@@ -56,14 +56,14 @@ jobs:
           cd vcpkg
           .\bootstrap-vcpkg.bat
           .\vcpkg integrate install
-          .\vcpkg install libusb ffmpeg libsodium
+          .\vcpkg install libusb ffmpeg libsodium opencv
           echo ("VCPKG_ROOT=" + "$PWD") >> $env:GITHUB_ENV
 
       - name: Install dependency libraries (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev xorg-dev libpcap-dev
+          sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
