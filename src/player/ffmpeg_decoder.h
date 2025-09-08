@@ -31,7 +31,7 @@ public:
         hwFrame.reset();
     }
 
-    bool OpenInput(const std::string &url, bool forceSoftwareDecoding);
+    bool OpenInput(std::string &inputFile, bool forceSoftwareDecoding);
 
     bool CloseInput();
 

@@ -10,8 +10,7 @@ class GstDecoder;
 class PlayerRect final : public revector::TextureRect {
 public:
     std::shared_ptr<RealTimePlayer> player_;
-    // Preserved for reuse when restarting decoder.
-    std::string play_url_;
+    std::string playing_file_;
 
     std::shared_ptr<GstDecoder> gst_decoder_;
 

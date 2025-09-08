@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <nlohmann/json.hpp>
 
 #ifdef __linux__
@@ -302,21 +303,32 @@ public:
         WfbngLink::Instance().set_alink_tx_power(power);
     }
 
-    static std::string BuildSdp(const std::string &codec, const int payloadType, const int port) {
-        std::stringstream sdpStream;
-        sdpStream << "v=0\n";
-        sdpStream << "o=- 0 0 IN IP4 127.0.0.1\n";
-        sdpStream << "s=No Name\n";
-        sdpStream << "c=IN IP4 127.0.0.1\n";
-        sdpStream << "t=0 0\n";
-        sdpStream << "m=video " << port << " RTP/AVP " << payloadType << "\n";
-        sdpStream << "a=rtpmap:" << payloadType << " " << codec << "/90000\n";
+    static void BuildSdp(const std::string &filePath, const std::string &codec, int payloadType, int port) {
+        auto absolutePath = std::filesystem::absolute(filePath);
+        std::string dirPath = absolutePath.parent_path().string();
 
-        auto sdpStr = sdpStream.str();
+        try {
+            if (!std::filesystem::exists(dirPath)) {
+                std::filesystem::create_directories(dirPath);
+            }
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
 
-        Instance().PutLog(LogLevel::Debug, "Built SDP: " + sdpStr);
+        std::ofstream sdpFos(filePath);
+        sdpFos << "v=0\n";
+        sdpFos << "o=- 0 0 IN IP4 127.0.0.1\n";
+        sdpFos << "s=No Name\n";
+        sdpFos << "c=IN IP4 127.0.0.1\n";
+        sdpFos << "t=0 0\n";
+        sdpFos << "m=video " << port << " RTP/AVP " << payloadType << "\n";
+        sdpFos << "a=rtpmap:" << payloadType << " " << codec << "/90000\n";
+        sdpFos.flush();
+        sdpFos.close();
 
-        return sdpStr;
+        Instance().PutLog(LogLevel::Debug,
+                          "Build SDP: Codec: " + codec + ", Payload type: " + std::to_string(payloadType) +
+                              ", Port: " + std::to_string(port));
     }
 
     template <typename... Args>
@@ -325,11 +337,12 @@ public:
         EmitLog(level, str);
     }
 
-    void NotifyRtpStream(const int pt, uint16_t ssrc, const int port, const std::string &codec) {
-        const auto sdpStr = BuildSdp(codec, pt, port);
-        const std::string sdpUrl = "sdp://" + sdpStr;
+    void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string &codec) {
+        std::string sdpFile = "sdp/sdp" + std::to_string(port) + ".sdp";
 
-        EmitRtpStream(sdpUrl);
+        BuildSdp(sdpFile, codec, pt, port);
+
+        EmitRtpStream(sdpFile);
     }
 
     void UpdateCount() {
