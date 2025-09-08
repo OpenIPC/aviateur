@@ -115,6 +115,7 @@ void PlayerRect::custom_ready() {
         lq_bar_ = std::make_shared<SignalBar>();
         add_child(lq_bar_);
         lq_bar_->set_custom_minimum_size({0, 8});
+        lq_bar_->set_size({0, 8});
         lq_bar_->set_visibility(false);
         lq_bar_->set_anchor_flag(revector::AnchorFlag::BottomWide);
     }
