@@ -8,7 +8,7 @@
 
 constexpr size_t MAX_AUDIO_PACKET = 2 * 1024 * 1024;
 
-bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding) {
+bool FfmpegDecoder::OpenInput(const std::string &url, bool forceSoftwareDecoding) {
 #ifndef NDEBUG
     av_log_set_level(AV_LOG_ERROR);
 #endif
@@ -46,7 +46,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&options, "fflags", "nobuffer", 0);
     av_dict_set(&options, "flags", "low_delay", 0);
 
-    if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options) != 0) {
+    if (avformat_open_input(&pFormatCtx, url.c_str(), nullptr, &options) != 0) {
         CloseInput();
         return false;
     }

@@ -60,9 +60,9 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
 }
 
 void PlayerRect::custom_ready() {
-    auto onRtpStream = [this](std::string sdp_file) {
-        playing_file_ = sdp_file;
-        start_playing(sdp_file);
+    auto onRtpStream = [this](const std::string &rtp_url) {
+        play_url_ = rtp_url;
+        start_playing(rtp_url);
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
@@ -247,7 +247,7 @@ void PlayerRect::custom_ready() {
             force_software_decoding = toggled;
             if (playing_) {
                 player_->stop();
-                player_->play(playing_file_, force_software_decoding);
+                player_->play(play_url_, force_software_decoding);
             }
         };
         button->connect_signal("toggled", callback);
