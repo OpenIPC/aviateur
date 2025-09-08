@@ -60,7 +60,7 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
 }
 
 void PlayerRect::custom_ready() {
-    auto onRtpStream = [this](const std::string &rtp_url) {
+    auto onRtpStream = [this](std::string rtp_url) {
         play_url_ = rtp_url;
         start_playing(rtp_url);
     };
