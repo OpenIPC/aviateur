@@ -15,6 +15,9 @@
 
 #ifdef __linux__
     #include "linux/tun.h"
+#endif
+
+#ifndef _WIN32
     #include "linux/tx_frame.h"
 #endif
 
@@ -54,7 +57,7 @@ public:
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
     /// Send a RTP payload via socket.
     void handle_rtp(uint8_t *payload, uint16_t packet_size);
 #endif
@@ -68,8 +71,8 @@ protected:
 
     std::string keyPath;
 
-#ifdef __linux__
-    // Adaptive link
+#ifndef _WIN32
+    // --------------- Adaptive link
     std::unique_ptr<std::thread> usb_event_thread;
     std::unique_ptr<std::thread> usb_tx_thread;
     uint32_t link_id{7669206};
@@ -81,27 +84,20 @@ protected:
     std::unique_ptr<std::thread> link_quality_thread;
     FecController fec_controller;
 
-    // TUN
-    bool tun_enabled = false;
-    std::unique_ptr<Tun> tun_;
-
-    void init_thread(std::unique_ptr<std::thread> &thread,
-                     const std::function<std::unique_ptr<std::thread>()> &init_func) {
-        std::unique_lock lock(thread_mutex);
-        destroy_thread(thread);
-        thread = init_func();
-    }
-
-    void destroy_thread(std::unique_ptr<std::thread> &thread) {
-        std::unique_lock lock(thread_mutex);
-        if (thread && thread->joinable()) {
-            thread->join();
-            thread = nullptr;
-        }
-    }
-
     void start_link_quality_thread();
 
     void stop_adaptive_link();
+// --------------- Adaptive link
+#endif
+
+    void init_thread(std::unique_ptr<std::thread> &thread,
+                     const std::function<std::unique_ptr<std::thread>()> &init_func);
+
+    void destroy_thread(std::unique_ptr<std::thread> &thread);
+
+    // Use TUN instead of manually crafted IP packets.
+    bool tun_enabled = false;
+#ifdef __linux__
+    std::unique_ptr<Tun> tun_;
 #endif
 };

@@ -1,13 +1,10 @@
-#ifdef __linux__
 
-    #include "transmitter.h"
+#include "transmitter.h"
 
-    #include <linux/if_packet.h>
-    #include <net/if.h>
-    #include <sys/ioctl.h>
+#include <cinttypes>
+#include <cstring>
 
-    #include <cinttypes>
-    #include <cstring>
+#include "../cross/endian.h"
 
 //-------------------------------------------------------------
 // Transmitter
@@ -181,6 +178,12 @@ void Transmitter::makeSessionKey() {
     }
 }
 
+#ifdef __linux__
+
+    #include <linux/if_packet.h>
+    #include <net/if.h>
+    #include <sys/ioctl.h>
+
 //-------------------------------------------------------------
 // RawSocketTransmitter
 //-------------------------------------------------------------
@@ -328,6 +331,7 @@ void RawSocketTransmitter::dumpStats(FILE *fp,
 
     antennaStat_.clear();
 }
+#endif
 
 //-------------------------------------------------------------
 // UdpTransmitter
@@ -475,5 +479,3 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
     const uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
     antennaStat_[key].logLatency(get_time_us() - startUs, result, static_cast<uint32_t>(size));
 }
-
-#endif

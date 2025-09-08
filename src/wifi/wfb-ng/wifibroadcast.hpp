@@ -26,12 +26,10 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <pcap.h>
-#include <endian.h>
 #include <fcntl.h>
 #include <time.h>
 #include <sys/mman.h>
 #include <sodium.h>
-#include <endian.h>
 #include <string>
 #include <vector>
 

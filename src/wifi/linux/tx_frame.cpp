@@ -1,14 +1,19 @@
+#include "tx_frame.h"
+
+#include <sys/poll.h>
+
 #ifdef __linux__
-
-    #include "tx_frame.h"
-
     #include <linux/ip.h>
     #include <linux/random.h>
     #include <linux/udp.h>
     #include <sys/ioctl.h>
+#else
+    #include "../cross/ip.h"
+    #include "../cross/udp.h"
+#endif
 
-    #include <cinttypes>
-    #include <cstring>
+#include <cinttypes>
+#include <cstring>
 
 TxFrame::TxFrame(const bool tun_enabled) {
     tun_enabled_ = tun_enabled;
@@ -22,11 +27,20 @@ void TxFrame::stop() {
 
 uint32_t TxFrame::extractRxqOverflow(struct msghdr *msg) {
     for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(msg); cmsg != nullptr; cmsg = CMSG_NXTHDR(msg, cmsg)) {
+
+        #ifdef __linux__
         if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_RXQ_OVFL) {
             uint32_t val = 0;
             std::memcpy(&val, CMSG_DATA(cmsg), sizeof(val));
             return val;
         }
+        #else
+        if (cmsg->cmsg_level == SOL_SOCKET) {
+            uint32_t val = 0;
+            std::memcpy(&val, CMSG_DATA(cmsg), sizeof(val));
+            return val;
+        }
+        #endif
     }
     return 0;
 }
@@ -295,7 +309,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         static int packet_id = 0;
 
                         // IP header
-                        struct iphdr *ip = (struct iphdr *)(packet.data() + 2);
+                        auto *ip = (struct iphdr *)(packet.data() + 2);
                         ip->saddr = inet_addr("10.5.0.1");
                         ip->daddr = inet_addr("10.5.0.10");
                         ip->ihl = 5;
@@ -309,7 +323,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         ip->check = 0; // Will be calculated later
 
                         // UDP header
-                        struct udphdr *udp = (struct udphdr *)(ip + 1);
+                        auto *udp = (struct udphdr *)(ip + 1);
                         udp->source = htons(54321); // Doesn't matter
                         udp->dest = htons(9999);
                         udp->len = htons(udphdr_len + rsize);
@@ -437,6 +451,7 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
             static_cast<uint8_t>((arg->vht_nss << IEEE80211_RADIOTAP_VHT_NSS_SHIFT) & IEEE80211_RADIOTAP_VHT_NSS_MASK);
     }
 
+#ifdef __linux__
     // Check system entropy
     {
         int fd = open("/dev/random", O_RDONLY);
@@ -450,6 +465,7 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
             close(fd);
         }
     }
+#endif
 
     // Attempt to create a UDP listening socket
     std::vector<int> rxFds;
@@ -508,5 +524,3 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
         std::fprintf(stderr, "Error in TxFrame::run: %s\n", ex.what());
     }
 }
-
-#endif

@@ -17,26 +17,26 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <arpa/inet.h>
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/resource.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <netinet/in.h>
 #include <pcap.h>
 #include <poll.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/un.h>
-#include <arpa/inet.h>
-#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
-#include <linux/random.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <time.h>
+#include <unistd.h>
 
+#include "src/wifi/cross/endian.h"
 #include "zfex.h"
 
 extern "C"

@@ -76,11 +76,13 @@ int open_udp_socket_for_rx(int port, int rcv_buf_size, uint32_t bind_addr, int s
         throw runtime_error(string_format("Unable to set SO_REUSEADDR: %s", strerror(errno)));
     }
 
+    #ifdef __linux__
     if(setsockopt(fd, SOL_SOCKET, SO_RXQ_OVFL, (const void *)&optval , sizeof(optval)) != 0)
     {
         close(fd);
         throw runtime_error(string_format("Unable to set SO_RXQ_OVFL: %s", strerror(errno)));
     }
+    #endif
 
     if (rcv_buf_size > 0)
     {
@@ -119,11 +121,13 @@ int open_unix_socket_for_rx(const char *socket_path, int rcv_buf_size, int socke
         throw runtime_error(string_format("Unable to set SO_REUSEADDR: %s", strerror(errno)));
     }
 
+    #ifdef __linux__
     if(setsockopt(fd, SOL_SOCKET, SO_RXQ_OVFL, (const void *)&optval , sizeof(optval)) != 0)
     {
         close(fd);
         throw runtime_error(string_format("Unable to set SO_RXQ_OVFL: %s", strerror(errno)));
     }
+    #endif
 
     if (rcv_buf_size > 0)
     {

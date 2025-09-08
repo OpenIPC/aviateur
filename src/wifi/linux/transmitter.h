@@ -1,27 +1,21 @@
 #pragma once
 
-#ifdef __linux__
-
 // -- External C Libraries --
 extern "C" {
-    #include "../wfb-ng/zfex.h"
+#include "../wfb-ng/zfex.h"
 }
 
-    #include <arpa/inet.h>
-    #include <netinet/in.h>
-    #include <poll.h>
-    #include <sys/resource.h>
-    #include <sys/stat.h>
-    #include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
-    #include <algorithm>
-    #include <cerrno>
-    #include <memory>
-    #include <unordered_map>
-    #include <vector>
+#include <algorithm>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
-    #include "../wfb-ng/wifibroadcast.hpp"
-    #include "Rtl8812aDevice.h"
+#include "../wfb-ng/wifibroadcast.hpp"
+#include "Rtl8812aDevice.h"
 
 /// A custom deleter for FEC pointer usage in unique_ptr
 struct FecDeleter {
@@ -173,6 +167,7 @@ public:
 /// Map: key = (antennaIndex << 8) | 0xff, value = TxAntennaItem
 typedef std::unordered_map<uint64_t, TxAntennaItem> TxAntennaStat;
 
+#ifdef __linux__
 /**
  * @class RawSocketTransmitter
  * @brief Sends packets over raw AF_PACKET sockets.
@@ -217,6 +212,7 @@ private:
     size_t radiotapHeaderLen_;
     uint8_t frameType_;
 };
+#endif
 
 /**
  * @class UdpTransmitter
@@ -292,5 +288,3 @@ private:
     uint8_t frameType_;
     Rtl8812aDevice *rtlDevice_;
 };
-
-#endif

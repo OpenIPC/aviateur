@@ -184,3 +184,26 @@ if (AVIATEUR_ENABLE_GSTREAMER)
         )
     endif ()
 endif ()
+
+if (APPLE)
+    ##install(DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/aviateur.app"
+    ##        DESTINATION "${CMAKE_BINARY_DIR}")
+    #install(TARGETS aviateur DESTINATION "${CMAKE_BINARY_DIR}")
+    ## Include CPack
+    #include(CPack)
+    #
+    ## Set package information
+    #set(CPACK_PACKAGE_NAME "Aviateur")
+    #set(CPACK_PACKAGE_VERSION "0.1.15")
+    #set(CPACK_PACKAGE_VENDOR "OpenIPC")
+    #set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A brief description of your app.")
+    #
+    ## Specify the DragNDrop generator for macOS DMG
+    #set(CPACK_GENERATOR "DragNDrop")
+    #
+    ## Configure DMG specific options (optional)
+    ##set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_CURRENT_SOURCE_DIR}/Resources/background.png") # Path to a custom background image
+    #set(CPACK_DMG_APPLICATIONS_SYMLINK_LAUNCH_COMMAND "open /Applications/${CPACK_PACKAGE_NAME}.app") # Command to launch your app
+    ##set(CPACK_DMG_DS_STORE_SETUP_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/Resources/setup_ds_store.applescript") # Custom AppleScript for .DS_Store layout
+    #
+endif ()

@@ -1,64 +1,124 @@
-#pragma once
+//
+// endian.h
+//
+// https://gist.github.com/panzi/6856583
+//
+// I, Mathias Panzenböck, place this file hereby into the public domain. Use
+// it at your own risk for whatever you like. In case there are
+// jurisdictions that don't support putting things in the public domain you
+// can also consider it to be "dual licensed" under the BSD, MIT and Apache
+// licenses, if you want to. This code is trivial anyway. Consider it an
+// example on how to get the endian conversion functions on different
+// platforms.
 
-#include <cstdint>
-#include <cstdio>
+#ifndef PORTABLE_ENDIAN_H__
+#define PORTABLE_ENDIAN_H__
 
-#ifdef __APPLE__
-    #include <libkern/OSByteOrder.h>
+#if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64)) && !defined(__WINDOWS__)
+
+#	define __WINDOWS__
+
 #endif
 
-/// Convert host int32 to big endian.
-inline uint32_t htobe32(uint32_t host_32bits) {
-    uint16_t test = 0x1;
-    bool is_little_endian = *((uint8_t *)&test) == 0x1;
+#if defined(__linux__) || defined(__CYGWIN__)
 
-    // macOS: OSSwapHostToBigInt32(x)
-    if (is_little_endian) {
-        // Little to big endian
-        return ((host_32bits & 0x000000FF) << 24) | ((host_32bits & 0x0000FF00) << 8) |
-               ((host_32bits & 0x00FF0000) >> 8) | ((host_32bits & 0xFF000000) >> 24);
-    }
-    return host_32bits;
-}
+#	include <endian.h>
 
-/// Convert big endian to host int64.
-inline uint64_t be64toh(uint64_t big_endian_64bits) {
-#if defined(_WIN32)
-    return _byteswap_uint64(big_endian_64bits);
 #elif defined(__APPLE__)
-    return OSSwapBigToHostInt64(big_endian_64bits);
-#else
-    printf(
-        "No implementation for big endian to little endian conversion, so no conversion is applied. Make sure this is "
-        "what you want");
-    return big_endian_64bits;
-#endif
-}
 
-/// Convert big to host int32.
-inline uint32_t be32toh(uint32_t big_endian_32bits) {
-#if defined(_WIN32)
-    return _byteswap_ulong(big_endian_32bits);
-#elif defined(__APPLE__)
-    return OSSwapBigToHostInt32(big_endian_32bits);
-#else
-    printf(
-        "No implementation for big endian to little endian conversion, so no conversion is applied. Make sure this is "
-        "what you want");
-    return big_endian_32bits;
-#endif
-}
+#	include <libkern/OSByteOrder.h>
 
-/// Convert big to host int16.
-inline uint16_t be16toh(uint16_t big_endian_16bits) {
-#if defined(_WIN32)
-    return _byteswap_ushort(big_endian_16bits);
-#elif defined(__APPLE__)
-    return OSSwapBigToHostInt16(big_endian_16bits);
+#	define htobe16(x) OSSwapHostToBigInt16(x)
+#	define htole16(x) OSSwapHostToLittleInt16(x)
+#	define be16toh(x) OSSwapBigToHostInt16(x)
+#	define le16toh(x) OSSwapLittleToHostInt16(x)
+
+#	define htobe32(x) OSSwapHostToBigInt32(x)
+#	define htole32(x) OSSwapHostToLittleInt32(x)
+#	define be32toh(x) OSSwapBigToHostInt32(x)
+#	define le32toh(x) OSSwapLittleToHostInt32(x)
+
+#	define htobe64(x) OSSwapHostToBigInt64(x)
+#	define htole64(x) OSSwapHostToLittleInt64(x)
+#	define be64toh(x) OSSwapBigToHostInt64(x)
+#	define le64toh(x) OSSwapLittleToHostInt64(x)
+
+#	define __BYTE_ORDER    BYTE_ORDER
+#	define __BIG_ENDIAN    BIG_ENDIAN
+#	define __LITTLE_ENDIAN LITTLE_ENDIAN
+#	define __PDP_ENDIAN    PDP_ENDIAN
+
+#elif defined(__OpenBSD__)
+
+#	include <sys/endian.h>
+
+#elif defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
+
+#	include <sys/endian.h>
+
+#	define be16toh(x) betoh16(x)
+#	define le16toh(x) letoh16(x)
+
+#	define be32toh(x) betoh32(x)
+#	define le32toh(x) letoh32(x)
+
+#	define be64toh(x) betoh64(x)
+#	define le64toh(x) letoh64(x)
+
+#elif defined(__WINDOWS__)
+
+#	include <winsock2.h>
+
+#	if BYTE_ORDER == LITTLE_ENDIAN
+
+#		define htobe16(x) htons(x)
+#		define htole16(x) (x)
+#		define be16toh(x) ntohs(x)
+#		define le16toh(x) (x)
+
+#		define htobe32(x) htonl(x)
+#		define htole32(x) (x)
+#		define be32toh(x) ntohl(x)
+#		define le32toh(x) (x)
+
+#		define htobe64(x) htonll(x)
+#		define htole64(x) (x)
+#		define be64toh(x) ntohll(x)
+#		define le64toh(x) (x)
+
+#	elif BYTE_ORDER == BIG_ENDIAN
+
+		/* that would be xbox 360 */
+#		define htobe16(x) (x)
+#		define htole16(x) __builtin_bswap16(x)
+#		define be16toh(x) (x)
+#		define le16toh(x) __builtin_bswap16(x)
+
+#		define htobe32(x) (x)
+#		define htole32(x) __builtin_bswap32(x)
+#		define be32toh(x) (x)
+#		define le32toh(x) __builtin_bswap32(x)
+
+#		define htobe64(x) (x)
+#		define htole64(x) __builtin_bswap64(x)
+#		define be64toh(x) (x)
+#		define le64toh(x) __builtin_bswap64(x)
+
+#	else
+
+#		error byte order not supported
+
+#	endif
+
+#	define __BYTE_ORDER    BYTE_ORDER
+#	define __BIG_ENDIAN    BIG_ENDIAN
+#	define __LITTLE_ENDIAN LITTLE_ENDIAN
+#	define __PDP_ENDIAN    PDP_ENDIAN
+
 #else
-    printf(
-        "No implementation for big endian to little endian conversion, so no conversion is applied. Make sure this is "
-        "what you want");
-    return big_endian_16bits;
+
+#	error platform not supported
+
 #endif
-}
+
+#endif
