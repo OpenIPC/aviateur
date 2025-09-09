@@ -86,7 +86,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
 
         GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(),
                                                   decoder->GetHeight(),
-                                                  decoder->GetFps(),
+                                                  decoder->GetFramerate(),
                                                   decoder_name);
 
         if (!isMuted && decoder->HasAudio()) {

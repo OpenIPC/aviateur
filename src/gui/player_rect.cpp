@@ -348,10 +348,10 @@ void PlayerRect::start_playing(const std::string &url) {
 
     if (recreate_player) {
         if (GuiInterface::Instance().use_gstreamer_) {
-            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (FFmpeg)");
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (GStreamer)");
             player_ = std::make_shared<VideoPlayerGst>(render_server->device_, render_server->queue_);
         } else {
-            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (GStreamer)");
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (FFmpeg)");
             player_ = std::make_shared<VideoPlayerFfmpeg>(render_server->device_, render_server->queue_);
         }
     }

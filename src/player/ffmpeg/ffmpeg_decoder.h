@@ -45,8 +45,8 @@ public:
         return height;
     }
 
-    float GetFps() const {
-        return videoFps;
+    float GetFramerate() const {
+        return videoFramerate;
     }
 
     bool HasAudio() const {
@@ -127,7 +127,7 @@ private:
 
     volatile bool sourceIsOpened = false;
 
-    float videoFps = 0;
+    float videoFramerate = 0;
 
     double videoBaseTime = 0;
 

@@ -84,10 +84,10 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     // Convert time base
     if (videoStreamIndex != -1) {
-        videoFps = static_cast<float>(av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate));
+        videoFramerate = static_cast<float>(av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate));
         videoBaseTime = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base);
 
-        GuiInterface::Instance().PutLog(LogLevel::Info, "Video FPS: {}", videoFps);
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Video framerate: {}", videoFramerate);
     }
 
     if (audioStreamIndex != -1) {
