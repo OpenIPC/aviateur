@@ -1,15 +1,9 @@
 ﻿#pragma once
 
-#include <common/any_callable.h>
-
 #include <memory>
-#include <queue>
-#include <thread>
 
 #include "../video_player.h"
 #include "gst_decoder.h"
-
-struct SDL_AudioStream;
 
 class VideoPlayerGst final : public VideoPlayer {
 public:

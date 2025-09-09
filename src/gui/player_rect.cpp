@@ -2,7 +2,9 @@
 
 #include "../gui_interface.h"
 #include "src/player/ffmpeg/video_player.h"
-#include "src/player/gst/video_player.h"
+#ifdef AVIATEUR_USE_GSTREAMER
+    #include "src/player/gst/video_player.h"
+#endif
 
 class SignalBar : public revector::ProgressBar {
     void custom_ready() override {
@@ -335,6 +337,7 @@ void PlayerRect::start_playing(const std::string &url) {
 
     bool recreate_player = true;
     if (player_) {
+#ifdef AVIATEUR_USE_GSTREAMER
         const bool player_is_gst = dynamic_cast<const VideoPlayerGst *>(player_.get()) != nullptr;
 
         if (player_is_gst && GuiInterface::Instance().use_gstreamer_) {
@@ -344,13 +347,19 @@ void PlayerRect::start_playing(const std::string &url) {
         if (!player_is_gst && !GuiInterface::Instance().use_gstreamer_) {
             recreate_player = false;
         }
+#else
+        recreate_player = false;
+#endif
     }
 
     if (recreate_player) {
+#ifdef AVIATEUR_USE_GSTREAMER
         if (GuiInterface::Instance().use_gstreamer_) {
             GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (GStreamer)");
             player_ = std::make_shared<VideoPlayerGst>(render_server->device_, render_server->queue_);
-        } else {
+        } else
+#endif
+        {
             GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (FFmpeg)");
             player_ = std::make_shared<VideoPlayerFfmpeg>(render_server->device_, render_server->queue_);
         }
@@ -381,8 +390,7 @@ void PlayerRect::stop_playing() {
         player_->stop();
     }
 
-    if (GuiInterface::Instance().use_gstreamer_) {
-    } else {
+    if (!GuiInterface::Instance().use_gstreamer_) {
         texture = logo_;
         collapse_panel_->set_visibility(false);
     }

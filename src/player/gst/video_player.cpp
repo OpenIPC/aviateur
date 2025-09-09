@@ -1,8 +1,9 @@
-﻿#include "video_player.h"
+﻿#ifdef AVIATEUR_USE_GSTREAMER
+    #include "video_player.h"
 
-#include <future>
+    #include <future>
 
-#include "../../gui_interface.h"
+    #include "../../gui_interface.h"
 
 VideoPlayerGst::VideoPlayerGst(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
     gst_init(NULL, NULL);
@@ -44,3 +45,5 @@ void VideoPlayerGst::stop() {
 }
 
 void VideoPlayerGst::set_muted(bool muted) {}
+
+#endif

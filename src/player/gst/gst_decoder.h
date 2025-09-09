@@ -1,12 +1,10 @@
 #pragma once
 
-#ifdef AVIATEUR_USE_GSTREAMER
+#include <gst/gst.h>
 
-    #include <gst/gst.h>
-
-    #include <functional>
-    #include <memory>
-    #include <string>
+#include <functional>
+#include <memory>
+#include <string>
 
 class BitrateCalculator {
 public:
@@ -43,5 +41,3 @@ private:
 
     std::shared_ptr<BitrateCalculator> bitrate_calculator_;
 };
-
-#endif
