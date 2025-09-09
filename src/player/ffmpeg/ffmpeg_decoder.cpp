@@ -46,6 +46,9 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&options, "fflags", "nobuffer", 0);
     av_dict_set(&options, "flags", "low_delay", 0);
 
+    // av_dict_set(&options, "probesize", "10000000", 0); // Increase to 10 MB
+    // av_dict_set(&options, "analyzeduration", "5000000", 0); // Increase to 5 seconds
+
     if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options) != 0) {
         CloseInput();
         return false;

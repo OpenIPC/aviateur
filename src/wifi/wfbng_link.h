@@ -1,10 +1,14 @@
 #pragma once
 
 #if defined(_WIN32) || defined(__APPLE__)
+    #ifdef _WIN32
+        #include <winsock2.h> // To solve winsock.h redefinition errors, include before libusb.h
+    #endif
     #include <libusb.h>
 #else
     #include <libusb-1.0/libusb.h>
 #endif
+
 #include <mutex>
 #include <string>
 #include <thread>
@@ -46,6 +50,11 @@ public:
 
     void stop() const;
 
+#ifdef _WIN32
+    /// Send a RTP payload via socket.
+    void handle_rtp(uint8_t *payload, uint16_t packet_size);
+#endif
+
     bool get_alink_enabled() const;
 
     void enable_alink(bool enable);
@@ -56,11 +65,6 @@ public:
 
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
-
-#if defined(_WIN32)
-    /// Send a RTP payload via socket.
-    void handle_rtp(uint8_t *payload, uint16_t packet_size);
-#endif
 
 protected:
     libusb_context *ctx{};
@@ -78,22 +82,22 @@ protected:
     uint32_t link_id{7669206};
     std::recursive_mutex thread_mutex;
     std::shared_ptr<TxFrame> tx_frame;
-    bool alink_enabled = true;
     bool alink_should_stop = false;
-    int alink_tx_power = 30;
     std::unique_ptr<std::thread> link_quality_thread;
     FecController fec_controller;
 
     void start_link_quality_thread();
 
     void stop_adaptive_link();
-// --------------- Adaptive link
-#endif
 
     void init_thread(std::unique_ptr<std::thread> &thread,
                      const std::function<std::unique_ptr<std::thread>()> &init_func);
 
     void destroy_thread(std::unique_ptr<std::thread> &thread);
+#endif
+    bool alink_enabled = true;
+    int alink_tx_power = 30;
+    // --------------- Adaptive link
 
     // Use TUN instead of manually crafted IP packets.
     bool tun_enabled = false;

@@ -326,8 +326,8 @@ public:
         sdpFos.flush();
         sdpFos.close();
 
-        Instance().PutLog(LogLevel::Debug,
-                          "Build SDP: Codec: " + codec + ", Payload type: " + std::to_string(payloadType) +
+        Instance().PutLog(LogLevel::Info,
+                          "Built SDP: Codec: " + codec + ", Payload type: " + std::to_string(payloadType) +
                               ", Port: " + std::to_string(port));
     }
 

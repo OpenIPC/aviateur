@@ -371,6 +371,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     return true;
 }
 
+#ifndef _WIN32
 void WfbngLink::init_thread(std::unique_ptr<std::thread> &thread,
                             const std::function<std::unique_ptr<std::thread>()> &init_func) {
     std::unique_lock lock(thread_mutex);
@@ -386,7 +387,6 @@ void WfbngLink::destroy_thread(std::unique_ptr<std::thread> &thread) {
     }
 }
 
-#ifndef _WIN32
 void WfbngLink::start_link_quality_thread() {
     GuiInterface::Instance().PutLog(LogLevel::Info, "Start alink thread");
 
@@ -590,6 +590,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
     std::string client_addr = "127.0.0.1";
 
+#ifndef _WIN32
     static std::unique_ptr<AggregatorX> video_aggregator =
         std::make_unique<AggregatorX>(client_addr,
                                       GuiInterface::Instance().playerPort,
@@ -600,6 +601,13 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
     static std::unique_ptr<AggregatorX> udp_aggregator =
         std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
+#else
+    static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
+        keyPath.c_str(),
+        epoch,
+        video_channel_id_f,
+        [](uint8_t *payload, uint16_t packet_size) { Instance().handle_rtp(payload, packet_size); });
+#endif
 
     static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
@@ -617,6 +625,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
         SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
+#ifndef _WIN32
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -631,6 +640,13 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
                                                              video_aggregator->count_p_fec_recovered,
                                                              video_aggregator->count_p_lost);
+#else
+        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                         0,
+                                         antenna,
+                                         rssi);
+#endif
 
         const auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
         GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
@@ -726,6 +742,7 @@ int WfbngLink::get_alink_tx_power() const {
 }
 
 void WfbngLink::enable_alink(const bool enable) {
+#ifndef _WIN32
     if (alink_enabled == enable) {
         return;
     }
@@ -741,9 +758,11 @@ void WfbngLink::enable_alink(const bool enable) {
         }
         start_link_quality_thread();
     }
+#endif
 }
 
 void WfbngLink::set_alink_tx_power(const int tx_power) {
+#ifndef _WIN32
     if (tx_power <= 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
         return;
@@ -758,6 +777,7 @@ void WfbngLink::set_alink_tx_power(const int tx_power) {
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
+#endif
 }
 
 WfbngLink::WfbngLink() {
