@@ -11,7 +11,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 ![](tutorials/interface.png)
 
 > [!NOTE]
-> Adaptive Link support is only available for Linux.
+> No Adaptive Link support for Windows.
 
 > [!NOTE]
 > Only RTL8812AU Wi-Fi adapter is supported.
@@ -41,7 +41,9 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 3. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
 4. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
 
-### How to run on macOS (WIP)
+### How to run on macOS
+
+Currently, I cannot find a way to distribute it on macOS. So, you have to build it yourself.
 
 ### Common run issues
 

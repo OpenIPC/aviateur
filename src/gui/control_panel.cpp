@@ -246,7 +246,7 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(select_button);
         }
 
-#ifdef __linux__
+#ifndef _WIN32
         {
             auto alink_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
             alink_con->set_title(FTR("alink"));
@@ -254,7 +254,7 @@ void ControlPanel::custom_ready() {
             alink_con->set_color(revector::ColorU(210.0, 137, 94));
             vbox_unblockable->add_child(alink_con);
 
-            auto callback2 = [this](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
+            auto callback2 = [](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
             alink_con->connect_signal("collapsed", callback2);
 
             auto vbox_container2 = std::make_shared<revector::HBoxContainer>();

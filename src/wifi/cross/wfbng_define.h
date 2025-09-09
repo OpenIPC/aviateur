@@ -10,7 +10,7 @@
 #undef min
 #undef max
 
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
 
 static uint8_t ieee80211_header[] = {
     0x08, 0x01, 0x00, 0x00,             // data frame, not protected, from STA to DS via an AP, duration not set

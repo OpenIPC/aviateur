@@ -1,13 +1,9 @@
 #pragma once
 
-#ifdef __linux__
+#include <memory>
+#include <vector>
 
-    #include <sys/socket.h>
-
-    #include <memory>
-    #include <vector>
-
-    #include "transmitter.h"
+#include "transmitter.h"
 
 class Rtl8812aDevice;
 
@@ -101,5 +97,3 @@ private:
      */
     static int open_udp_socket_for_rx(int port, int buf_size);
 };
-
-#endif

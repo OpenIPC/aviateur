@@ -7,32 +7,22 @@
 
 #include "../gui_interface.h"
 #include "WiFiDriver.h"
+#include "cross/endian.h"
 #include "logger.h"
 #include "rtp.h"
 #include "rx_frame.h"
 #include "signal_quality.h"
 
-#ifdef __linux__
-    #include "linux/tun.h"
-    #include "linux/tx_frame.h"
-    #include "wfb-ng/rx.hpp"
-#else
-    #include "cross/endian.h"
+#ifdef _WIN32
     #include "cross/wfbng_processor.h"
 
     #define INVALID_SOCKET (-1)
 
-    #ifdef __APPLE__
-        #include <unistd.h>
-    #endif
-
-    #ifdef _WIN32
-        #pragma comment(lib, "ws2_32.lib")
-    #endif
-#endif
-
-#if defined(_WIN32) || defined(__APPLE__)
-    #define INVALID_SOCKET (-1)
+    #pragma comment(lib, "ws2_32.lib")
+#else
+    #include "linux/tun.h"
+    #include "linux/tx_frame.h"
+    #include "wfb-ng/rx.hpp"
 #endif
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
@@ -48,7 +38,7 @@ inline bool isH264(const uint8_t *data) {
     return h264NalType == 24 || h264NalType == 28;
 }
 
-#ifdef __linux__
+#ifndef _WIN32
 class AggregatorX : public AggregatorUDPv4 {
 public:
     AggregatorX(const std::string &client_addr,
@@ -268,7 +258,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
-#ifdef __linux__
+#ifndef _WIN32
     tx_frame = std::make_shared<TxFrame>(tun_enabled);
 #endif
 
@@ -277,7 +267,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         try {
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
 
-#ifdef __linux__
+#ifndef _WIN32
             // if (!usb_event_thread) {
             //     auto usb_event_thread_func = [this] {
             //         while (true) {
@@ -325,7 +315,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 stop_adaptive_link();
                 start_link_quality_thread();
             }
-
 #endif
 
             rtlDevice->Init(
@@ -348,7 +337,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
 
-#ifdef __linux__
+#ifndef _WIN32
         stop_adaptive_link();
         tx_frame->stop();
         destroy_thread(usb_tx_thread);
@@ -382,8 +371,22 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     return true;
 }
 
-#ifdef __linux__
+void WfbngLink::init_thread(std::unique_ptr<std::thread> &thread,
+                            const std::function<std::unique_ptr<std::thread>()> &init_func) {
+    std::unique_lock lock(thread_mutex);
+    destroy_thread(thread);
+    thread = init_func();
+}
 
+void WfbngLink::destroy_thread(std::unique_ptr<std::thread> &thread) {
+    std::unique_lock lock(thread_mutex);
+    if (thread && thread->joinable()) {
+        thread->join();
+        thread = nullptr;
+    }
+}
+
+#ifndef _WIN32
 void WfbngLink::start_link_quality_thread() {
     GuiInterface::Instance().PutLog(LogLevel::Info, "Start alink thread");
 
@@ -550,7 +553,6 @@ void WfbngLink::stop_adaptive_link() {
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "Alink thread stopped");
 }
-
 #endif
 
 void WfbngLink::handle_80211_frame(const Packet &packet) {
@@ -588,7 +590,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
     std::string client_addr = "127.0.0.1";
 
-#ifdef __linux__
     static std::unique_ptr<AggregatorX> video_aggregator =
         std::make_unique<AggregatorX>(client_addr,
                                       GuiInterface::Instance().playerPort,
@@ -599,13 +600,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
     static std::unique_ptr<AggregatorX> udp_aggregator =
         std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
-#else
-    static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
-        keyPath.c_str(),
-        epoch,
-        video_channel_id_f,
-        [](uint8_t *payload, uint16_t packet_size) { Instance().handle_rtp(payload, packet_size); });
-#endif
 
     static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
@@ -623,7 +617,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
         SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
-#ifdef __linux__
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -638,13 +631,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
                                                              video_aggregator->count_p_fec_recovered,
                                                              video_aggregator->count_p_lost);
-#else
-        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                         0,
-                                         antenna,
-                                         rssi);
-#endif
 
         const auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
         GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
@@ -674,7 +660,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     }
 }
 
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
 void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();
@@ -732,23 +718,14 @@ void WfbngLink::stop() const {
 }
 
 bool WfbngLink::get_alink_enabled() const {
-#ifdef __linux__
     return alink_enabled;
-#else
-    return false;
-#endif
 }
 
 int WfbngLink::get_alink_tx_power() const {
-#ifdef __linux__
     return alink_tx_power;
-#else
-    return 0;
-#endif
 }
 
-void WfbngLink::enable_alink(bool enable) {
-#ifdef __linux__
+void WfbngLink::enable_alink(const bool enable) {
     if (alink_enabled == enable) {
         return;
     }
@@ -764,11 +741,9 @@ void WfbngLink::enable_alink(bool enable) {
         }
         start_link_quality_thread();
     }
-#endif
 }
 
-void WfbngLink::set_alink_tx_power(int tx_power) {
-#ifdef __linux__
+void WfbngLink::set_alink_tx_power(const int tx_power) {
     if (tx_power <= 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
         return;
@@ -783,7 +758,6 @@ void WfbngLink::set_alink_tx_power(int tx_power) {
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
-#endif
 }
 
 WfbngLink::WfbngLink() {
