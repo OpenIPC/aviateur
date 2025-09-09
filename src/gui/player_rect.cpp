@@ -321,8 +321,10 @@ void PlayerRect::custom_draw() {
     if (!playing_) {
         return;
     }
-    auto render_image = (revector::RenderImage *)texture.get();
-    player_->render(render_image->get_texture());
+    if (player_) {
+        auto render_image = (revector::RenderImage *)texture.get();
+        player_->render(render_image->get_texture());
+    }
 }
 
 template <class DstType, class SrcType>
