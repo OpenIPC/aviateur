@@ -24,15 +24,17 @@ private:
 
 class GstDecoder {
 public:
-    GstDecoder() = default;
+    GstDecoder();
 
-    void init();
+    ~GstDecoder();
 
     void create_pipeline(const std::string& codec);
 
     void play_pipeline(const std::string& uri);
 
     void stop_pipeline();
+
+    void destroy();
 
 private:
     GstElement* pipeline_{};

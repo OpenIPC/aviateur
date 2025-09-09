@@ -1,10 +1,8 @@
 #include "player_rect.h"
 
 #include "../gui_interface.h"
-
-#ifdef AVIATEUR_USE_GSTREAMER
-    #include "src/player/gst_decoder.h"
-#endif
+#include "src/player/ffmpeg/video_player.h"
+#include "src/player/gst/video_player.h"
 
 class SignalBar : public revector::ProgressBar {
     void custom_ready() override {
@@ -61,7 +59,7 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
 
 void PlayerRect::custom_ready() {
     auto onRtpStream = [this](std::string sdp_file) {
-        playing_file_ = sdp_file;
+        play_url_ = sdp_file;
         start_playing(sdp_file);
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
@@ -80,15 +78,7 @@ void PlayerRect::custom_ready() {
     logo_ = std::make_shared<revector::VectorImage>(revector::get_asset_dir("openipc-logo-white.svg"));
     texture = logo_;
 
-    auto render_server = revector::RenderServer::get_singleton();
-    player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
-
     render_image_ = std::make_shared<revector::RenderImage>(Pathfinder::Vec2I{1920, 1080});
-
-#ifdef AVIATEUR_USE_GSTREAMER
-    gst_decoder_ = std::make_shared<GstDecoder>();
-    gst_decoder_->init();
-#endif
 
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
@@ -192,7 +182,7 @@ void PlayerRect::custom_ready() {
     auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("CaptureImage.svg"), true);
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this] {
-        auto output_file = player_->captureJpeg();
+        auto output_file = player_->capture_jpeg();
         if (output_file.empty()) {
             show_red_tip(FTR("capture fail"));
         } else {
@@ -210,7 +200,7 @@ void PlayerRect::custom_ready() {
     auto record_button_raw = record_button_.get();
     auto record_callback = [record_button_raw, this] {
         if (!is_recording) {
-            is_recording = player_->startRecord();
+            is_recording = player_->start_mp4_recording();
 
             if (is_recording) {
                 record_button_raw->set_text(FTR("stop recording") + " (F10)");
@@ -225,7 +215,7 @@ void PlayerRect::custom_ready() {
         } else {
             is_recording = false;
 
-            auto output_file = player_->stopRecord();
+            auto output_file = player_->stop_mp4_recording();
 
             record_button_raw->set_text(FTR("record mp4") + " (F10)");
             record_status_label_->set_text("");
@@ -248,7 +238,7 @@ void PlayerRect::custom_ready() {
             force_software_decoding = toggled;
             if (playing_) {
                 player_->stop();
-                player_->play(playing_file_, force_software_decoding);
+                player_->play(play_url_, force_software_decoding);
             }
         };
         button->connect_signal("toggled", callback);
@@ -298,14 +288,15 @@ void PlayerRect::custom_ready() {
 }
 
 void PlayerRect::custom_update(double dt) {
-    player_->update(dt);
+    if (player_) {
+        player_->update(dt);
+    }
 
     render_fps_label_->set_text(FTR("render fps") + ": " +
                                 std::to_string(revector::Engine::get_singleton()->get_fps_int()));
 
     if (is_recording) {
-        std::chrono::duration<double, std::chrono::seconds::period> duration =
-            std::chrono::steady_clock::now() - record_start_time;
+        std::chrono::duration<double> duration = std::chrono::steady_clock::now() - record_start_time;
 
         int total_seconds = duration.count();
         int hours = total_seconds / 3600;
@@ -329,31 +320,47 @@ void PlayerRect::custom_draw() {
         return;
     }
     auto render_image = (revector::RenderImage *)texture.get();
+    player_->render(render_image->get_texture());
+}
 
-    if (!GuiInterface::Instance().use_gstreamer_) {
-        player_->yuvRenderer_->render(render_image->get_texture());
-    }
+template <class DstType, class SrcType>
+bool IsType(const SrcType *src) {
+    return dynamic_cast<const DstType *>(src) != nullptr;
 }
 
 void PlayerRect::start_playing(const std::string &url) {
     playing_ = true;
 
-#ifdef AVIATEUR_USE_GSTREAMER
-    if (GuiInterface::Instance().use_gstreamer_) {
-        if (url.starts_with("udp://")) {
-            gst_decoder_->create_pipeline(GuiInterface::Instance().rtp_codec_);
-            gst_decoder_->play_pipeline(url);
-        } else {
-            gst_decoder_->create_pipeline(GuiInterface::Instance().playerCodec);
-            gst_decoder_->play_pipeline("");
+    auto render_server = revector::RenderServer::get_singleton();
+
+    bool recreate_player = true;
+    if (player_) {
+        const bool player_is_gst = dynamic_cast<const VideoPlayerGst *>(player_.get()) != nullptr;
+
+        if (player_is_gst && GuiInterface::Instance().use_gstreamer_) {
+            recreate_player = false;
         }
 
-        collapse_panel_->set_visibility(false);
+        if (!player_is_gst && !GuiInterface::Instance().use_gstreamer_) {
+            recreate_player = false;
+        }
+    }
 
-    } else
-#endif
-    {
-        player_->play(url, force_software_decoding);
+    if (recreate_player) {
+        if (GuiInterface::Instance().use_gstreamer_) {
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (FFmpeg)");
+            player_ = std::make_shared<VideoPlayerGst>(render_server->device_, render_server->queue_);
+        } else {
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player (GStreamer)");
+            player_ = std::make_shared<VideoPlayerFfmpeg>(render_server->device_, render_server->queue_);
+        }
+    }
+
+    player_->play(url, force_software_decoding);
+
+    if (GuiInterface::Instance().use_gstreamer_) {
+        collapse_panel_->set_visibility(false);
+    } else {
         texture = render_image_;
         collapse_panel_->set_visibility(true);
     }
@@ -369,16 +376,13 @@ void PlayerRect::stop_playing() {
         record_button_->trigger();
     }
 
-#ifdef AVIATEUR_USE_GSTREAMER
+    // Fix crash in WfbReceiver destructor.
+    if (player_) {
+        player_->stop();
+    }
+
     if (GuiInterface::Instance().use_gstreamer_) {
-        gst_decoder_->stop_pipeline();
-    } else
-#endif
-    {
-        // Fix crash in WfbReceiver destructor.
-        if (player_) {
-            player_->stop();
-        }
+    } else {
         texture = logo_;
         collapse_panel_->set_visibility(false);
     }

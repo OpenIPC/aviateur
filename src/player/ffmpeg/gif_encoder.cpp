@@ -1,6 +1,6 @@
-﻿#include <chrono>
+﻿#include "gif_encoder.h"
 
-#include "gif_encoder.h"
+#include <chrono>
 
 bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const std::string &outputPath) {
     _formatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);

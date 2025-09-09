@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../player/real_time_player.h"
+#include "../player/video_player.h"
 #include "app.h"
 #include "tip_label.h"
 
@@ -9,10 +9,10 @@ class GstDecoder;
 
 class PlayerRect final : public revector::TextureRect {
 public:
-    std::shared_ptr<RealTimePlayer> player_;
-    std::string playing_file_;
+    std::shared_ptr<VideoPlayer> player_;
 
-    std::shared_ptr<GstDecoder> gst_decoder_;
+    // Preserved for reuse when restarting decoder.
+    std::string play_url_;
 
     bool playing_ = false;
 

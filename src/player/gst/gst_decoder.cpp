@@ -161,26 +161,16 @@ void BitrateCalculator::feed_bytes(guint64 bytes) {
     g_mutex_unlock(&mutex);
 }
 
-void GstDecoder::init() {
-    if (initialized_) {
-        return;
-    }
-
-    initialized_ = true;
-
-    // setenv("GST_DEBUG", "GST_TRACER:7", 1);
-    // setenv("GST_TRACERS", "latency(flags=pipeline)", 1); // Latency
-    // setenv("GST_DEBUG_FILE", "./latency.log", 1);
-
-    gst_init(NULL, NULL);
-
-    gst_debug_set_default_threshold(GST_LEVEL_WARNING);
-
+GstDecoder::GstDecoder() {
     bitrate_calculator_ = std::make_shared<BitrateCalculator>();
 
     bitrate_calculator_->bitrate_cb = [](const uint64_t bitrate) {
         GuiInterface::Instance().EmitBitrateUpdate(bitrate);
     };
+}
+
+GstDecoder::~GstDecoder() {
+    destroy();
 }
 
 void GstDecoder::create_pipeline(const std::string &codec) {
@@ -236,19 +226,19 @@ void GstDecoder::create_pipeline(const std::string &codec) {
 }
 
 void GstDecoder::play_pipeline(const std::string &uri) {
-    GstElement *udpsrc = gst_bin_get_by_name(GST_BIN(pipeline_), "udpsrc");
+    GstElement *udp_src = gst_bin_get_by_name(GST_BIN(pipeline_), "udpsrc");
 
     if (uri.empty()) {
-        g_object_set(udpsrc, "port", GuiInterface::Instance().playerPort, NULL);
+        g_object_set(udp_src, "port", GuiInterface::Instance().playerPort, NULL);
     } else {
-        g_object_set(udpsrc, "uri", uri.c_str(), NULL);
+        g_object_set(udp_src, "uri", uri.c_str(), NULL);
     }
 
     gint buffer_size;
-    g_object_get(G_OBJECT(udpsrc), "buffer-size", &buffer_size, NULL);
+    g_object_get(G_OBJECT(udp_src), "buffer-size", &buffer_size, NULL);
     GuiInterface::Instance().PutLog(LogLevel::Info, "udpsrc buffer-size: {} bytes", buffer_size);
 
-    gst_object_unref(udpsrc);
+    gst_object_unref(udp_src);
 
     g_assert(gst_element_set_state(pipeline_, GST_STATE_PLAYING) != GST_STATE_CHANGE_FAILURE);
 
@@ -276,10 +266,14 @@ void GstDecoder::stop_pipeline() {
     // Completely stop the pipeline.
     gst_element_set_state(pipeline_, GST_STATE_NULL);
 
-    gst_object_unref(pipeline_);
-    pipeline_ = nullptr;
-
     GuiInterface::Instance().PutLog(LogLevel::Info, "GStreamer pipeline stopped");
+}
+
+void GstDecoder::destroy() {
+    if (pipeline_) {
+        gst_object_unref(pipeline_);
+        pipeline_ = nullptr;
+    }
 }
 
 #endif

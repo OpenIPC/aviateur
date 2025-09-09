@@ -1,4 +1,4 @@
-﻿#include "real_time_player.h"
+﻿#include "video_player.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
@@ -6,35 +6,29 @@
 #include <future>
 #include <sstream>
 
-#include "../gui_interface.h"
+#include "../../gui_interface.h"
 #include "jpeg_encoder.h"
 
-// GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10
 
-RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
+VideoPlayerFfmpeg::VideoPlayerFfmpeg(std::shared_ptr<Pathfinder::Device> device,
+                                     std::shared_ptr<Pathfinder::Queue> queue) {
     yuvRenderer_ = std::make_shared<YuvRenderer>(device, queue);
     yuvRenderer_->init();
-
-    // If the decoder fails, try to replay.
-    connectionLostCallbacks.emplace_back([this] {
-        stop();
-        play(url, forceSoftwareDecoding_);
-    });
 
     if (!SDL_Init(SDL_INIT_AUDIO)) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "SDL init audio failed!");
     }
 }
 
-void RealTimePlayer::update(float dt) {
-    if (playStop) {
+void VideoPlayerFfmpeg::update(float dt) {
+    if (should_stop_playing_) {
         return;
     }
 
-    if (infoChanged_) {
-        yuvRenderer_->updateTextureInfo(videoWidth_, videoHeight_, videoFormat_);
-        infoChanged_ = false;
+    if (video_info_changed_) {
+        yuvRenderer_->updateTextureInfo(video_width_, video_height_, video_format_);
+        video_info_changed_ = false;
     }
 
     std::shared_ptr<AVFrame> frame = getFrame();
@@ -43,7 +37,11 @@ void RealTimePlayer::update(float dt) {
     }
 }
 
-std::shared_ptr<AVFrame> RealTimePlayer::getFrame() {
+void VideoPlayerFfmpeg::render(std::shared_ptr<Pathfinder::Texture> target) {
+    yuvRenderer_->render(target);
+}
+
+std::shared_ptr<AVFrame> VideoPlayerFfmpeg::getFrame() {
     std::lock_guard lck(mtx);
 
     // No frame in the queue
@@ -62,23 +60,8 @@ std::shared_ptr<AVFrame> RealTimePlayer::getFrame() {
     return frame;
 }
 
-void RealTimePlayer::onVideoInfoReady(int width, int height, int format) {
-    if (videoWidth_ != width) {
-        videoWidth_ = width;
-        makeInfoDirty(true);
-    }
-    if (videoHeight_ != height) {
-        videoHeight_ = height;
-        makeInfoDirty(true);
-    }
-    if (videoFormat_ != format) {
-        videoFormat_ = format;
-        makeInfoDirty(true);
-    }
-}
-
-void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding) {
-    playStop = false;
+void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecoding) {
+    should_stop_playing_ = false;
 
     if (analysisThread.joinable()) {
         analysisThread.join();
@@ -111,7 +94,7 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
         }
 
         if (decoder->HasVideo()) {
-            onVideoInfoReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
+            update_video_info(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
         }
 
         // Bitrate callback.
@@ -120,7 +103,7 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
         decodeThread = std::thread([this] {
             decodeResMtx.lock();
 
-            while (!playStop) {
+            while (!should_stop_playing_) {
                 try {
                     // Getting frame.
                     auto frame = decoder->GetNextFrame();
@@ -166,8 +149,8 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
     analysisThread.detach();
 }
 
-void RealTimePlayer::stop() {
-    playStop = true;
+void VideoPlayerFfmpeg::stop() {
+    should_stop_playing_ = true;
 
     if (decoder && decoder->pFormatCtx) {
         decoder->pFormatCtx->interrupt_callback.callback = [](void *) { return 1; };
@@ -201,7 +184,7 @@ void RealTimePlayer::stop() {
     }
 }
 
-void RealTimePlayer::setMuted(bool muted) {
+void VideoPlayerFfmpeg::set_muted(bool muted) {
     if (!decoder->HasAudio()) {
         return;
     }
@@ -220,13 +203,13 @@ void RealTimePlayer::setMuted(bool muted) {
     // emit onMutedChanged(muted);
 }
 
-RealTimePlayer::~RealTimePlayer() {
+VideoPlayerFfmpeg::~VideoPlayerFfmpeg() {
     stop();
 
     SDL_Quit();
 }
 
-std::string RealTimePlayer::captureJpeg() {
+std::string VideoPlayerFfmpeg::capture_jpeg() {
     if (!lastFrame_) {
         return "";
     }
@@ -256,8 +239,8 @@ std::string RealTimePlayer::captureJpeg() {
     return ok ? std::string(filePath.str()) : "";
 }
 
-bool RealTimePlayer::startRecord() {
-    if (playStop && !lastFrame_) {
+bool VideoPlayerFfmpeg::start_mp4_recording() {
+    if (should_stop_playing_ && !lastFrame_) {
         return false;
     }
 
@@ -306,7 +289,7 @@ bool RealTimePlayer::startRecord() {
     return true;
 }
 
-std::string RealTimePlayer::stopRecord() const {
+std::string VideoPlayerFfmpeg::stop_mp4_recording() const {
     if (!mp4Encoder_) {
         return {};
     }
@@ -316,83 +299,8 @@ std::string RealTimePlayer::stopRecord() const {
     return mp4Encoder_->saveFilePath_;
 }
 
-int RealTimePlayer::getVideoWidth() const {
-    if (!decoder) {
-        return 0;
-    }
-    return decoder->width;
-}
-
-int RealTimePlayer::getVideoHeight() const {
-    if (!decoder) {
-        return 0;
-    }
-    return decoder->height;
-}
-
-void RealTimePlayer::forceSoftwareDecoding(bool force) {
-    forceSoftwareDecoding_ = force;
-}
-
-std::shared_ptr<FfmpegDecoder> RealTimePlayer::getDecoder() const {
-    return decoder;
-}
-
-void RealTimePlayer::emitConnectionLost() {
-    for (auto &callback : connectionLostCallbacks) {
-        try {
-            callback();
-        } catch (std::bad_any_cast &) {
-            abort();
-        }
-    }
-}
-
-void SDLCALL audio_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
-    if (additional_amount > 0) {
-        Uint8 *data = SDL_stack_alloc(Uint8, additional_amount);
-        if (data) {
-            auto *player = static_cast<RealTimePlayer *>(userdata);
-
-            int ret = player->getDecoder()->ReadAudioBuff(data, additional_amount);
-
-            if (ret) {
-                SDL_PutAudioStreamData(stream, data, additional_amount);
-                SDL_stack_free(data);
-            }
-        }
-    }
-}
-
-bool RealTimePlayer::enableAudio() {
-    if (!decoder->HasAudio()) {
-        return false;
-    }
-
-    const SDL_AudioSpec spec = {SDL_AUDIO_S16, decoder->GetAudioChannelCount(), decoder->GetAudioSampleRate()};
-    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_callback, this);
-    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
-
-    return true;
-}
-
-void RealTimePlayer::disableAudio() {
-    if (stream) {
-        SDL_CloseAudioDevice(SDL_GetAudioStreamDevice(stream));
-        stream = nullptr;
-    }
-}
-
-bool RealTimePlayer::hasAudio() const {
-    if (!decoder) {
-        return false;
-    }
-
-    return decoder->HasAudio();
-}
-
-bool RealTimePlayer::startGifRecord() {
-    if (playStop) {
+bool VideoPlayerFfmpeg::start_gif_recording() {
+    if (should_stop_playing_) {
         return false;
     }
 
@@ -439,11 +347,65 @@ bool RealTimePlayer::startGifRecord() {
     return true;
 }
 
-std::string RealTimePlayer::stopGifRecord() const {
+std::string VideoPlayerFfmpeg::stop_gif_recording() const {
     decoder->gotVideoFrameCallback = nullptr;
     if (!gifEncoder_) {
         return "";
     }
     gifEncoder_->close();
     return gifEncoder_->_saveFilePath;
+}
+
+std::shared_ptr<FfmpegDecoder> VideoPlayerFfmpeg::getDecoder() const {
+    return decoder;
+}
+
+void SDLCALL audio_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
+    if (additional_amount > 0) {
+        Uint8 *data = SDL_stack_alloc(Uint8, additional_amount);
+        if (data) {
+            auto *player = static_cast<VideoPlayerFfmpeg *>(userdata);
+
+            int ret = player->getDecoder()->ReadAudioBuff(data, additional_amount);
+
+            if (ret) {
+                SDL_PutAudioStreamData(stream, data, additional_amount);
+                SDL_stack_free(data);
+            }
+        }
+    }
+}
+
+bool VideoPlayerFfmpeg::enableAudio() {
+    if (!decoder) {
+        return false;
+    }
+    if (!decoder->HasAudio()) {
+        return false;
+    }
+    if (stream) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "Audio stream already exists!");
+        return false;
+    }
+
+    const SDL_AudioSpec spec = {SDL_AUDIO_S16, decoder->GetAudioChannelCount(), decoder->GetAudioSampleRate()};
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_callback, this);
+    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
+
+    return true;
+}
+
+void VideoPlayerFfmpeg::disableAudio() {
+    if (stream) {
+        SDL_CloseAudioDevice(SDL_GetAudioStreamDevice(stream));
+        stream = nullptr;
+    }
+}
+
+bool VideoPlayerFfmpeg::hasAudio() const {
+    if (!decoder) {
+        return false;
+    }
+
+    return decoder->HasAudio();
 }

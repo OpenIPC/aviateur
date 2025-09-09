@@ -1,6 +1,6 @@
-﻿#include <memory>
+﻿#include "jpeg_encoder.h"
 
-#include "jpeg_encoder.h"
+#include <memory>
 
 inline bool convertToYUV420P(const std::shared_ptr<AVFrame> &frame, std::shared_ptr<AVFrame> &yuvFrame) {
     int width = frame->width;

@@ -19,7 +19,7 @@ public:
 };
 
 class FfmpegDecoder {
-    friend class RealTimePlayer;
+    friend class VideoPlayerFfmpeg;
 
 public:
     FfmpegDecoder() = default;
