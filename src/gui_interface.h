@@ -59,17 +59,17 @@ constexpr std::array CHANNELS{
 
 /// Channel widths.
 constexpr std::array CHANNEL_WIDTHS{
-    "20",
-    "40",
+    "20 MHz",
+    "40 MHz",
 };
 
 /// Alink TX powers.
 constexpr std::array ALINK_TX_POWERS{
-    "1",
-    "10",
-    "20",
-    "30",
-    "40",
+    "1 mW",
+    "10 mW",
+    "20 mW",
+    "30 mW",
+    "40 mW",
 };
 
 enum class LogLevel {

@@ -374,7 +374,7 @@ void ControlPanel::custom_ready() {
         vbox_blockable->add_child(hbox_container);
 
         auto label = std::make_shared<revector::Label>();
-        label->set_text(FTR("port") + ":");
+        label->set_text(FTR("port"));
         hbox_container->add_child(label);
 
         local_listener_port_edit_ = std::make_shared<revector::TextEdit>();
@@ -390,7 +390,7 @@ void ControlPanel::custom_ready() {
             vbox_blockable->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
-            label->set_text(FTR("codec") + ":");
+            label->set_text(FTR("codec"));
             hbox_container->add_child(label);
 
             auto codec_menu_button = std::make_shared<revector::MenuButton>();
