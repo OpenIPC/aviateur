@@ -35,7 +35,6 @@ int main() {
         split_container->add_child(player_rect);
 
         auto control_panel = std::make_shared<ControlPanel>();
-        control_panel->set_custom_minimum_size({280, 0});
         control_panel->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
         split_container->add_child(control_panel);
 
