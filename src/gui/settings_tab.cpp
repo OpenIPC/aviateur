@@ -27,7 +27,7 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<revector::Label>();
-        label->set_text(FTR("lang") + ":");
+        label->set_text(FTR("lang"));
         hbox_container->add_child(label);
 
         auto lang_menu_button = std::make_shared<revector::MenuButton>();
@@ -73,30 +73,98 @@ void SettingsContainer::custom_ready() {
         lang_menu_button->connect_signal("item_selected", callback);
     }
 
-#ifdef AVIATEUR_USE_GSTREAMER
-    {
-        auto media_backend_btn = std::make_shared<revector::CheckButton>();
-        media_backend_btn->set_text(FTR("use gstreamer"));
-        vbox_container->add_child(media_backend_btn);
-        media_backend_btn->set_toggled_no_signal(GuiInterface::Instance().use_gstreamer_);
-        auto callback = [this](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
-        media_backend_btn->connect_signal("toggled", callback);
+    revector::StyleBox radio_group_bg;
+    if (GuiInterface::Instance().dark_mode_) {
+        radio_group_bg.bg_color = revector::ColorU(0, 0, 0, 50);
+    } else {
+        radio_group_bg.bg_color = revector::ColorU(255, 255, 255, 50);
     }
+
+    {
+        auto hbox_container = std::make_shared<revector::HBoxContainer>();
+        hbox_container->set_theme_bg(radio_group_bg);
+        vbox_container->add_child(hbox_container);
+
+        auto label = std::make_shared<revector::Label>();
+        label->set_text(FTR("codec backend"));
+        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
+        hbox_container->add_child(label);
+
+        auto vbox_container2 = std::make_shared<revector::VBoxContainer>();
+        vbox_container2->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        hbox_container->add_child(vbox_container2);
+
+        media_btn_group = std::make_shared<revector::ToggleButtonGroup>();
+        {
+            auto ffmpeg_btn = std::make_shared<revector::RadioButton>();
+            ffmpeg_btn->set_text("FFmpeg");
+            ffmpeg_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            vbox_container2->add_child(ffmpeg_btn);
+            ffmpeg_btn->set_toggled_no_signal(!GuiInterface::Instance().use_gstreamer_);
+            auto callback = [](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
+            ffmpeg_btn->connect_signal("toggled", callback);
+
+            media_btn_group->add_button(ffmpeg_btn);
+        }
+
+#ifdef AVIATEUR_USE_GSTREAMER
+        {
+            auto gst_btn = std::make_shared<revector::RadioButton>();
+            gst_btn->set_text("GStreamer");
+            gst_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            vbox_container2->add_child(gst_btn);
+            gst_btn->set_toggled_no_signal(GuiInterface::Instance().use_gstreamer_);
+            auto callback = [](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
+            gst_btn->connect_signal("toggled", callback);
+            media_btn_group->add_button(gst_btn);
+        }
 #endif
+    }
+
+    {
+        auto hbox_container = std::make_shared<revector::HBoxContainer>();
+        hbox_container->set_theme_bg(radio_group_bg);
+        vbox_container->add_child(hbox_container);
+
+        auto label = std::make_shared<revector::Label>();
+        label->set_text(FTR("render backend"));
+        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
+        hbox_container->add_child(label);
+
+        auto vbox_container2 = std::make_shared<revector::VBoxContainer>();
+        vbox_container2->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        hbox_container->add_child(vbox_container2);
+
+        render_btn_group = std::make_shared<revector::ToggleButtonGroup>();
 
 #ifndef __APPLE__
-    {
-        auto render_backend_btn = std::make_shared<revector::CheckButton>();
-        render_backend_btn->set_text(FTR("use vulkan"));
-        vbox_container->add_child(render_backend_btn);
-        render_backend_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
-        auto callback = [this](bool toggled) {
-            GuiInterface::Instance().use_vulkan_ = toggled;
-            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
-        };
-        render_backend_btn->connect_signal("toggled", callback);
-    }
+        {
+            auto gl_btn = std::make_shared<revector::RadioButton>();
+            gl_btn->set_text("OpenGL");
+            vbox_container2->add_child(gl_btn);
+            gl_btn->set_toggled_no_signal(!GuiInterface::Instance().use_vulkan_);
+            auto callback = [](bool toggled) { GuiInterface::Instance().use_vulkan_ = toggled; };
+            gl_btn->connect_signal("toggled", callback);
+            gl_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+
+            render_btn_group->add_button(gl_btn);
+        }
 #endif
+
+        {
+            auto vk_btn = std::make_shared<revector::RadioButton>();
+            vk_btn->set_text("Vulkan");
+            vk_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            vbox_container2->add_child(vk_btn);
+            vk_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
+            auto callback = [](bool toggled) {
+                GuiInterface::Instance().use_vulkan_ = toggled;
+                GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
+            };
+            vk_btn->connect_signal("toggled", callback);
+            render_btn_group->add_button(vk_btn);
+        }
+    }
 
     {
         auto dark_mode_btn = std::make_shared<revector::CheckButton>();
