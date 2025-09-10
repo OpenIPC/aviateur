@@ -141,7 +141,7 @@ void PlayerRect::custom_ready() {
     hud_container_->add_child(hw_status_label_);
     hw_status_label_->set_visibility(false);
 
-#ifdef __linux__
+#ifndef _WIN32
     pl_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(pl_label_);
     fec_label_ = std::make_shared<revector::Label>();
@@ -154,7 +154,7 @@ void PlayerRect::custom_ready() {
     auto callback = [this] {
         lq_bar_->set_value(GuiInterface::Instance().link_quality_);
 
-#ifdef __linux__
+#ifndef _WIN32
         if (GuiInterface::Instance().is_using_wifi) {
             pl_label_->set_visibility(true);
             fec_label_->set_visibility(true);
