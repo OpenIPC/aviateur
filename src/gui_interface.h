@@ -258,7 +258,7 @@ public:
             ini[CONFIG_WIFI][WIFI_CHANNEL] = "161";
             ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = "0";
             ini[CONFIG_WIFI][WIFI_GS_KEY] = "";
-            ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "true";
+            ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "false";
             ini[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = "20";
 
             ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = "5600";
