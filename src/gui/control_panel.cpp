@@ -153,14 +153,16 @@ void ControlPanel::custom_ready() {
             {
                 auto channel_menu = channel_button_->get_popup_menu();
 
-                auto callback = [this](uint32_t) { channel = std::stoi(channel_button_->get_selected_item_text()); };
+                auto callback = [this](uint32_t) { channel = std::stoi(channel_button_->get_selected_item_meta()); };
                 channel_button_->connect_signal("item_selected", callback);
 
                 uint32_t selected = 0;
-                for (auto c : CHANNELS) {
-                    channel_menu.lock()->create_item(std::to_string(c));
-                    if (std::to_string(channel) == std::to_string(c)) {
-                        selected = channel_menu.lock()->get_item_count() - 1;
+                for (const auto &pair : CHANNELS) {
+                    channel_menu.lock()->create_item(pair.second);
+                    int item_index = channel_menu.lock()->get_item_count() - 1;
+                    channel_menu.lock()->set_item_meta(item_index, std::to_string(pair.first));
+                    if (channel == pair.first) {
+                        selected = item_index;
                     }
                 }
 
