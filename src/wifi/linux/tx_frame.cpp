@@ -26,22 +26,17 @@ void TxFrame::stop() {
 }
 
 uint32_t TxFrame::extractRxqOverflow(struct msghdr *msg) {
-    for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(msg); cmsg != nullptr; cmsg = CMSG_NXTHDR(msg, cmsg)) {
-
-        #ifdef __linux__
+#ifdef __linux__
+    for (cmsghdr *cmsg = CMSG_FIRSTHDR(msg); cmsg != nullptr; cmsg = CMSG_NXTHDR(msg, cmsg)) {
+        // Determine if there has been a receive queue overflow on a socket and,
+        // if so, how many packets were dropped due to this overflow.
         if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_RXQ_OVFL) {
             uint32_t val = 0;
             std::memcpy(&val, CMSG_DATA(cmsg), sizeof(val));
             return val;
         }
-        #else
-        if (cmsg->cmsg_level == SOL_SOCKET) {
-            uint32_t val = 0;
-            std::memcpy(&val, CMSG_DATA(cmsg), sizeof(val));
-            return val;
-        }
-        #endif
     }
+#endif
     return 0;
 }
 
