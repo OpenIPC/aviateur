@@ -270,25 +270,21 @@ void ControlPanel::custom_ready() {
             label->set_text(FTR("tx power"));
             hbox_container->add_child(label);
 
-            tx_pwr_btn_ = std::make_shared<revector::MenuButton>();
-            tx_pwr_btn_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-            hbox_container->add_child(tx_pwr_btn_);
+            tx_pwr_label_ = std::make_shared<revector::Label>();
+            tx_pwr_label_->set_custom_minimum_size({64, 0});
+            hbox_container->add_child(tx_pwr_label_);
 
-            auto tx_pwr_menu = tx_pwr_btn_->get_popup_menu();
-            auto callback = [this](uint32_t) {
-                // Set tx power
-                auto selected = tx_pwr_btn_->get_selected_item_index();
-                if (selected.has_value()) {
-                    auto power = std::stoi(ALINK_TX_POWERS[selected.value()]);
-                    GuiInterface::SetAlinkTxPower(power);
-                }
+            tx_pwr_slider_ = std::make_shared<revector::Slider>();
+            tx_pwr_slider_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            tx_pwr_slider_->set_integer_mode(true);
+            tx_pwr_slider_->set_range(1, 40);
+            hbox_container->add_child(tx_pwr_slider_);
+
+            auto callback = [this](float new_value) {
+                GuiInterface::SetAlinkTxPower(new_value);
+                tx_pwr_label_->set_text(std::to_string(int(round(new_value))) + " mW");
             };
-            tx_pwr_btn_->connect_signal("item_selected", callback);
-
-            for (auto power : ALINK_TX_POWERS) {
-                tx_pwr_menu.lock()->create_item(power);
-            }
-            tx_pwr_btn_->select_item(2);
+            tx_pwr_slider_->connect_signal("value_changed", callback);
 
             // Set UI according to config
             {
@@ -297,12 +293,7 @@ void ControlPanel::custom_ready() {
                 alink_con->set_collapse(!enabled);
 
                 std::string tx_power = GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER];
-
-                for (int idx = 0; idx < ALINK_TX_POWERS.size(); idx++) {
-                    if (ALINK_TX_POWERS[idx] == tx_power) {
-                        tx_pwr_btn_->select_item(idx);
-                    }
-                }
+                tx_pwr_slider_->set_value(std::stoi(tx_power));
             }
         }
 #endif

@@ -13,7 +13,8 @@ public:
     std::shared_ptr<revector::Panel> adapter_prop_block_;
     std::shared_ptr<revector::Panel> udp_prop_block_;
 
-    std::shared_ptr<revector::MenuButton> tx_pwr_btn_;
+    std::shared_ptr<revector::Label> tx_pwr_label_;
+    std::shared_ptr<revector::Slider> tx_pwr_slider_;
 
     std::string dongle_name;
     std::optional<DeviceId> selected_dongle;
