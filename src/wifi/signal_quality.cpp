@@ -1,7 +1,7 @@
+#include "signal_quality.h"
+
 #include <chrono>
 #include <random>
-
-#include "signal_quality.h"
 
 namespace {
 
@@ -23,67 +23,59 @@ std::string generate_random_string(size_t length) {
 
 // Remove RSSI samples older than 1 second
 void SignalQualityCalculator::cleanup_old_rssi_data() {
-    auto now = std::chrono::steady_clock::now();
-    auto cutoff = now - kAveragingWindow;
+    const auto now = std::chrono::steady_clock::now();
+    const auto cutoff = now - averaging_window_;
 
     // Erase-remove idiom for data older than cutoff
-    m_rssis.erase(std::remove_if(m_rssis.begin(),
-                                 m_rssis.end(),
-                                 [&](const RssiEntry &entry) { return entry.timestamp < cutoff; }),
-                  m_rssis.end());
+    std::erase_if(rssi_data_, [&](const RssiEntry &entry) { return entry.timestamp < cutoff; });
 }
 
 void SignalQualityCalculator::cleanup_old_snr_data() {
-    auto now = std::chrono::steady_clock::now();
-    auto cutoff = now - kAveragingWindow;
+    const auto now = std::chrono::steady_clock::now();
+    const auto cutoff = now - averaging_window_;
 
     // Erase-remove idiom for data older than cutoff
-    m_snrs.erase(
-        std::remove_if(m_snrs.begin(), m_snrs.end(), [&](const SnrEntry &entry) { return entry.timestamp < cutoff; }),
-        m_snrs.end());
+    std::erase_if(snr_data_, [&](const SnrEntry &entry) { return entry.timestamp < cutoff; });
 }
 
 void SignalQualityCalculator::cleanup_old_fec_data() {
-    auto now = std::chrono::steady_clock::now();
-    auto cutoff = now - kAveragingWindow;
+    const auto now = std::chrono::steady_clock::now();
+    const auto cutoff = now - averaging_window_;
 
-    m_fec_data.erase(std::remove_if(m_fec_data.begin(),
-                                    m_fec_data.end(),
-                                    [&](const FecEntry &entry) { return entry.timestamp < cutoff; }),
-                     m_fec_data.end());
+    std::erase_if(fec_data_, [&](const FecEntry &entry) { return entry.timestamp < cutoff; });
 }
 
 void SignalQualityCalculator::add_rssi(uint8_t ant1, uint8_t ant2) {
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
     RssiEntry entry;
     entry.timestamp = std::chrono::steady_clock::now();
     entry.ant1 = ant1;
     entry.ant2 = ant2;
-    m_rssis.push_back(entry);
+    rssi_data_.push_back(entry);
 }
 
 void SignalQualityCalculator::add_snr(int8_t ant1, int8_t ant2) {
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
     SnrEntry entry;
     entry.timestamp = std::chrono::steady_clock::now();
     entry.ant1 = ant1;
     entry.ant2 = ant2;
-    m_snrs.push_back(entry);
+    snr_data_.push_back(entry);
 }
 
 SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal_quality() {
     SignalQuality ret;
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
     // Make sure we clean up old data first
     cleanup_old_rssi_data();
     cleanup_old_snr_data();
     cleanup_old_fec_data();
 
-    float avg_rssi = get_avg(m_rssis);
-    float avg_snr = get_avg(m_snrs);
+    float avg_rssi = get_average(rssi_data_);
+    float avg_snr = get_average(snr_data_);
 
     // Map the RSSI from range 10..80 to -1024..1024
     avg_rssi = map_range(avg_rssi, 0.f, 80.f, -1024.f, 1024.f);
@@ -103,7 +95,7 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
 
     ret.quality = quality;
     ret.snr = avg_snr;
-    ret.idr_code = m_idr_code;
+    ret.idr_code = idr_code_;
 
     return ret;
 }
@@ -112,7 +104,7 @@ std::tuple<uint32_t, uint32_t, uint32_t> SignalQualityCalculator::get_accumulate
     uint32_t p_recovered = 0;
     uint32_t p_all = 0;
     uint32_t p_lost = 0;
-    for (const auto &data : m_fec_data) {
+    for (const auto &data : fec_data_) {
         p_all += data.all;
         p_recovered += data.recovered;
         p_lost += data.lost;
@@ -121,8 +113,8 @@ std::tuple<uint32_t, uint32_t, uint32_t> SignalQualityCalculator::get_accumulate
     return {p_recovered, p_lost, p_all};
 }
 
-void SignalQualityCalculator::add_fec_data(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost) {
-    std::lock_guard lock(m_mutex);
+void SignalQualityCalculator::add_fec(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost) {
+    std::lock_guard lock(mutex_);
 
     FecEntry entry;
     entry.timestamp = std::chrono::steady_clock::now();
@@ -131,8 +123,8 @@ void SignalQualityCalculator::add_fec_data(uint32_t p_all, uint32_t p_recovered,
     entry.lost = p_lost;
 
     if (p_lost > 0) {
-        m_idr_code = generate_random_string(4);
+        idr_code_ = generate_random_string(4);
     }
 
-    m_fec_data.push_back(entry);
+    fec_data_.push_back(entry);
 }

@@ -4,9 +4,10 @@
 #include <span>
 #include <vector>
 
+/// An IEEE 802.11 (Wi-Fi) packet, formally known as a MAC frame.
 class RxFrame {
 public:
-    RxFrame(const std::span<uint8_t> &data) : _data(data) {}
+    explicit RxFrame(const std::span<uint8_t> &data) : _data(data) {}
 
     std::span<uint8_t> ControlField() const {
         return {_data.data(), 2};
@@ -79,7 +80,6 @@ private:
     /// Frame control value for QoS data
     static constexpr std::array<uint8_t, 2> _dataHeader = {uint8_t(0x08), uint8_t(0x01)};
 
-private:
     bool IsDataFrame() const {
         return _data.size() >= 2 && _data[0] == _dataHeader[0] && _data[1] == _dataHeader[1];
     }
@@ -93,38 +93,38 @@ private:
     }
 };
 
-class WifiFrame {
-public:
-    WifiFrame(const std::span<uint8_t> &rawData) {
-        // Frame Control (2 bytes)
-        frameControl = (rawData[1] << 8) | rawData[0];
-
-        // Duration/ID (2 bytes)
-        durationID = (rawData[3] << 8) | rawData[2];
-
-        // Receiver Address (6 bytes)
-        receiverAddress.assign(rawData.begin() + 4, rawData.begin() + 10);
-
-        // Transmitter Address (6 bytes)
-        transmitterAddress.assign(rawData.begin() + 10, rawData.begin() + 16);
-
-        // Destination Address (6 bytes)
-        destinationAddress.assign(rawData.begin() + 16, rawData.begin() + 22);
-
-        // Source Address (6 bytes)
-        // sourceAddress.assign(rawData.begin() + 22, rawData.begin() + 28);
-
-        // Sequence Control (2 bytes)
-        sequenceControl = (rawData[22] << 8) | rawData[22];
-    }
-
-    uint16_t frameControl;
-    uint16_t durationID;
-    std::vector<uint8_t> receiverAddress;
-    std::vector<uint8_t> transmitterAddress;
-    std::vector<uint8_t> destinationAddress;
-    std::vector<uint8_t> sourceAddress;
-    uint16_t sequenceControl;
-    std::vector<uint8_t> frameBody;
-    uint32_t frameCheckSequence;
-};
+// class WifiFrame {
+// public:
+//     WifiFrame(const std::span<uint8_t> &rawData) {
+//         // Frame Control (2 bytes)
+//         frameControl = (rawData[1] << 8) | rawData[0];
+//
+//         // Duration/ID (2 bytes)
+//         durationID = (rawData[3] << 8) | rawData[2];
+//
+//         // Receiver Address (6 bytes)
+//         receiverAddress.assign(rawData.begin() + 4, rawData.begin() + 10);
+//
+//         // Transmitter Address (6 bytes)
+//         transmitterAddress.assign(rawData.begin() + 10, rawData.begin() + 16);
+//
+//         // Destination Address (6 bytes)
+//         destinationAddress.assign(rawData.begin() + 16, rawData.begin() + 22);
+//
+//         // Source Address (6 bytes)
+//         // sourceAddress.assign(rawData.begin() + 22, rawData.begin() + 28);
+//
+//         // Sequence Control (2 bytes)
+//         sequenceControl = (rawData[22] << 8) | rawData[22];
+//     }
+//
+//     uint16_t frameControl;
+//     uint16_t durationID;
+//     std::vector<uint8_t> receiverAddress;
+//     std::vector<uint8_t> transmitterAddress;
+//     std::vector<uint8_t> destinationAddress;
+//     std::vector<uint8_t> sourceAddress;
+//     uint16_t sequenceControl;
+//     std::vector<uint8_t> frameBody;
+//     uint32_t frameCheckSequence; // FCS
+// };

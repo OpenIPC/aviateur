@@ -18,7 +18,7 @@ public:
         int recovered_last_second;
         int total_last_second;
         int quality;
-        float snr;
+        float snr; // Signal to noice ratio
         std::string idr_code;
     };
 
@@ -28,18 +28,15 @@ public:
     /// Add a new RSSI entry with current timestamp
     void add_rssi(uint8_t ant1, uint8_t ant2);
 
+    /// Add a new SNR entry with current timestamp
     void add_snr(int8_t ant1, int8_t ant2);
 
-    /// Add new FEC data entry with current timestamp
-    void add_fec_data(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost);
+    /// Add new FEC entry with current timestamp
+    void add_fec(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost);
 
-    /// Get fresh averages over the last second
     template <class T>
-    float get_avg(const T &array) {
-        std::lock_guard lock(m_mutex);
-
-        // Remove old entries
-        cleanup_old_rssi_data();
+    float get_average(const T &array) {
+        std::lock_guard lock(mutex_);
 
         float sum1 = 0.f;
         float sum2 = 0.f;
@@ -55,11 +52,11 @@ public:
         }
 
         // We'll take the maximum of the two average RSSI values
-        float avg = std::max(sum1, sum2);
+        const float avg = std::max(sum1, sum2);
         return avg;
     }
 
-    /// Calculate signal quality based on last-second RSSI and FEC data
+    /// Calculate signal quality over the averaging window
     SignalQuality calculate_signal_quality();
 
     static SignalQualityCalculator &get_instance() {
@@ -68,7 +65,7 @@ public:
     }
 
 private:
-    /// Sum up FEC data over the last 1 second
+    /// Sum up FEC data over the averaging window
     std::tuple<uint32_t, uint32_t, uint32_t> get_accumulated_fec_data() const;
 
     // Helper methods to remove old entries
@@ -99,14 +96,16 @@ private:
     };
 
 private:
-    const std::chrono::seconds kAveragingWindow{std::chrono::seconds(1)};
-    mutable std::recursive_mutex m_mutex;
+    const std::chrono::seconds averaging_window_{std::chrono::seconds(1)};
 
-    std::vector<RssiEntry> m_rssis;
+    mutable std::recursive_mutex mutex_;
 
-    std::vector<SnrEntry> m_snrs;
+    std::vector<RssiEntry> rssi_data_;
 
-    std::vector<FecEntry> m_fec_data;
+    std::vector<SnrEntry> snr_data_;
 
-    std::string m_idr_code{"aaaa"};
+    std::vector<FecEntry> fec_data_;
+
+    // 4-character random string
+    std::string idr_code_{"aaaa"};
 };

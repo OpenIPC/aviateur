@@ -428,7 +428,7 @@ void WfbngLink::start_link_quality_thread() {
         }
 
         const auto map_range = [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-            return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
+            return outputMin + (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin);
         };
 
         while (!this->alink_should_stop) {
@@ -637,9 +637,9 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                          0,
                                          NULL);
 
-        SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
-                                                             video_aggregator->count_p_fec_recovered,
-                                                             video_aggregator->count_p_lost);
+        SignalQualityCalculator::get_instance().add_fec(video_aggregator->count_p_all,
+                                                        video_aggregator->count_p_fec_recovered,
+                                                        video_aggregator->count_p_lost);
 #else
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
