@@ -43,7 +43,19 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 ### How to run on macOS
 
-Currently, I cannot find a way to distribute it on macOS. So, you have to build it yourself.
+1. Build Aviateur following the build instructions below.
+2. **Important**: Run the app from terminal to ensure proper environment variable handling:
+   ```bash
+   # Run from terminal (recommended)
+   ./build/bin/aviateur.app/Contents/MacOS/aviateur
+   
+   # Or run the app bundle from terminal  
+   open ./build/bin/aviateur.app
+   ```
+3. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
+
+> [!NOTE]
+> macOS apps launched by double-clicking cannot inherit environment variables correctly. Running from terminal ensures proper functionality.
 
 ### Common run issues
 
@@ -126,7 +138,15 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
 
 3. Log out and in for the above change to take effect.
 
-4. Open as a CMake project and build.
+4. Build the project:
+   ```bash
+   mkdir build && cd build
+   cmake ../
+   make
+   ```
+
+> [!NOTE]  
+> Font library linking issues reported in earlier versions have been resolved. The build system now automatically handles dylib paths and copies libraries to the correct locations.
 
 ### Common build issues
 
