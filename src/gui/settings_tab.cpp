@@ -87,7 +87,7 @@ void SettingsContainer::custom_ready() {
 
         auto label = std::make_shared<revector::Label>();
         label->set_text(FTR("codec backend"));
-        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
+        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
         hbox_container->add_child(label);
 
         auto vbox_container2 = std::make_shared<revector::VBoxContainer>();
@@ -128,7 +128,7 @@ void SettingsContainer::custom_ready() {
 
         auto label = std::make_shared<revector::Label>();
         label->set_text(FTR("render backend"));
-        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
+        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
         hbox_container->add_child(label);
 
         auto vbox_container2 = std::make_shared<revector::VBoxContainer>();
@@ -206,7 +206,7 @@ void SettingsContainer::custom_ready() {
 
         open_crash_dumps_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_crash_dumps_button);
-        open_crash_dumps_button->set_text(FTR("open crash dump folder"));
+        open_crash_dumps_button->set_text(FTR("crash dump folder"));
 
         auto callback = [this] {
             auto dir = GuiInterface::GetAppDataDir();
