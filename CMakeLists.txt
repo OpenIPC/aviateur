@@ -84,6 +84,25 @@ if (APPLE)
     file(COPY ${CMAKE_BINARY_DIR}/bin/assets
             DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
     )
+    
+    # Copy the font kit wrapper dylib to the app bundle
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/libfont_kit_wrapper.dylib"
+            "${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS/libfont_kit_wrapper.dylib"
+        COMMENT "Copying font kit wrapper dylib to app bundle"
+    )
+    
+    # Fix the hardcoded dylib path in the main executable
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND install_name_tool -change 
+            "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib"
+            "@executable_path/libfont_kit_wrapper.dylib"
+            "${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS/${PROJECT_NAME}"
+        COMMENT "Fixing dylib path in main executable"
+        RESULT_VARIABLE install_name_result
+        ERROR_QUIET
+    )
 
     add_executable(${PROJECT_NAME} MACOSX_BUNDLE
             src/main.cpp
