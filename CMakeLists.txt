@@ -81,10 +81,6 @@ endif ()
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
 if (APPLE)
-    file(COPY ${CMAKE_BINARY_DIR}/bin/assets
-            DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
-    )
-
     add_executable(${PROJECT_NAME} MACOSX_BUNDLE
             src/main.cpp
             src/gui_interface.h
@@ -139,6 +135,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/SDL/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
 
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
+
+if (APPLE)
+    # Do this after we copied assets for both Aviateur & Revector.
+    file(COPY ${CMAKE_BINARY_DIR}/bin/assets
+            DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
+    )
+endif ()
 
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
