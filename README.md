@@ -111,15 +111,21 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
 ### How to build on macOS
 
 1. Install dependencies:
+   
    Xcode: This assumes you already have Xcode installed and have run `xcode-select --install`
-   (Homebrew)[https://brew.sh/]
-   (Vulkan)[https://vulkan.lunarg.com/sdk/home]  - Install Location ~/ (default), no need to pick any extra options in installer (default)
+   
+   [Homebrew](https://brew.sh/)
+   
+   [Vulkan](https://vulkan.lunarg.com/sdk/home)  - Install Location ~/ (default), no need to pick any extra options in installer (default)
+   
    Extra Packages with Homebrew:
    ```bash
    brew install libusb ffmpeg libsodium opencv libpcap cmake
    ```
 
-2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version and username to your own version/username).  `nano ~/.zprofile`, paste the text in, `ctrl-o` to save, `ctrl-x` to exit.
+3. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version and username to your own version/username).
+
+   `nano ~/.zprofile`, paste the text in, `ctrl-o` to save, `ctrl-x` to exit.
    ```
    VULKAN_SDK="/Users/zzz/VulkanSDK/1.4.321.0/macOS"
    export VULKAN_SDK
@@ -137,9 +143,9 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    export PKG_CONFIG_PATH
    ```
 
-4. Log out and in for the above change to take effect.
+5. Log out and in for the above change to take effect.
 
-5. Build the project:
+6. Build the project:
    ```bash
    git clone https://github.com/OpenIPC/aviateur
    cd aviateur
