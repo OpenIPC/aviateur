@@ -141,6 +141,19 @@ if (APPLE)
     file(COPY ${CMAKE_BINARY_DIR}/bin/assets
             DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
     )
+
+    # Do this after we copied assets for both Aviateur & Revector.
+    file(COPY ${CMAKE_BINARY_DIR}/bin/libfont_kit_wrapper.dylib
+            DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS
+    )
+
+    execute_process(
+            COMMAND install_name_tool -change "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib" "@loader_path/libfont_kit_wrapper.dylib" aviateur
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS
+            RESULT_VARIABLE exit_code
+            OUTPUT_VARIABLE stdout_output
+            ERROR_VARIABLE stderr_output
+    )
 endif ()
 
 if (WIN32)
