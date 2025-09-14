@@ -123,7 +123,7 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    brew install libusb ffmpeg libsodium opencv libpcap cmake
    ```
 
-3. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version and username to your own version/username).
+2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version and username to your own version/username).
 
    `nano ~/.zprofile`, paste the text in, `ctrl-o` to save, `ctrl-x` to exit.
    ```
@@ -143,9 +143,9 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    export PKG_CONFIG_PATH
    ```
 
-5. Log out and in for the above change to take effect.
+3. Log out and in for the above change to take effect.
 
-6. Build the project:
+4. Build the project:
    ```bash
    git clone https://github.com/OpenIPC/aviateur
    cd aviateur
@@ -156,6 +156,13 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    cd bin/aviateur.app/Contents/MacOS
    install_name_tool -change "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib" "@loader_path/libfont_kit_wrapper.dylib" aviateur
    ```
+5. As noted above, you must run the file through terminal:
+   
+   `open ./bin/aviateur.app`
+
+   Or if you want to see the log file while running:
+   `./bin/aviateur.app/Contents/MacOS/aviateur`
+   
 
 ### Common build issues
 
