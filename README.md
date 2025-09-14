@@ -43,6 +43,12 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 ### How to run on macOS
 
+1. Build yourself.
+2. **Important**: Run the app from terminal to ensure proper environment variable handling:
+   ```bash
+   open ./build/bin/aviateur.app
+   ```
+
 Currently, I cannot find a way to distribute it on macOS. So, you have to build it yourself.
 
 ### Common run issues
@@ -85,7 +91,12 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    git submodule update --init --recursive
    ```
 
-5. Open as a CMake project and build.
+5. Build the project.
+   ```bash
+   mkdir build && cd build
+   cmake ../
+   make
+   ```
 
 ### How to build on Linux (tested on Ubuntu 24.04)
 
@@ -95,7 +106,7 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
    ```
 
-2. Open as a CMake project and build.
+2. Build the project.
 
 ### How to build on macOS
 
@@ -126,7 +137,7 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
 
 3. Log out and in for the above change to take effect.
 
-4. Open as a CMake project and build.
+4. Build the project.
 
 ### Common build issues
 
