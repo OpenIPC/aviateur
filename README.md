@@ -110,13 +110,22 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
 
 ### How to build on macOS
 
-1. Install dependencies.
+1. Install dependencies:
+   
+   Xcode: This assumes you already have Xcode installed and have run `xcode-select --install`
+   
+   [Homebrew](https://brew.sh/)
+   
+   [Vulkan](https://vulkan.lunarg.com/sdk/home)  - Install Location ~/ (default), no need to pick any extra options in installer (default)
+   
+   Extra Packages with Homebrew:
    ```bash
-   git submodule update --init --recursive
-   brew install libusb ffmpeg libsodium opencv libpcap
+   brew install libusb ffmpeg libsodium opencv libpcap cmake
    ```
 
-2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version to your own version).
+2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version and username to your own version/username).
+
+   `nano ~/.zprofile`, paste the text in, `ctrl-o` to save, `ctrl-x` to exit.
    ```
    VULKAN_SDK="/Users/zzz/VulkanSDK/1.4.321.0/macOS"
    export VULKAN_SDK
@@ -124,7 +133,6 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    export PATH
    DYLD_LIBRARY_PATH="$VULKAN_SDK/lib:${DYLD_LIBRARY_PATH:-}"
    export DYLD_LIBRARY_PATH
-   echo "This script is now using VK_ADD_LAYER_PATH instead of VK_LAYER_PATH"
    VK_ADD_LAYER_PATH="$VULKAN_SDK/share/vulkan/explicit_layer.d"
    export VK_ADD_LAYER_PATH
    VK_ICD_FILENAMES="$VULKAN_SDK/share/vulkan/icd.d/MoltenVK_icd.json"
@@ -137,7 +145,24 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
 
 3. Log out and in for the above change to take effect.
 
-4. Build the project.
+4. Build the project:
+   ```bash
+   git clone https://github.com/OpenIPC/aviateur
+   cd aviateur
+   git submodule update --init --recursive
+   mkdir build && cd build
+   cmake ../
+   make
+   cd bin/aviateur.app/Contents/MacOS
+   install_name_tool -change "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib" "@loader_path/libfont_kit_wrapper.dylib" aviateur
+   ```
+5. As noted above, you must run the file through terminal:
+   
+   `open ./bin/aviateur.app`
+
+   Or if you want to see the log file while running:
+   `./bin/aviateur.app/Contents/MacOS/aviateur`
+   
 
 ### Common build issues
 
