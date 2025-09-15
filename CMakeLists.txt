@@ -147,12 +147,13 @@ if (APPLE)
             DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS
     )
 
-    execute_process(
-            COMMAND install_name_tool -change "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib" "@loader_path/libfont_kit_wrapper.dylib" aviateur
+    add_custom_command(
+            TARGET ${PROJECT_NAME}
+            POST_BUILD
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS
-            RESULT_VARIABLE exit_code
-            OUTPUT_VARIABLE stdout_output
-            ERROR_VARIABLE stderr_output
+            COMMAND ${CMAKE_COMMAND} -E echo "Target built, running post-build command!"
+            COMMAND install_name_tool -change "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib" "@loader_path/libfont_kit_wrapper.dylib" aviateur
+            COMMENT "Running post-build actions for target"
     )
 endif ()
 
