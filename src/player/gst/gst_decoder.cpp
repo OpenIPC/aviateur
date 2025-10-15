@@ -188,9 +188,10 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     gchar *pipeline_str = g_strdup_printf(
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
-        "rtpjitterbuffer latency=50 ! "
+        "rtpjitterbuffer latency=10 ! "
         "%s name=depay ! "
-        "decodebin3 name=decbin ! "
+        "avdec_h264 name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
+        // "decodebin3 name=decbin ! "
         "autovideosink name=glsink sync=false",
         codec.c_str(),
         depay.c_str());
