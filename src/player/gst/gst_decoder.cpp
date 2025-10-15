@@ -181,8 +181,10 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     GError *error = NULL;
 
     std::string depay = "rtph264depay";
+    std::string sw_dec = "avdec_h264";
     if (codec == "H265") {
         depay = "rtph265depay";
+        sw_dec = "avdec_h265";
     }
 
     gchar *pipeline_str = g_strdup_printf(
@@ -190,8 +192,8 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
         "rtpjitterbuffer latency=10 ! "
         "%s name=depay ! "
-        "avdec_h264 name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
-        // "decodebin3 name=decbin ! "
+        // "%sw_dec name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
+        "decodebin3 name=decbin ! "
         "autovideosink name=glsink sync=false",
         codec.c_str(),
         depay.c_str());
