@@ -405,10 +405,11 @@ void PlayerRect::start_playing(const std::string &url) {
 
     player_->play(url, force_software_decoding);
 
+    texture = render_image_;
+
     if (GuiInterface::Instance().use_gstreamer_) {
         collapse_panel_->set_visibility(false);
     } else {
-        texture = render_image_;
         collapse_panel_->set_visibility(true);
     }
 

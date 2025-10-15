@@ -2,7 +2,8 @@
 
     #include "gst_decoder.h"
 
-    #include <gst/video/video.h>
+    #include <gst/app/gstappsink.h>
+    #include <gst/gstsample.h>
 
     #include "src/gui_interface.h"
 
@@ -167,10 +168,63 @@ GstDecoder::GstDecoder() {
     bitrate_calculator_->bitrate_cb = [](const uint64_t bitrate) {
         GuiInterface::Instance().EmitBitrateUpdate(bitrate);
     };
+
+    g_mutex_init(&sample_mutex_);
 }
 
 GstDecoder::~GstDecoder() {
     destroy();
+}
+
+static GstFlowReturn on_new_sample_cb(GstAppSink *appsink, gpointer user_data) {
+    auto *dec = (GstDecoder *)user_data;
+
+    GstSample *sample = gst_app_sink_pull_sample(appsink);
+    g_assert_nonnull(sample);
+
+    GstSample *prev_sample = nullptr;
+
+    // Update client sample
+    {
+        g_mutex_lock(&dec->sample_mutex_);
+        prev_sample = dec->sample_;
+        dec->sample_ = sample;
+        g_mutex_unlock(&dec->sample_mutex_);
+    }
+
+    // Previous client sample is not used.
+    if (prev_sample) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Discarding unused, replaced sample");
+        gst_sample_unref(prev_sample);
+    }
+
+    return GST_FLOW_OK;
+}
+
+GstSample *GstDecoder::try_pull_sample() {
+    if (!appsink_) {
+        // Not setup yet.
+        return NULL;
+    }
+
+    // We actually pull the sample in the new-sample signal handler,
+    // so here we're just receiving the sample already pulled.
+    GstSample *sample = NULL;
+    {
+        g_mutex_lock(&sample_mutex_);
+        sample = sample_;
+        sample_ = NULL;
+        g_mutex_unlock(&sample_mutex_);
+    }
+
+    if (sample == NULL) {
+        if (gst_app_sink_is_eos(GST_APP_SINK(appsink_))) {
+            // TODO trigger teardown?
+        }
+        return NULL;
+    }
+
+    return sample;
 }
 
 void GstDecoder::create_pipeline(const std::string &codec) {
@@ -194,7 +248,10 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         "%s name=depay ! "
         // "%sw_dec name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
         "decodebin3 name=decbin ! "
-        "autovideosink name=glsink sync=false",
+        "videoconvert ! "
+        "video/x-raw,format=RGBA ! "
+        "appsink name=mysink max-buffers=1 drop=true",
+        // "autovideosink name=glsink sync=false",
         codec.c_str(),
         depay.c_str());
 
@@ -204,6 +261,18 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     g_free(pipeline_str);
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "GStreamer pipeline created successfully");
+
+    GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline_), "mysink");
+    if (appsink) {
+        appsink_ = appsink;
+
+        // Lower overhead than new-sample signal.
+        GstAppSinkCallbacks callbacks = {};
+        callbacks.new_sample = on_new_sample_cb;
+        gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &callbacks, this, NULL);
+
+        gst_object_unref(appsink);
+    }
 
     GstBus *bus = gst_element_get_bus(pipeline_);
     gst_bus_add_watch(bus, gst_bus_cb, pipeline_);

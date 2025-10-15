@@ -34,6 +34,13 @@ public:
 
     void destroy();
 
+    GstSample* try_pull_sample();
+
+    GstElement* appsink_{};
+
+    GMutex sample_mutex_;
+    GstSample* sample_{};
+
 private:
     GstElement* pipeline_{};
 
