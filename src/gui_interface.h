@@ -137,6 +137,8 @@ public:
 
     ~GuiInterface() = default;
 
+    std::vector<std::shared_ptr<WfbngLink>> links_;
+
     void init() {
 #ifdef _WIN32
         ShowWindow(GetConsoleWindow(), SW_HIDE); // SW_RESTORE to bring back
@@ -187,6 +189,9 @@ public:
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
+
+        links_.clear();
+        links_.emplace_back(std::make_shared<WfbngLink>());
     }
 
     static std::vector<DeviceId> GetDeviceList() {
@@ -272,8 +277,8 @@ public:
         // For clearing obsolete entries.
         // Instance().ini_.clear();
 
-        Instance().ini_[CONFIG_WIFI][WIFI_ALINK_ENABLED] = WfbngLink::Instance().get_alink_enabled() ? "true" : "false";
-        Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = std::to_string(WfbngLink::Instance().get_alink_tx_power());
+        Instance().ini_[CONFIG_WIFI][WIFI_ALINK_ENABLED] = Instance().alink_enabled_ ? "true" : "false";
+        Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = std::to_string(Instance().alink_tx_power_);
 
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] =
@@ -318,21 +323,36 @@ public:
             gsKeyPath = revector::get_asset_dir("gs.key");
             Instance().PutLog(LogLevel::Info, "Using GS key: {}", gsKeyPath);
         }
-        return WfbngLink::Instance().start(deviceId, channel, channelWidthMode, gsKeyPath);
+
+        auto link = std::make_shared<WfbngLink>();
+        Instance().links_.push_back(link);
+
+        return link->start(deviceId, channel, channelWidthMode, gsKeyPath);
     }
 
     static bool Stop() {
-        WfbngLink::Instance().stop();
+        for (const auto &link : Instance().links_) {
+            link->stop();
+        }
         return true;
     }
 
     static void EnableAlink(bool enable) {
         Instance().PutLog(LogLevel::Info, "Enable alink: {}", enable);
-        WfbngLink::Instance().enable_alink(enable);
+
+        Instance().alink_enabled_ = enable;
+
+        for (const auto &link : Instance().links_) {
+            link->enable_alink(enable);
+        }
     }
 
     static void SetAlinkTxPower(int power) {
-        WfbngLink::Instance().set_alink_tx_power(power);
+        Instance().alink_tx_power_ = power;
+
+        for (const auto &link : Instance().links_) {
+            link->set_alink_tx_power(power);
+        }
     }
 
     static void BuildSdp(const std::string &filePath, const std::string &codec, int payloadType, int port) {
@@ -489,6 +509,9 @@ public:
 
     // Use gstreamer for decoding instead of ffmpeg
     bool use_gstreamer_ = false;
+
+    bool alink_enabled_ = false;
+    int alink_tx_power_ = 0;
 
 #ifdef __APPLE__
     bool use_vulkan_ = true;

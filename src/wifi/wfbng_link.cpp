@@ -318,8 +318,8 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 #endif
 
             rtlDevice->Init(
-                [](const Packet &p) {
-                    Instance().handle_80211_frame(p);
+                [this](const Packet &p) {
+                    handle_80211_frame(p);
                     GuiInterface::Instance().UpdateCount();
                 },
                 SelectedChannel{
@@ -606,7 +606,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         keyPath.c_str(),
         epoch,
         video_channel_id_f,
-        [](uint8_t *payload, uint16_t packet_size) { Instance().handle_rtp(payload, packet_size); });
+        [this](uint8_t *payload, uint16_t packet_size) { handle_rtp(payload, packet_size); });
 #endif
 
     static int8_t rssi[2] = {1, 1};

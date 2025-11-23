@@ -39,11 +39,6 @@ public:
     WfbngLink();
     ~WfbngLink();
 
-    static WfbngLink &Instance() {
-        static WfbngLink link;
-        return link;
-    }
-
     static std::vector<DeviceId> get_device_list();
 
     bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
