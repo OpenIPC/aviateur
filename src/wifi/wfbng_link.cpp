@@ -348,7 +348,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         usbThread.reset();
 
         GuiInterface::Instance().EmitWifiStopped();
-        playing = false;
+        first_rtp_packet_received = false;
 
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
     });
@@ -690,8 +690,8 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
 
     auto *header = (RtpHeader *)payload;
 
-    if (!playing) {
-        playing = true;
+    if (!first_rtp_packet_received) {
+        first_rtp_packet_received = true;
         // Check H264 or H265
         if (isH264(header->getPayloadData())) {
             GuiInterface::Instance().playerCodec = "H264";

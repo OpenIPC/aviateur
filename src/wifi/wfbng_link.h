@@ -80,7 +80,7 @@ protected:
 
     int socketFd = INVALID_SOCKET;
 
-    bool playing = false;
+    bool first_rtp_packet_received = false;
 
     std::mutex agg_mutex;
 
