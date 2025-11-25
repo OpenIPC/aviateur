@@ -167,17 +167,22 @@ void PlayerRect::custom_ready() {
         }
 
 #ifndef _WIN32
-        // if (GuiInterface::Instance().is_using_wifi) {
-        //     pl_label_->set_visibility(true);
-        //     fec_label_->set_visibility(true);
-        //
-        //     pl_label_->set_text(FTR("packet loss") + ": " +
-        //                         std::format("{:.1f}", GuiInterface::Instance().packet_loss_) + "%");
-        //     fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
-        // } else {
-        //     pl_label_->set_visibility(false);
-        //     fec_label_->set_visibility(false);
-        // }
+        if (GuiInterface::Instance().is_using_wifi) {
+            pl_label_->set_visibility(true);
+            fec_label_->set_visibility(true);
+
+            std::string pl_text;
+            for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
+                auto link = GuiInterface::Instance().links_[i];
+                pl_text += std::format(" {:.1f}%", link->packet_loss_);
+            }
+            pl_label_->set_text(FTR("packet loss") + ":" + pl_text);
+
+            fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
+        } else {
+            pl_label_->set_visibility(false);
+            fec_label_->set_visibility(false);
+        }
 #endif
 
         rx_status_update_timer->start_timer(0.1);
