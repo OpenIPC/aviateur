@@ -107,6 +107,7 @@ void PlayerRect::custom_ready() {
         auto vbox_container = std::make_shared<revector::VBoxContainer>();
         add_child(vbox_container);
         vbox_container->set_separation(2);
+        vbox_container->set_size({0, 0});
         vbox_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
 
         lq_bars_.push_back(std::make_shared<SignalBar>());
