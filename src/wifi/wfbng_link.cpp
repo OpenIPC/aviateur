@@ -16,8 +16,6 @@
 #ifdef _WIN32
     #include "cross/wfbng_processor.h"
 
-    #define INVALID_SOCKET (-1)
-
     #pragma comment(lib, "ws2_32.lib")
 #else
     #include "linux/tun.h"
@@ -26,9 +24,6 @@
 #endif
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
-
-static int socketFd = INVALID_SOCKET;
-static std::atomic playing = false;
 
 constexpr u8 WFB_TX_PORT = 160;
 constexpr u8 WFB_RX_PORT = 32;
@@ -64,15 +59,7 @@ protected:
         GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP sequence number: {}", seq_num);
         GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP timestamp: {}", htonl(header->stamp));
 
-        static uint16_t prev_seq_num = seq_num;
-        if (seq_num - prev_seq_num > 1) {
-            GuiInterface::Instance().PutLog(LogLevel::Info, "RTP packets lost: {}", seq_num - prev_seq_num - 1);
-        }
-        prev_seq_num = seq_num;
-
-        if (!playing) {
-            playing = true;
-
+        if (!prev_seq_num.has_value()) {
             // Check H264 or H265
             if (isH264(header->getPayloadData())) {
                 GuiInterface::Instance().playerCodec = "H264";
@@ -86,6 +73,11 @@ protected:
                                                      GuiInterface::Instance().playerCodec);
         }
 
+        if (prev_seq_num.has_value() && seq_num - prev_seq_num.value() > 1) {
+            GuiInterface::Instance().PutLog(LogLevel::Info, "RTP packets lost: {}", seq_num - prev_seq_num.value() - 1);
+        }
+        prev_seq_num = seq_num;
+
         // Send payload via socket.
         sendto(sockfd, payload, packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
     }
@@ -93,6 +85,8 @@ protected:
 private:
     AggregatorX(const AggregatorX &);
     AggregatorX &operator=(const AggregatorX &);
+
+    std::optional<uint16_t> prev_seq_num;
 };
 #endif
 
@@ -591,22 +585,26 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     std::string client_addr = "127.0.0.1";
 
 #ifndef _WIN32
-    static std::unique_ptr<AggregatorX> video_aggregator =
-        std::make_unique<AggregatorX>(client_addr,
-                                      GuiInterface::Instance().playerPort,
-                                      keyPath.c_str(),
-                                      epoch,
-                                      video_channel_id_f,
-                                      0);
-
-    static std::unique_ptr<AggregatorX> udp_aggregator =
-        std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
+    if (!video_aggregator) {
+        video_aggregator = std::make_unique<AggregatorX>(client_addr,
+                                                         GuiInterface::Instance().playerPort,
+                                                         keyPath.c_str(),
+                                                         epoch,
+                                                         video_channel_id_f,
+                                                         0);
+    }
+    if (!udp_aggregator) {
+        udp_aggregator =
+            std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
+    }
 #else
-    static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
-        keyPath.c_str(),
-        epoch,
-        video_channel_id_f,
-        [this](uint8_t *payload, uint16_t packet_size) { handle_rtp(payload, packet_size); });
+    if (!video_aggregator) {
+        video_aggregator = std::make_unique<Aggregator>(
+            keyPath.c_str(),
+            epoch,
+            video_channel_id_f,
+            [this](uint8_t *payload, uint16_t packet_size) { handle_rtp(payload, packet_size); });
+    }
 #endif
 
     static int8_t rssi[2] = {1, 1};
@@ -614,9 +612,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     uint32_t freq = 0;
     int8_t noise[4] = {1, 1, 1, 1};
 
-    // The aggregator is static, so we need a mutex to modify it
-    // Considering to make it non-static
-    static std::mutex agg_mutex;
     std::lock_guard lock(agg_mutex);
 
     // Video frame

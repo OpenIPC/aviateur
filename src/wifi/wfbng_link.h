@@ -3,6 +3,7 @@
 #if defined(_WIN32) || defined(__APPLE__)
     #ifdef _WIN32
         #include <winsock2.h> // To solve winsock.h redefinition errors, include before libusb.h
+        #define INVALID_SOCKET (-1)
     #endif
     #include <libusb.h>
 #else
@@ -32,6 +33,8 @@ struct DeviceId {
     uint8_t bus_num;
     uint8_t port_num;
 };
+
+class AggregatorX;
 
 /// Receive packets from a Wi-Fi adapter.
 class WfbngLink {
@@ -69,6 +72,19 @@ protected:
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
 
     std::string keyPath;
+
+    int socketFd = INVALID_SOCKET;
+
+    bool playing = false;
+
+    std::mutex agg_mutex;
+
+#ifndef _WIN32
+    std::unique_ptr<AggregatorX> video_aggregator;
+    std::unique_ptr<AggregatorX> udp_aggregator;
+#else
+    std::unique_ptr<Aggregator> video_aggregator;
+#endif
 
 #ifndef _WIN32
     // --------------- Adaptive link
