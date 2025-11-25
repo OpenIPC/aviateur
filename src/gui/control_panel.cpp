@@ -147,7 +147,7 @@ void ControlPanel::custom_ready() {
 
         {
             auto device_b_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
-            device_b_con->set_title(FTR("dual adatper"));
+            device_b_con->set_title(FTR("dual adapter"));
             device_b_con->set_collapse(true);
             device_b_con->set_color(revector::ColorU(110.0, 137, 94));
             vbox_blockable->add_child(device_b_con);
@@ -166,15 +166,12 @@ void ControlPanel::custom_ready() {
             };
             device_b_con->connect_signal("collapsed", callback2);
 
-            auto vbox_container2 = std::make_shared<revector::HBoxContainer>();
-            device_b_con->add_child(vbox_container2);
-
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
             hbox_container->set_separation(8);
-            vbox_container2->add_child(hbox_container);
+            device_b_con->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
-            label->set_text(FTR("Device B"));
+            label->set_text(FTR("device"));
             hbox_container->add_child(label);
 
             dongle_menu_button_b_ = std::make_shared<revector::MenuButton>();
