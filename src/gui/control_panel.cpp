@@ -160,6 +160,8 @@ void ControlPanel::custom_ready() {
                     GuiInterface::Instance().links_.resize(2);
                     GuiInterface::Instance().links_.back() = std::make_shared<WfbngLink>();
                     dongle_names[1] = "";
+
+                    update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
                 }
             };
             device_b_con->connect_signal("collapsed", callback2);

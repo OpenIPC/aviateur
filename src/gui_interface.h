@@ -192,6 +192,7 @@ public:
 
         links_.clear();
         links_.emplace_back(std::make_shared<WfbngLink>());
+        links_.emplace_back(std::make_shared<WfbngLink>());
     }
 
     static std::vector<DeviceId> GetDeviceList() {
@@ -327,6 +328,9 @@ public:
         auto link = std::make_shared<WfbngLink>();
         Instance().links_.push_back(link);
 
+        link->enable_alink(Instance().alink_enabled_);
+        link->set_alink_tx_power(Instance().alink_tx_power_);
+
         return link->start(deviceId, channel, channelWidthMode, gsKeyPath);
     }
 
@@ -334,6 +338,7 @@ public:
         for (const auto &link : Instance().links_) {
             link->stop();
         }
+        Instance().links_.clear();
         return true;
     }
 
