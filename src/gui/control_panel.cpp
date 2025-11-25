@@ -154,11 +154,11 @@ void ControlPanel::custom_ready() {
 
             auto callback2 = [this](bool collapsed) {
                 if (collapsed) {
-                    GuiInterface::Instance().links_.resize(1);
+                    // GuiInterface::Instance().links_.resize(1);
                     dongle_names[1] = {};
                 } else {
-                    GuiInterface::Instance().links_.resize(2);
-                    GuiInterface::Instance().links_.back() = std::make_shared<WfbngLink>();
+                    // GuiInterface::Instance().links_.resize(2);
+                    // GuiInterface::Instance().links_.back() = std::make_shared<WfbngLink>();
                     dongle_names[1] = "";
 
                     update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());

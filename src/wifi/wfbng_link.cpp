@@ -426,13 +426,13 @@ void WfbngLink::start_link_quality_thread() {
         };
 
         while (!this->alink_should_stop) {
-            auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
+            auto quality = signal_quality_calculator->calculate_signal_quality();
 
             if (quality.total_last_second != 0) {
-                GuiInterface::Instance().packet_loss_ =
+                packet_loss_ =
                     std::round((float)quality.lost_last_second / quality.total_last_second * 1000.0f) / 10.0f;
             } else {
-                GuiInterface::Instance().packet_loss_ = 100;
+                packet_loss_ = 100;
             }
 
             time_t currentEpoch = time(nullptr);
@@ -617,8 +617,8 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     // Video frame
     if (frame.MatchesChannelID(video_channel_id_be8)) {
         // Update signal quality
-        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
-        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+        signal_quality_calculator->add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
+        signal_quality_calculator->add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
 #ifndef _WIN32
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
@@ -632,9 +632,9 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                          0,
                                          NULL);
 
-        SignalQualityCalculator::get_instance().add_fec(video_aggregator->count_p_all,
-                                                        video_aggregator->count_p_fec_recovered,
-                                                        video_aggregator->count_p_lost);
+        signal_quality_calculator->add_fec(video_aggregator->count_p_all,
+                                           video_aggregator->count_p_fec_recovered,
+                                           video_aggregator->count_p_lost);
 #else
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
@@ -643,8 +643,8 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                          rssi);
 #endif
 
-        const auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
-        GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
+        const auto quality = signal_quality_calculator->calculate_signal_quality();
+        link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
@@ -787,6 +787,8 @@ WfbngLink::WfbngLink() {
 
     socketFd = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
+
+    signal_quality_calculator = std::make_unique<SignalQualityCalculator>();
 }
 
 WfbngLink::~WfbngLink() {

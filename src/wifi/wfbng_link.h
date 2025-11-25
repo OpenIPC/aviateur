@@ -1,4 +1,5 @@
 #pragma once
+#include "signal_quality.h"
 
 #if defined(_WIN32) || defined(__APPLE__)
     #ifdef _WIN32
@@ -63,6 +64,10 @@ public:
 
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
+
+    std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
+    float link_quality_ = 0; // Percentage
+    float packet_loss_ = 0;  // Percentage
 
 protected:
     libusb_context *ctx{};

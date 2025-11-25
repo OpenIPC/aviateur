@@ -191,8 +191,6 @@ public:
         }
 
         links_.clear();
-        links_.emplace_back(std::make_shared<WfbngLink>());
-        links_.emplace_back(std::make_shared<WfbngLink>());
     }
 
     static std::vector<DeviceId> GetDeviceList() {
@@ -508,8 +506,8 @@ public:
 
     bool is_using_wifi = true;
 
-    float link_quality_ = 0; // Percentage
-    float packet_loss_ = 0;  // Percentage
+    // float link_quality_ = 0; // Percentage
+    // float packet_loss_ = 0;  // Percentage
     int drone_fec_level_ = 0;
 
     // Use gstreamer for decoding instead of ffmpeg
