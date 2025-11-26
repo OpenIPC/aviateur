@@ -164,10 +164,16 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     keyPath = kPath;
 
     if (usbThread) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "USB thread already exists");
         return false;
     }
 
     auto logger = std::make_shared<Logger>();
+
+    if (ctx) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "libusb context should be null");
+        return false;
+    }
 
     int rc = libusb_init(&ctx);
     if (rc < 0) {
@@ -181,6 +187,8 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     libusb_device **devs;
     ssize_t count = libusb_get_device_list(ctx, &devs);
     if (count < 0) {
+        libusb_exit(ctx);
+        ctx = nullptr;
         return false;
     }
 
@@ -193,8 +201,8 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         if (libusb_get_device_descriptor(dev, &desc) == 0) {
             // Check if the device is using libusb driver
             if (desc.bDeviceClass == LIBUSB_CLASS_PER_INTERFACE) {
-                int bus_num = libusb_get_bus_number(dev);
-                int port_num = libusb_get_port_number(dev);
+                const int bus_num = libusb_get_bus_number(dev);
+                const int port_num = libusb_get_port_number(dev);
 
                 if (desc.idVendor == deviceId.vendor_id && desc.idProduct == deviceId.product_id &&
                     bus_num == deviceId.bus_num && port_num == deviceId.port_num) {
@@ -231,6 +239,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                                         deviceId.bus_num,
                                         deviceId.port_num);
         GuiInterface::Instance().ShowTip(FTR("invalid usb msg"));
+
         return false;
     }
 
@@ -249,6 +258,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         ctx = nullptr;
 
         GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to claim interface");
+
         return false;
     }
 
