@@ -4,8 +4,9 @@
 
 #include "settings_tab.h"
 
-void ControlPanel::update_dongle_list() {
-    auto menu = dongle_menu_button_->get_popup_menu().lock();
+void ControlPanel::update_dongle_list(const std::shared_ptr<revector::MenuButton> &menu_button,
+                                      std::string &dongle_name) {
+    auto menu = menu_button->get_popup_menu().lock();
 
     devices_ = GuiInterface::GetDeviceList();
 
@@ -15,14 +16,12 @@ void ControlPanel::update_dongle_list() {
     for (const auto &d : devices_) {
         if (dongle_name == d.display_name) {
             previous_device_exists = true;
-            selected_dongle = d;
         }
         menu->create_item(d.display_name);
     }
 
     if (!previous_device_exists) {
         dongle_name = "";
-        selected_dongle = {};
     }
 }
 
@@ -62,7 +61,9 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 
 void ControlPanel::custom_ready() {
     auto &ini = GuiInterface::Instance().ini_;
-    dongle_name = ini[CONFIG_WIFI][WIFI_DEVICE];
+    dongle_names.resize(2);
+    dongle_names[0] = ini[CONFIG_WIFI][WIFI_DEVICE];
+    dongle_names[1] = {};
     channel = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
@@ -122,10 +123,10 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(dongle_menu_button_);
 
             // Do this before setting dongle button text.
-            update_dongle_list();
-            dongle_menu_button_->set_text(dongle_name);
+            update_dongle_list(dongle_menu_button_, dongle_names[0].value());
+            dongle_menu_button_->set_text(dongle_names[0].value());
 
-            auto callback = [this](uint32_t) { dongle_name = dongle_menu_button_->get_selected_item_text(); };
+            auto callback = [this](uint32_t) { dongle_names[0] = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<revector::Button>();
@@ -134,8 +135,59 @@ void ControlPanel::custom_ready() {
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
 
-            auto callback2 = [this]() { update_dongle_list(); };
+            auto callback2 = [this] {
+                update_dongle_list(dongle_menu_button_, dongle_names[0].value());
+
+                if (dongle_names[1].has_value()) {
+                    update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
+                }
+            };
             refresh_dongle_button_->connect_signal("triggered", callback2);
+        }
+
+        {
+            auto device_b_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
+            device_b_con->set_title(FTR("dual adapter"));
+            device_b_con->set_collapse(true);
+            device_b_con->set_color(revector::ColorU(110.0, 137, 94));
+            vbox_blockable->add_child(device_b_con);
+
+            auto callback2 = [this](bool collapsed) {
+                if (collapsed) {
+                    // GuiInterface::Instance().links_.resize(1);
+                    dongle_names[1] = {};
+                } else {
+                    // GuiInterface::Instance().links_.resize(2);
+                    // GuiInterface::Instance().links_.back() = std::make_shared<WfbngLink>();
+                    dongle_names[1] = "";
+
+                    update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
+                }
+            };
+            device_b_con->connect_signal("collapsed", callback2);
+
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            hbox_container->set_separation(8);
+            device_b_con->add_child(hbox_container);
+
+            auto label = std::make_shared<revector::Label>();
+            label->set_text(FTR("device"));
+            hbox_container->add_child(label);
+
+            dongle_menu_button_b_ = std::make_shared<revector::MenuButton>();
+            dongle_menu_button_b_->set_custom_minimum_size({0, 32});
+            dongle_menu_button_b_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            dongle_menu_button_b_->set_text("");
+            hbox_container->add_child(dongle_menu_button_b_);
+
+            // Do this before setting dongle button text.
+            if (dongle_names[1].has_value()) {
+                update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
+                dongle_menu_button_b_->set_text(dongle_names[1].value());
+            }
+
+            auto callback = [this](uint32_t) { dongle_names[1] = dongle_menu_button_b_->get_selected_item_text(); };
+            dongle_menu_button_b_->connect_signal("item_selected", callback);
         }
 
         {
@@ -310,21 +362,44 @@ void ControlPanel::custom_ready() {
                 GuiInterface::Instance().is_using_wifi = true;
 
                 if (start) {
-                    std::optional<DeviceId> target_device_id;
-                    for (auto &d : devices_) {
-                        if (dongle_name == d.display_name) {
-                            target_device_id = d;
+                    bool all_started = true;
+
+                    if (dongle_names[1].has_value() && dongle_names[1] == dongle_names[0]) {
+                        GuiInterface::Instance().ShowTip("Same device for dual adapter mode");
+                        all_started = false;
+                    } else {
+                        for (const auto &dongle_name : dongle_names) {
+                            if (!dongle_name.has_value()) {
+                                continue;
+                            }
+
+                            // Check if the device is available.
+                            std::optional<DeviceId> target_device_id;
+                            for (auto &d : devices_) {
+                                if (dongle_name == d.display_name) {
+                                    target_device_id = d;
+                                }
+                            }
+
+                            if (target_device_id.has_value()) {
+                                bool res =
+                                    GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath);
+
+                                if (!res) {
+                                    GuiInterface::Instance().ShowTip("Device failed to start");
+                                }
+
+                                all_started &= res;
+                            } else {
+                                all_started = false;
+                                GuiInterface::Instance().ShowTip("Null device");
+                            }
                         }
                     }
 
-                    if (target_device_id.has_value()) {
-                        bool res = GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath);
-                        if (!res) {
-                            start = false;
-                        }
-                    } else {
-                        GuiInterface::Instance().ShowTip("Null device");
+                    if (!all_started) {
                         start = false;
+                        GuiInterface::Stop();
                     }
                 } else {
                     GuiInterface::Stop();

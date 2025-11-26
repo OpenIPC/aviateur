@@ -59,11 +59,6 @@ public:
     /// Calculate signal quality over the averaging window
     SignalQuality calculate_signal_quality();
 
-    static SignalQualityCalculator &get_instance() {
-        static SignalQualityCalculator instance;
-        return instance;
-    }
-
 private:
     /// Sum up FEC data over the averaging window
     std::tuple<uint32_t, uint32_t, uint32_t> get_accumulated_fec_data() const;

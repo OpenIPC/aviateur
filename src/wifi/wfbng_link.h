@@ -1,8 +1,10 @@
 #pragma once
+#include "signal_quality.h"
 
 #if defined(_WIN32) || defined(__APPLE__)
     #ifdef _WIN32
         #include <winsock2.h> // To solve winsock.h redefinition errors, include before libusb.h
+        #define INVALID_SOCKET (-1)
     #endif
     #include <libusb.h>
 #else
@@ -33,22 +35,20 @@ struct DeviceId {
     uint8_t port_num;
 };
 
+class AggregatorX;
+
 /// Receive packets from a Wi-Fi adapter.
 class WfbngLink {
 public:
     WfbngLink();
     ~WfbngLink();
 
-    static WfbngLink &Instance() {
-        static WfbngLink link;
-        return link;
-    }
-
     static std::vector<DeviceId> get_device_list();
 
-    bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
+    /// Start Wi-Fi monitoring with a device.
+    bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &kPath);
 
-    void stop() const;
+    void stop();
 
 #ifdef _WIN32
     /// Send a RTP payload via socket.
@@ -66,6 +66,10 @@ public:
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
+    float get_link_quality() const;
+
+    float get_packet_loss() const;
+
 protected:
     libusb_context *ctx{};
     libusb_device_handle *devHandle{};
@@ -74,6 +78,23 @@ protected:
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
 
     std::string keyPath;
+
+    int socketFd = INVALID_SOCKET;
+
+    bool first_rtp_packet_received = false;
+
+    std::mutex agg_mutex;
+
+#ifndef _WIN32
+    std::unique_ptr<AggregatorX> video_aggregator;
+    std::unique_ptr<AggregatorX> udp_aggregator;
+#else
+    std::unique_ptr<Aggregator> video_aggregator;
+#endif
+
+    std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
+    float link_quality_ = 0; // Percentage
+    float packet_loss_ = 0;  // Percentage
 
 #ifndef _WIN32
     // --------------- Adaptive link

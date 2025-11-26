@@ -104,12 +104,21 @@ void PlayerRect::custom_ready() {
     hud_container_->set_separation(16);
 
     {
-        lq_bar_ = std::make_shared<SignalBar>();
-        add_child(lq_bar_);
-        lq_bar_->set_custom_minimum_size({0, 8});
-        lq_bar_->set_size({0, 8});
-        lq_bar_->set_visibility(false);
-        lq_bar_->set_anchor_flag(revector::AnchorFlag::BottomWide);
+        auto vbox_container = std::make_shared<revector::VBoxContainer>();
+        add_child(vbox_container);
+        vbox_container->set_separation(2);
+        vbox_container->set_size({0, 0});
+        vbox_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
+
+        lq_bars_.push_back(std::make_shared<SignalBar>());
+        lq_bars_.push_back(std::make_shared<SignalBar>());
+
+        for (const auto &bar : lq_bars_) {
+            vbox_container->add_child(bar);
+            bar->set_custom_minimum_size({0, 4});
+            bar->set_size({0, 4});
+            bar->set_visibility(false);
+        }
     }
 
     {
@@ -152,15 +161,22 @@ void PlayerRect::custom_ready() {
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
-        lq_bar_->set_value(GuiInterface::Instance().link_quality_);
+        for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
+            lq_bars_[i]->set_visibility(true);
+            lq_bars_[i]->set_value(GuiInterface::Instance().links_[i]->get_link_quality());
+        }
 
 #ifndef _WIN32
         if (GuiInterface::Instance().is_using_wifi) {
             pl_label_->set_visibility(true);
             fec_label_->set_visibility(true);
 
-            pl_label_->set_text(FTR("packet loss") + ": " +
-                                std::format("{:.1f}", GuiInterface::Instance().packet_loss_) + "%");
+            std::string pl_text;
+            for (const auto &link : GuiInterface::Instance().links_) {
+                pl_text += std::format(" {:.1f}%", link->get_packet_loss());
+            }
+            pl_label_->set_text(FTR("packet loss") + ":" + pl_text);
+
             fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
         } else {
             pl_label_->set_visibility(false);
@@ -333,6 +349,10 @@ bool IsType(const SrcType *src) {
 }
 
 void PlayerRect::start_playing(const std::string &url) {
+    if (playing_) {
+        return;
+    }
+
     playing_ = true;
 
     auto render_server = revector::RenderServer::get_singleton();
@@ -377,7 +397,6 @@ void PlayerRect::start_playing(const std::string &url) {
     }
 
     hud_container_->set_visibility(true);
-    lq_bar_->set_visibility(true);
 }
 
 void PlayerRect::stop_playing() {
@@ -398,5 +417,4 @@ void PlayerRect::stop_playing() {
     }
 
     hud_container_->set_visibility(false);
-    lq_bar_->set_visibility(false);
 }
