@@ -163,7 +163,7 @@ void PlayerRect::custom_ready() {
     auto callback = [this] {
         for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
             lq_bars_[i]->set_visibility(true);
-            lq_bars_[i]->set_value(GuiInterface::Instance().links_[i]->link_quality_);
+            lq_bars_[i]->set_value(GuiInterface::Instance().links_[i]->get_link_quality());
         }
 
 #ifndef _WIN32
@@ -172,9 +172,8 @@ void PlayerRect::custom_ready() {
             fec_label_->set_visibility(true);
 
             std::string pl_text;
-            for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
-                auto link = GuiInterface::Instance().links_[i];
-                pl_text += std::format(" {:.1f}%", link->packet_loss_);
+            for (const auto &link : GuiInterface::Instance().links_) {
+                pl_text += std::format(" {:.1f}%", link->get_packet_loss());
             }
             pl_label_->set_text(FTR("packet loss") + ":" + pl_text);
 

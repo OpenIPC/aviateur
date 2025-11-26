@@ -45,7 +45,8 @@ public:
 
     static std::vector<DeviceId> get_device_list();
 
-    bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
+    /// Start Wi-Fi monitoring with a device.
+    bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &kPath);
 
     void stop() const;
 
@@ -65,9 +66,9 @@ public:
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
-    std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
-    float link_quality_ = 0; // Percentage
-    float packet_loss_ = 0;  // Percentage
+    float get_link_quality() const;
+
+    float get_packet_loss() const;
 
 protected:
     libusb_context *ctx{};
@@ -90,6 +91,10 @@ protected:
 #else
     std::unique_ptr<Aggregator> video_aggregator;
 #endif
+
+    std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
+    float link_quality_ = 0; // Percentage
+    float packet_loss_ = 0;  // Percentage
 
 #ifndef _WIN32
     // --------------- Adaptive link

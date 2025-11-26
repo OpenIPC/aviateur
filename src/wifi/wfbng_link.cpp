@@ -671,6 +671,14 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     }
 }
 
+float WfbngLink::get_link_quality() const {
+    return link_quality_;
+}
+
+float WfbngLink::get_packet_loss() const {
+    return packet_loss_;
+}
+
 #if defined(_WIN32)
 void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
