@@ -48,7 +48,7 @@ public:
     /// Start Wi-Fi monitoring with a device.
     bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &kPath);
 
-    void stop() const;
+    void stop();
 
 #ifdef _WIN32
     /// Send a RTP payload via socket.

@@ -355,8 +355,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         devHandle = nullptr;
         ctx = nullptr;
 
-        usbThread.reset();
-
         GuiInterface::Instance().EmitWifiStopped();
         first_rtp_packet_received = false;
 
@@ -735,7 +733,7 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
 }
 #endif
 
-void WfbngLink::stop() const {
+void WfbngLink::stop() {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
@@ -744,6 +742,10 @@ void WfbngLink::stop() const {
         tun_->stop();
     }
 #endif
+
+    // Wait for the USB thread to exit.
+    usbThread->join();
+    usbThread.reset();
 }
 
 bool WfbngLink::get_alink_enabled() const {
