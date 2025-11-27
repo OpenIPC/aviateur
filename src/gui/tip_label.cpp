@@ -1,7 +1,7 @@
 #include "tip_label.h"
 
 void TipLabel::custom_ready() {
-    set_font_size(48);
+    set_font_size(32);
 
     auto style_box = revector::StyleBox();
     style_box.bg_color = revector::ColorU(201, 79, 79);

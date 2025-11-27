@@ -331,6 +331,8 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                     .ChannelOffset = 0,
                     .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
                 });
+
+            GuiInterface::Instance().PutLog(LogLevel::Info, "RTL device loop exited");
         } catch (const std::runtime_error &e) {
             GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
         } catch (...) {
@@ -360,7 +362,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
     });
-    usbThread->detach();
+    // usbThread->detach();
 
 #ifdef __linux__
     if (tun_enabled) {
@@ -744,7 +746,7 @@ void WfbngLink::stop() {
 #endif
 
     // Wait for the USB thread to exit.
-    if (usbThread) {
+    if (usbThread && usbThread->joinable()) {
         usbThread->join();
         usbThread.reset();
     }

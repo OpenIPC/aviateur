@@ -115,6 +115,7 @@ void PlayerRect::custom_ready() {
 
         for (const auto &bar : lq_bars_) {
             vbox_container->add_child(bar);
+            bar->set_value(0);
             bar->set_custom_minimum_size({0, 4});
             bar->set_size({0, 4});
             bar->set_visibility(false);
@@ -161,6 +162,10 @@ void PlayerRect::custom_ready() {
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
+        for (const auto bar : lq_bars_) {
+            bar->set_visibility(false);
+        }
+
         for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
             lq_bars_[i]->set_visibility(true);
             lq_bars_[i]->set_value(GuiInterface::Instance().links_[i]->get_link_quality());

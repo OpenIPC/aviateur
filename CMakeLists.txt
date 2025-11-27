@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 
 # This should go before project declaration.
 if (WIN32)
@@ -48,6 +48,8 @@ if (WIN32)
         set(GIO_INCLUDE_DIRS "${GST_ROOT}\\include\\gio-win32-2.0")
         set(GIO_LIBRARIES "${GST_LIB_ROOT}\\gio-2.0.lib")
     endif ()
+elseif (ANDROID)
+
 else ()
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavformat
