@@ -744,8 +744,10 @@ void WfbngLink::stop() {
 #endif
 
     // Wait for the USB thread to exit.
-    usbThread->join();
-    usbThread.reset();
+    if (usbThread) {
+        usbThread->join();
+        usbThread.reset();
+    }
 }
 
 bool WfbngLink::get_alink_enabled() const {
