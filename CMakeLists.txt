@@ -141,20 +141,6 @@ if (APPLE)
     file(COPY ${CMAKE_BINARY_DIR}/bin/assets
             DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
     )
-
-    # Do this after we copied assets for both Aviateur & Revector.
-    file(COPY ${CMAKE_BINARY_DIR}/bin/libfont_kit_wrapper.dylib
-            DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS
-    )
-
-    add_custom_command(
-            TARGET ${PROJECT_NAME}
-            POST_BUILD
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/MacOS
-            COMMAND ${CMAKE_COMMAND} -E echo "Target built, running post-build command!"
-            COMMAND install_name_tool -change "/Users/zzz/Repos/font_kit_wrapper/third_party/font_kit/target/release/deps/libfont_kit_wrapper.dylib" "@loader_path/libfont_kit_wrapper.dylib" aviateur
-            COMMENT "Running post-build actions for target"
-    )
 endif ()
 
 if (WIN32)
