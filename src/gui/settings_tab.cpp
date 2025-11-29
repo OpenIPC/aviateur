@@ -3,6 +3,16 @@
 const std::string AVIATEUR_VERSION = "0.1.4";
 
 void open_explorer(const std::string& dir) {
+    // Check if the directory exists
+    if (!std::filesystem::exists(dir)) {
+        // If it doesn't exist, create it
+        if (std::filesystem::create_directory(dir)) {
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Directory '{}' created successfully.", dir);
+        } else {
+            GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to create directory '{}'!", dir);
+        }
+    }
+
 #ifdef _WIN32
     ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #elif defined(__APPLE__)
