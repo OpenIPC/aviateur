@@ -61,8 +61,9 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
 
 void PlayerRect::custom_ready() {
     auto onRtpStream = [this](std::string sdp_file) {
+        play_mutex_.lock();
         play_url_ = sdp_file;
-        start_playing(sdp_file);
+        play_mutex_.unlock();
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
@@ -311,6 +312,16 @@ void PlayerRect::custom_ready() {
 }
 
 void PlayerRect::custom_update(double dt) {
+    if (!playing_) {
+        play_mutex_.lock();
+        const auto has_url = !play_url_.empty();
+        play_mutex_.unlock();
+
+        if (has_url) {
+            start_playing(play_url_);
+        }
+    }
+
     if (player_) {
         player_->update(dt);
     }
@@ -406,6 +417,10 @@ void PlayerRect::start_playing(const std::string &url) {
 
 void PlayerRect::stop_playing() {
     playing_ = false;
+
+    play_mutex_.lock();
+    play_url_ = "";
+    play_mutex_.unlock();
 
     if (is_recording) {
         record_button_->trigger();

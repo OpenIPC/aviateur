@@ -13,6 +13,7 @@ public:
 
     // Preserved for reuse when restarting decoder.
     std::string play_url_;
+    std::mutex play_mutex_;
 
     bool playing_ = false;
 
