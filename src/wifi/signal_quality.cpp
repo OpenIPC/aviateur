@@ -77,23 +77,20 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     float avg_rssi = get_average(rssi_data_);
     float avg_snr = get_average(snr_data_);
 
-    // Map the RSSI from range 10..80 to -1024..1024
-    avg_rssi = map_range(avg_rssi, 0.f, 80.f, -1024.f, 1024.f);
-    avg_rssi = std::max(-1024.f, std::min(1024.f, avg_rssi));
+    // Map the RSSI from range 0..126 to 0..100
+    avg_rssi = map_range(avg_rssi, 0.f, 126.f, 0.f, 100.f);
+    avg_rssi = std::max(0.f, std::min(100.f, avg_rssi));
 
     // Return final clamped quality
     // formula: quality = avg_rssi - p_recovered * 5 - p_lost * 100
     // clamp between -1024 and 1024
     auto [p_recovered, p_lost, p_total] = get_accumulated_fec_data();
 
-    float quality = avg_rssi; // - static_cast<float>(p_recovered) * 12.f - static_cast<float>(p_lost) * 40.f;
-    quality = std::max(-1024.f, std::min(1024.f, quality));
-
     ret.lost_last_second = p_lost;
     ret.recovered_last_second = p_recovered;
     ret.total_last_second = p_total;
 
-    ret.quality = quality;
+    ret.rssi = avg_rssi;
     ret.snr = avg_snr;
     ret.idr_code = idr_code_;
 

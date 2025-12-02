@@ -8,7 +8,7 @@
 #include <vector>
 
 inline double map_range(double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-    return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
+    return outputMin + (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin);
 }
 
 class SignalQualityCalculator {
@@ -17,7 +17,7 @@ public:
         int lost_last_second;
         int recovered_last_second;
         int total_last_second;
-        int quality;
+        int rssi;  // [0, 100]
         float snr; // Signal to noice ratio
         std::string idr_code;
     };

@@ -431,10 +431,6 @@ void WfbngLink::start_link_quality_thread() {
             return;
         }
 
-        const auto map_range = [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-            return outputMin + (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin);
-        };
-
         while (!this->alink_should_stop) {
             auto quality = signal_quality_calculator->calculate_signal_quality();
 
@@ -448,7 +444,7 @@ void WfbngLink::start_link_quality_thread() {
             time_t currentEpoch = time(nullptr);
 
             // Map to 1000..2000
-            quality.quality = map_range(quality.quality, -1024, 1024, 1000, 2000);
+            quality.rssi = map_range(quality.rssi, 0, 100, 1000, 2000);
 
             // Prepare & send a message
             {
@@ -503,11 +499,11 @@ void WfbngLink::start_link_quality_thread() {
                          sizeof(message) - sizeof(len),
                          "%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s\n",
                          static_cast<long>(currentEpoch),
-                         quality.quality,
-                         quality.quality,
+                         quality.rssi,
+                         quality.rssi,
                          quality.recovered_last_second,
                          quality.lost_last_second,
-                         quality.quality,
+                         quality.rssi,
                          quality.snr,
                          fec_lvl,
                          quality.idr_code.c_str());
@@ -654,7 +650,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 #endif
 
         const auto quality = signal_quality_calculator->calculate_signal_quality();
-        link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
+        link_quality_ = quality.rssi;
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
