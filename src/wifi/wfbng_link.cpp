@@ -567,7 +567,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     GuiInterface::Instance().wfbngFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
-    static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
     static uint8_t video_radio_port = 0;
     static uint64_t epoch = 0;
 

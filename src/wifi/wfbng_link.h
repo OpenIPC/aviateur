@@ -83,6 +83,10 @@ protected:
 
     bool first_rtp_packet_received = false;
 
+    /// Unique identifier for this link. Must match between transmitter and receiver.
+    /// Use different values for separate links to avoid interference.
+    uint32_t link_id = 7669206;
+
     std::mutex agg_mutex;
 
 #ifndef _WIN32
@@ -100,7 +104,6 @@ protected:
     // --------------- Adaptive link
     std::unique_ptr<std::thread> usb_event_thread;
     std::unique_ptr<std::thread> usb_tx_thread;
-    uint32_t link_id{7669206};
     std::recursive_mutex thread_mutex;
     std::shared_ptr<TxFrame> tx_frame;
     bool alink_should_stop = false;
