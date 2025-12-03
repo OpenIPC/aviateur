@@ -1,7 +1,10 @@
 #pragma once
+
 #include "signal_quality.h"
 
 #if defined(_WIN32) || defined(__APPLE__)
+    #include "cross/wfbng_processor.h"
+
     #ifdef _WIN32
         #include <winsock2.h> // To solve winsock.h redefinition errors, include before libusb.h
         #define INVALID_SOCKET (-1)
