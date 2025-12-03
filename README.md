@@ -21,17 +21,13 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 ### How to run on Windows
 
-1. Install the GStreamer runtime (the development installer is not necessary)
-   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows).
-2. Add `C:\Program Files\gstreamer\1.0\msvc_x86_64\bin` to your PATH environment variable.
-3. Download [Zadig](https://zadig.akeo.ie/).
-4. Install the libusb driver for your adapter.
+1. Download [Zadig](https://zadig.akeo.ie/).
+2. Install the libusb driver for your adapter.
    Go *Options* → *List All Devices*
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
    ![](tutorials/zadig2.jpg)
-5. Run Aviateur.
-6. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
+3. Run Aviateur.
 
 ### How to run on Linux
 
@@ -39,7 +35,6 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
    `SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", MODE="0666"` in it.
 2. (Optional) Call `sudo udevadm control --reload-rules`, then reboot (this is definitely required).
 3. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
-4. Select the adapter of the correct USB ID. Select your drone channel. Select your WFB-NG key. Start.
 
 ### How to run on macOS
 
@@ -91,7 +86,12 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    git submodule update --init --recursive
    ```
 
-5. Build the project.
+5. Install GStreamer (both the runtime and development installer)
+   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows).
+   Add `C:\Program Files\gstreamer\1.0\msvc_x86_64\bin` to your PATH environment variable.
+
+
+6. Build the project.
    ```bash
    mkdir build && cd build
    cmake ../
@@ -156,7 +156,7 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    cmake ../
    make
    ```
-   
+
 5. As noted above, you must run the file through terminal:
 
    `open ./bin/aviateur.app`

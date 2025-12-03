@@ -1,0 +1,7 @@
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\ffi-7.dll" "cmake-build-release/bin"
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\glib-2.0-0.dll" "cmake-build-release/bin"
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\gobject-2.0-0.dll" "cmake-build-release/bin"
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\gstreamer-1.0-0.dll" "cmake-build-release/bin"
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\intl-8.dll" "cmake-build-release/bin"
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\gmodule-2.0-0.dll" "cmake-build-release/bin"
+Copy-Item "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\pcre2-8-0.dll" "cmake-build-release/bin"
