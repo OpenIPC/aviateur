@@ -1,6 +1,6 @@
 #include "settings_tab.h"
 
-const std::string AVIATEUR_VERSION = "0.1.4";
+const std::string AVIATEUR_VERSION = "0.1.5";
 
 void open_explorer(const std::string& dir) {
     // Check if the directory exists

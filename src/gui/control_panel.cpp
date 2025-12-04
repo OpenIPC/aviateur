@@ -146,7 +146,7 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto device_b_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
+            device_b_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
             device_b_con->set_title(FTR("dual adapter"));
             device_b_con->set_collapse(true);
             device_b_con->set_color(revector::ColorU(110.0, 137, 94));
@@ -549,6 +549,21 @@ void ControlPanel::custom_input(revector::InputEvent &event) {
                         play_port_button_->trigger();
                     }
                 }
+            }
+        }
+    }
+}
+
+void ControlPanel::custom_update(double dt) {
+    if (device_b_con) {
+        if (GuiInterface::Instance().use_gstreamer_) {
+            if (!device_b_con->get_visibility()) {
+                device_b_con->show();
+            }
+        } else {
+            if (device_b_con->get_visibility()) {
+                device_b_con->set_collapse(true);
+                device_b_con->hide();
             }
         }
     }

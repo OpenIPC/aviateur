@@ -422,6 +422,10 @@ void PlayerRect::stop_playing() {
     play_url_ = "";
     play_mutex_.unlock();
 
+    for (const auto &bar : lq_bars_) {
+        bar->set_value(0);
+    }
+
     if (is_recording) {
         record_button_->trigger();
     }

@@ -22,6 +22,8 @@ public:
     uint32_t channelWidthMode = 0;
     std::string keyPath;
 
+    std::shared_ptr<revector::CollapseContainer> device_b_con;
+
     std::shared_ptr<revector::Button> play_button_;
 
     std::shared_ptr<revector::Button> play_port_button_;
@@ -41,4 +43,6 @@ public:
     void custom_ready() override;
 
     void custom_input(revector::InputEvent& event) override;
+
+    void custom_update(double dt) override;
 };
