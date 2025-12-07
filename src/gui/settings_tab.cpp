@@ -1,6 +1,7 @@
 #include "settings_tab.h"
 
 const std::string AVIATEUR_VERSION = "0.1.5";
+const std::string AVIATEUR_REPO = "https://github.com/OpenIPC/aviateur";
 
 void open_explorer(const std::string& dir) {
     // Check if the directory exists
@@ -15,6 +16,18 @@ void open_explorer(const std::string& dir) {
 
 #ifdef _WIN32
     ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+#elif defined(__APPLE__)
+    std::string cmd = "open \"" + dir + "\"";
+    system(cmd.c_str());
+#else
+    const std::string cmd = "xdg-open \"" + dir + "\"";
+    std::system(cmd.c_str());
+#endif
+}
+
+void open_url(const std::string& url) {
+#ifdef _WIN32
+    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #elif defined(__APPLE__)
     std::string cmd = "open \"" + dir + "\"";
     system(cmd.c_str());
@@ -218,15 +231,12 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(open_crash_dumps_button);
         open_crash_dumps_button->set_text(FTR("crash dump folder"));
 
-        auto callback = [this] {
+        auto callback = [] {
             auto dir = GuiInterface::GetAppDataDir();
             auto path = std::filesystem::path(dir).parent_path().parent_path().parent_path();
             auto appdata_local = path.string() + "\\Local";
             auto dumps_dir = appdata_local + "\\CrashDumps";
-
-            if (std::filesystem::exists(dumps_dir)) {
-                open_explorer(dumps_dir);
-            }
+            open_explorer(dumps_dir);
         };
         open_crash_dumps_button->connect_signal("triggered", callback);
     }
@@ -260,10 +270,7 @@ void SettingsContainer::custom_ready() {
         button->set_flat(true);
         button->set_text("");
 
-        auto callback = [] {
-            const std::string url = "https://github.com/OpenIPC/aviateur";
-            open_explorer(url);
-        };
+        auto callback = [] { open_url(AVIATEUR_REPO); };
         button->connect_signal("triggered", callback);
     }
 
