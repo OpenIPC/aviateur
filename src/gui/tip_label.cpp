@@ -6,7 +6,7 @@ void TipLabel::custom_ready() {
     auto style_box = revector::StyleBox();
     style_box.bg_color = revector::ColorU(201, 79, 79);
     style_box.corner_radius = 0;
-    theme_background = style_box;
+    theme_override_bg = style_box;
 
     display_timer = std::make_shared<revector::Timer>();
     fade_timer = std::make_shared<revector::Timer>();

@@ -28,16 +28,17 @@ void ControlPanel::update_dongle_list(const std::shared_ptr<revector::MenuButton
 void ControlPanel::update_adapter_start_button_looking(bool start_status) const {
     tab_container_->set_tab_disabled(!start_status);
 
+    play_button_->theme_override_normal = revector::StyleBox();
+    play_button_->theme_override_pressed = revector::StyleBox();
+
     if (!start_status) {
-        play_button_->theme_normal.bg_color = RED;
-        play_button_->theme_hovered = play_button_->theme_normal;
-        play_button_->theme_pressed.bg_color = RED;
+        play_button_->theme_override_normal.value().bg_color = RED;
+        play_button_->theme_override_pressed.value().bg_color = RED;
         play_button_->set_text(FTR("stop") + " (F5)");
         adapter_prop_block_->set_visibility(true);
     } else {
-        play_button_->theme_normal.bg_color = GREEN;
-        play_button_->theme_hovered = play_button_->theme_normal;
-        play_button_->theme_pressed.bg_color = GREEN;
+        play_button_->theme_override_normal.value().bg_color = GREEN;
+        play_button_->theme_override_pressed.value().bg_color = GREEN;
         play_button_->set_text(FTR("start") + " (F5)");
         adapter_prop_block_->set_visibility(false);
     }
@@ -46,15 +47,16 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
 void ControlPanel::update_url_start_button_looking(bool start_status) const {
     tab_container_->set_tab_disabled(!start_status);
 
+    play_port_button_->theme_override_normal = revector::StyleBox();
+    play_port_button_->theme_override_pressed = revector::StyleBox();
+
     if (!start_status) {
-        play_port_button_->theme_normal.bg_color = RED;
-        play_port_button_->theme_hovered = {};
-        play_port_button_->theme_pressed.bg_color = RED;
+        play_port_button_->theme_override_normal.value().bg_color = RED;
+        play_port_button_->theme_override_pressed.value().bg_color = RED;
         play_port_button_->set_text(FTR("stop") + " (F5)");
     } else {
-        play_port_button_->theme_normal.bg_color = GREEN;
-        play_port_button_->theme_hovered = {};
-        play_port_button_->theme_pressed.bg_color = GREEN;
+        play_port_button_->theme_override_normal.value().bg_color = GREEN;
+        play_port_button_->theme_override_pressed.value().bg_color = GREEN;
         play_port_button_->set_text(FTR("start") + " (F5)");
     }
 }
@@ -67,12 +69,6 @@ void ControlPanel::custom_ready() {
     channel = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
-
-    auto default_theme = revector::DefaultResource::get_singleton()->get_default_theme();
-    theme_bg = std::make_optional(default_theme->panel.styles["background"]);
-    theme_bg.value().corner_radius = 0;
-    theme_bg.value().border_width = 0;
-    theme_bg->border_width = 0;
 
     set_anchor_flag(revector::AnchorFlag::RightWide);
 
@@ -101,8 +97,9 @@ void ControlPanel::custom_ready() {
         revector::StyleBox new_theme;
         new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
         new_theme.border_width = 0;
+        new_theme.corner_radius = 0;
         new_theme.border_color = revector::ColorU(0, 0, 0);
-        adapter_prop_block_->set_theme_panel(new_theme);
+        adapter_prop_block_->theme_override_bg_ = new_theme;
         con->add_child(adapter_prop_block_);
 
         auto vbox_unblockable = std::make_shared<revector::VBoxContainer>();
@@ -433,8 +430,9 @@ void ControlPanel::custom_ready() {
         revector::StyleBox new_theme;
         new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
         new_theme.border_width = 0;
+        new_theme.corner_radius = 0;
         new_theme.border_color = revector::ColorU(0, 0, 0);
-        udp_prop_block_->set_theme_panel(new_theme);
+        udp_prop_block_->theme_override_bg_ = new_theme;
         udp_prop_block_->set_visibility(false);
         con->add_child(udp_prop_block_);
 

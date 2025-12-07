@@ -32,12 +32,12 @@ class SignalBar : public revector::ProgressBar {
 };
 
 void PlayerRect::show_red_tip(std::string tip) {
-    tip_label_->theme_background.bg_color = RED;
+    tip_label_->theme_override_bg.value().bg_color = RED;
     tip_label_->show_tip(tip);
 }
 
 void PlayerRect::show_green_tip(std::string tip) {
-    tip_label_->theme_background.bg_color = GREEN;
+    tip_label_->theme_override_bg.value().bg_color = GREEN;
     tip_label_->show_tip(tip);
 }
 
@@ -99,7 +99,7 @@ void PlayerRect::custom_ready() {
         GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
     box.border_width = 0;
     box.corner_radius = 0;
-    hud_container_->set_theme_bg(box);
+    hud_container_->theme_override_bg = box;
     hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
     hud_container_->set_visibility(false);
     hud_container_->set_separation(16);
@@ -129,7 +129,7 @@ void PlayerRect::custom_ready() {
         video_info_label_->set_text("");
         video_info_label_->set_visibility(false);
 
-        auto on_deocder_ready = [this](uint32_t width, uint32_t height, float fps, std::string decoder_name) {
+        auto on_decoder_ready = [this](uint32_t width, uint32_t height, float fps, std::string decoder_name) {
             std::stringstream ss;
             ss << width << "x" << height << "@" << int(round(fps));
             video_info_label_->set_text(ss.str());
@@ -138,7 +138,7 @@ void PlayerRect::custom_ready() {
             hw_status_label_->set_text(FTR("hw decoder") + ": " + decoder_name);
             hw_status_label_->set_visibility(true);
         };
-        GuiInterface::Instance().decoderReadyCallbacks.emplace_back(on_deocder_ready);
+        GuiInterface::Instance().decoderReadyCallbacks.emplace_back(on_decoder_ready);
     }
 
     bitrate_label_ = std::make_shared<revector::Label>();

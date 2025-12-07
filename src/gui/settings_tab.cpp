@@ -1,5 +1,8 @@
 #include "settings_tab.h"
 
+#include "resources/default_resource.h"
+#include "resources/theme.h"
+
 const std::string AVIATEUR_VERSION = "0.1.5";
 const std::string AVIATEUR_REPO = "https://github.com/OpenIPC/aviateur";
 
@@ -105,7 +108,7 @@ void SettingsContainer::custom_ready() {
 
     {
         auto hbox_container = std::make_shared<revector::HBoxContainer>();
-        hbox_container->set_theme_bg(radio_group_bg);
+        hbox_container->theme_override_bg = radio_group_bg;
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<revector::Label>();
@@ -146,7 +149,7 @@ void SettingsContainer::custom_ready() {
 
     {
         auto hbox_container = std::make_shared<revector::HBoxContainer>();
-        hbox_container->set_theme_bg(radio_group_bg);
+        hbox_container->theme_override_bg = radio_group_bg;
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<revector::Label>();
@@ -196,7 +199,8 @@ void SettingsContainer::custom_ready() {
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
         auto callback = [](const bool toggled) {
             GuiInterface::Instance().dark_mode_ = toggled;
-            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
+            const auto theme = toggled ? revector::Theme::default_dark() : revector::Theme::default_light();
+            revector::DefaultResource::get_singleton()->set_default_theme(theme);
         };
         dark_mode_btn->connect_signal("toggled", callback);
     }
