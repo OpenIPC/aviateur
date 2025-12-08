@@ -35,7 +35,6 @@ video stab warning,Video stabilization is experimental!,视频增稳是实验性
 capture folder,Capture folder,录制文件夹,Папка захвата,キャプチャフォルダ
 config folder,Config folder,配置文件夹,Папка конфигурации,設定フォルダ
 crash dump folder,Crash dump folder,崩溃数据文件夹,Папка аварийного дампа,クラッシュダンプフォルダ
-show console,Show console,显示控制台,Показать консоль,コンソールを表示
 invalid input data,Invalid input data!,无效的输入数据！,Неверные входные данные!,無効な入力データ！
 signal lost,Signal lost!,信号丢失！,Сигнал потерян!,信号が失われました！
 low light enhancement,Low light enhancement,低光增强,Улучшение при слабом освещении,低照度強調
