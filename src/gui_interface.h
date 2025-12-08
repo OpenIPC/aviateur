@@ -393,7 +393,9 @@ public:
     }
 
     void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string &codec) {
-        std::string sdpFile = "sdp/sdp" + std::to_string(port) + ".sdp";
+        const auto dir = GetAppDataDir();
+
+        std::string sdpFile = dir + "sdp/port-" + std::to_string(port) + ".sdp";
 
         BuildSdp(sdpFile, codec, pt, port);
 
