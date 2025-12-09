@@ -21,7 +21,8 @@ VideoPlayerGst::VideoPlayerGst(std::shared_ptr<Pathfinder::Device> device, std::
 
 VideoPlayerGst::~VideoPlayerGst() {
     stop();
-    gst_deinit();
+    // Should never call this.
+    // gst_deinit();
 }
 
 void VideoPlayerGst::update(float dt) {
