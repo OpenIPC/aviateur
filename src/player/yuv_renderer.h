@@ -1,6 +1,8 @@
 ﻿#pragma once
 
-#include <gst/video/video-frame.h>
+#ifdef AVIATEUR_USE_GSTREAMER
+    #include <gst/video/video-frame.h>
+#endif
 #include <libavutil/frame.h>
 #include <pathfinder/common/math/mat3.h>
 #include <pathfinder/gpu/device.h>
@@ -10,7 +12,6 @@
 
 #include <memory>
 #include <optional>
-#include <vector>
 
 #include "../feature/low_light_enhancer.h"
 #include "../feature/video_stabilizer.h"
@@ -27,8 +28,12 @@ public:
     void render(const std::shared_ptr<Pathfinder::Texture>& outputTex);
     void updateTextureInfo(int width, int height, int format);
     void updateTextureData(const std::shared_ptr<AVFrame>& newFrameData);
+
+#ifdef AVIATEUR_USE_GSTREAMER
     void updateTextureInfoGst(int width, int height, GstVideoFormat format);
     void updateTextureDataGst(GstVideoFrame vframe);
+#endif
+
     void clear();
 
     bool mStabilize = false;

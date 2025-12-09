@@ -238,6 +238,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
     }
 }
 
+#ifdef AVIATEUR_USE_GSTREAMER
 void YuvRenderer::updateTextureInfoGst(int width, int height, GstVideoFormat format) {
     if (width == 0 || height == 0) {
         return;
@@ -293,6 +294,7 @@ void YuvRenderer::updateTextureDataGst(GstVideoFrame vframe) {
 
     mQueue->submit(encoder, mFence);
 }
+#endif
 
 void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) {
     if (!mTextureAllocated) {
