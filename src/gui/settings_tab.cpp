@@ -32,10 +32,10 @@ void open_url(const std::string& url) {
 #ifdef _WIN32
     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #elif defined(__APPLE__)
-    std::string cmd = "open \"" + dir + "\"";
+    std::string cmd = "open \"" + url + "\"";
     system(cmd.c_str());
 #else
-    const std::string cmd = "xdg-open \"" + dir + "\"";
+    const std::string cmd = "xdg-open \"" + url + "\"";
     std::system(cmd.c_str());
 #endif
 }
