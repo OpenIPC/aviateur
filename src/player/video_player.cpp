@@ -4,7 +4,11 @@
 
 #include "../gui_interface.h"
 
-VideoPlayer::VideoPlayer() {
+VideoPlayer::VideoPlayer(std::shared_ptr<Pathfinder::Device> device,
+                                     std::shared_ptr<Pathfinder::Queue> queue) {
+    yuvRenderer_ = std::make_shared<YuvRenderer>(device, queue);
+    yuvRenderer_->init();
+
     // If the decoder fails, try to replay.
     connectionLostCallbacks.emplace_back([this] {
         stop();

@@ -47,6 +47,4 @@ protected:
     std::shared_ptr<Pathfinder::Device> device_;
 
     std::shared_ptr<Pathfinder::Queue> queue_;
-
-    std::shared_ptr<Pathfinder::Fence> fence_;
 };

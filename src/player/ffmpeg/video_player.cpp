@@ -12,10 +12,8 @@
 #define DEFAULT_GIF_FRAMERATE 10
 
 VideoPlayerFfmpeg::VideoPlayerFfmpeg(std::shared_ptr<Pathfinder::Device> device,
-                                     std::shared_ptr<Pathfinder::Queue> queue) {
-    yuvRenderer_ = std::make_shared<YuvRenderer>(device, queue);
-    yuvRenderer_->init();
-
+                                     std::shared_ptr<Pathfinder::Queue> queue)
+    : VideoPlayer(device, queue) {
     if (!SDL_Init(SDL_INIT_AUDIO)) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "SDL init audio failed!");
     }

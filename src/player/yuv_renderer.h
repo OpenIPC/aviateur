@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <gst/video/video-frame.h>
 #include <libavutil/frame.h>
 #include <pathfinder/common/math/mat3.h>
 #include <pathfinder/gpu/device.h>
@@ -26,6 +27,8 @@ public:
     void render(const std::shared_ptr<Pathfinder::Texture>& outputTex);
     void updateTextureInfo(int width, int height, int format);
     void updateTextureData(const std::shared_ptr<AVFrame>& newFrameData);
+    void updateTextureInfoGst(int width, int height, GstVideoFormat format);
+    void updateTextureDataGst(GstVideoFrame vframe);
     void clear();
 
     bool mStabilize = false;
@@ -40,6 +43,7 @@ protected:
 private:
     std::shared_ptr<Pathfinder::RenderPipeline> mPipeline;
     std::shared_ptr<Pathfinder::Queue> mQueue;
+    std::shared_ptr<Pathfinder::Fence> mFence;
     std::shared_ptr<Pathfinder::RenderPass> mRenderPass;
     std::shared_ptr<Pathfinder::Texture> mTexY;
     std::shared_ptr<Pathfinder::Texture> mTexU;
@@ -53,6 +57,7 @@ private:
     std::optional<cv::Mat> mPreviousFrameY;
 
     Pathfinder::Mat3 mXform;
+    bool mXformChanged = true;
 
     int mPixFmt = 0;
     bool mTextureAllocated = false;

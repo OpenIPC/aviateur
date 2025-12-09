@@ -15,7 +15,7 @@ struct SDL_AudioStream;
 
 class VideoPlayer {
 public:
-    VideoPlayer();
+    VideoPlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
     virtual ~VideoPlayer() = default;
 
     bool video_info_dirty() const {
@@ -78,6 +78,8 @@ public:
 
     // void onHasAudio(bool has);
     revector::AnyCallable<void> onHasAudio;
+
+    std::shared_ptr<YuvRenderer> yuvRenderer_;
 
 protected:
     // Play file URL

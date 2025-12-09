@@ -68,7 +68,4 @@ protected:
     std::shared_ptr<GifEncoder> gifEncoder_;
 
     bool hasAudio() const;
-
-public:
-    std::shared_ptr<YuvRenderer> yuvRenderer_;
 };

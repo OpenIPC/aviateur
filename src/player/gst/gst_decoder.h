@@ -46,5 +46,7 @@ private:
 
     bool initialized_ = false;
 
+    guint timeout_src_id_dot_data_;
+
     std::shared_ptr<BitrateCalculator> bitrate_calculator_;
 };

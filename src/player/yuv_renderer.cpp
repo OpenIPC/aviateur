@@ -35,6 +35,10 @@ void YuvRenderer::init() {
                                               Pathfinder::AttachmentLoadOp::Clear,
                                               "yuv render pass");
 
+    mXform = Pathfinder::Mat3(1);
+
+    mFence = mDevice->create_fence("VideoPlayerGst fence");
+
     initPipeline();
     initGeometry();
 }
@@ -234,6 +238,62 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
     }
 }
 
+void YuvRenderer::updateTextureInfoGst(int width, int height, GstVideoFormat format) {
+    if (width == 0 || height == 0) {
+        return;
+    }
+
+    switch (format) {
+        case GST_VIDEO_FORMAT_NV12:
+            mPixFmt = AV_PIX_FMT_NV12;
+            break;
+        default:
+            abort();
+    }
+
+    mTexY = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "y texture");
+
+    if (format == GST_VIDEO_FORMAT_NV12) {
+        mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::Rg8}, "u texture");
+
+        // V is not used for NV12.
+        if (mTexV == nullptr) {
+            mTexV = mDevice->create_texture({{2, 2}, Pathfinder::TextureFormat::R8}, "dummy v texture");
+        }
+    } else {
+        abort();
+    }
+
+    mTextureAllocated = true;
+}
+
+void YuvRenderer::updateTextureDataGst(GstVideoFrame vframe) {
+    // --- Frame Data (Planes) are now accessible ---
+    // For NV12, there are 2 planes:
+    // Plane 0: Y (Luma)
+    // Plane 1: UV (Chroma, interleaved)
+
+    void* plane_y_data = GST_VIDEO_FRAME_PLANE_DATA(&vframe, 0);
+    gint plane_y_stride = GST_VIDEO_FRAME_PLANE_STRIDE(&vframe, 0);
+
+    void* plane_uv_data = GST_VIDEO_FRAME_PLANE_DATA(&vframe, 1);
+    gint plane_uv_stride = GST_VIDEO_FRAME_PLANE_STRIDE(&vframe, 1);
+
+    // Y plane: info.width x info.height
+    // UV plane: (info.width / 2) x (info.height / 2)
+
+    auto encoder = mDevice->create_command_encoder("upload appsink sample (YUV)");
+
+    // Upload the separate planes to your renderer
+    // The 'target' must now be a multi-plane texture, or you need
+    // two separate target textures (one for Y, one for UV).
+
+    encoder->write_texture(mTexY, {}, plane_y_data);
+    encoder->write_texture(mTexU, {}, plane_uv_data);
+
+    mQueue->submit(encoder, mFence);
+}
+
 void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) {
     if (!mTextureAllocated) {
         return;
@@ -246,12 +306,15 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
     auto encoder = mDevice->create_command_encoder("render yuv");
 
     // Update uniform buffers.
-    {
-        FragUniformBlock uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
+    FragUniformBlock uniform;
+    if (mXformChanged) {
+        uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
 
         // We don't need to preserve the data until the upload commands are implemented because
         // these uniform buffers are host-visible/coherent.
         encoder->write_buffer(mUniformBuffer, 0, sizeof(FragUniformBlock), &uniform);
+
+        mXformChanged = false;
     }
 
     // Update descriptor set.
@@ -275,7 +338,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
 
     encoder->end_render_pass();
 
-    mQueue->submit_and_wait(encoder);
+    mQueue->submit(encoder, mFence);
 }
 
 void YuvRenderer::clear() {

@@ -227,6 +227,18 @@ GstSample *GstDecoder::try_pull_sample() {
     return sample;
 }
 
+gboolean check_pipeline_dot_data(GstElement *pipeline) {
+    if (!pipeline) {
+        return G_SOURCE_CONTINUE;
+    }
+
+    gchar *dot_data = gst_debug_bin_to_dot_data(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL);
+    // Put you breakpoint here.
+    g_free(dot_data);
+
+    return G_SOURCE_CONTINUE;
+}
+
 void GstDecoder::create_pipeline(const std::string &codec) {
     if (pipeline_) {
         return;
@@ -249,7 +261,7 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         // "%sw_dec name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
         "decodebin3 name=decbin ! "
         "videoconvert ! "
-        "video/x-raw,format=RGBA ! "
+        "video/x-raw,format=NV12 ! "
         "appsink name=mysink max-buffers=1 drop=true",
         // "autovideosink name=glsink sync=false",
         codec.c_str(),
@@ -295,6 +307,8 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER, bitrate_probe, bitrate_calculator_.get(), NULL);
         gst_object_unref(pad);
     }
+
+    timeout_src_id_dot_data_ = g_timeout_add_seconds(3, G_SOURCE_FUNC(check_pipeline_dot_data), pipeline_);
 }
 
 void GstDecoder::play_pipeline(const std::string &uri) {
