@@ -34,8 +34,6 @@ if (WIN32)
     if (AVIATEUR_ENABLE_GSTREAMER)
         # To ensure dll linking, add "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin" to your PATH
         set(GST_ROOT "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64")
-        # For older versions of gstreamer
-        #    set(GST_ROOT "C:\\gstreamer\\1.0\\msvc_x86_64")
 
         set(GST_LIB_ROOT "${GST_ROOT}\\lib")
 
