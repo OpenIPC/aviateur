@@ -38,7 +38,7 @@ if (WIN32)
         set(GST_LIB_ROOT "${GST_ROOT}\\lib")
 
         set(GST_INCLUDE_DIRS "${GST_ROOT}\\include\\gstreamer-1.0")
-        set(GST_LIBRARIES "${GST_LIB_ROOT}\\gstreamer-1.0.lib" "${GST_LIB_ROOT}\\gstreamer-app-1.0.lib" "${GST_LIB_ROOT}\\gstreamer-video-1.0.lib")
+        set(GST_LIBRARIES "${GST_LIB_ROOT}\\gstreamer-1.0.lib" "${GST_LIB_ROOT}\\gstapp-1.0.lib" "${GST_LIB_ROOT}\\gstvideo-1.0.lib")
 
         set(GLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\glib-2.0" "${GST_LIB_ROOT}\\glib-2.0\\include")
         set(GLIB_LIBRARIES "${GST_LIB_ROOT}\\gobject-2.0.lib" "${GST_LIB_ROOT}\\glib-2.0.lib")
