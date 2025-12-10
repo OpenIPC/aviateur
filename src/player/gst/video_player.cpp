@@ -9,6 +9,11 @@
 
 VideoPlayerGst::VideoPlayerGst(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue)
     : VideoPlayer(device, queue) {
+    // Set GST_PLUGIN_PATH for release build.
+    #if defined(NDEBUG) && defined(_WIN32)
+    _putenv("GST_PLUGIN_PATH=./gstreamer-1.0/");
+    #endif
+
     gst_init(NULL, NULL);
 
     gst_debug_set_default_threshold(GST_LEVEL_WARNING);

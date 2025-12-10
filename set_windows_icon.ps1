@@ -1,1 +1,0 @@
-./rcedit-x64.exe "cmake-build-release/bin/aviateur.exe" --set-icon "assets/logo.ico"
