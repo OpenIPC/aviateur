@@ -80,7 +80,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
             return;
         }
 
-        std::string decoder_name = decoder->hwDecoderName.has_value() ? decoder->hwDecoderName.value() : "N/A";
+        std::string decoder_name = decoder->hwDecoderName.has_value() ? decoder->hwDecoderName.value() : "Software";
 
         GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(),
                                                   decoder->GetHeight(),

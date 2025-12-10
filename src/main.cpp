@@ -13,7 +13,7 @@ int main() {
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
     auto app =
-        new revector::App({1280, 720}, GuiInterface::Instance().dark_mode_, GuiInterface::Instance().use_vulkan_);
+        new revector::App({1080, 480}, GuiInterface::Instance().dark_mode_, GuiInterface::Instance().use_vulkan_);
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "revector app created");
@@ -24,19 +24,19 @@ int main() {
     int rc = libusb_init(nullptr);
 
     {
-        auto split_container = std::make_shared<revector::SplitContainer>();
-        split_container->set_split_ratio(1.0f);
-        split_container->set_anchor_flag(revector::AnchorFlag::FullRect);
-        app->get_tree_root()->add_child(split_container);
+        auto hbox_container = std::make_shared<revector::HBoxContainer>();
+        hbox_container->set_anchor_flag(revector::AnchorFlag::FullRect);
+        hbox_container->set_separation(0);
+        app->get_tree_root()->add_child(hbox_container);
 
         auto player_rect = std::make_shared<PlayerRect>();
         player_rect->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         player_rect->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
-        split_container->add_child(player_rect);
+        hbox_container->add_child(player_rect);
 
         auto control_panel = std::make_shared<ControlPanel>();
         control_panel->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
-        split_container->add_child(control_panel);
+        hbox_container->add_child(control_panel);
 
         std::weak_ptr control_panel_weak = control_panel;
         std::weak_ptr player_rect_weak = player_rect;

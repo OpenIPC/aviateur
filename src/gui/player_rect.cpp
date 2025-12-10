@@ -6,6 +6,8 @@
     #include "src/player/gst/video_player.h"
 #endif
 
+constexpr uint32_t HUD_LABEL_FONT_SIZE = 20;
+
 class SignalBar : public revector::ProgressBar {
     void custom_ready() override {
         theme_fg = {};
@@ -89,11 +91,12 @@ void PlayerRect::custom_ready() {
     tip_label_->set_anchor_flag(revector::AnchorFlag::VCenterWide);
     tip_label_->set_visibility(false);
     tip_label_->set_word_wrap(true);
+    tip_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     add_child(tip_label_);
 
     hud_container_ = std::make_shared<revector::HBoxContainer>();
     add_child(hud_container_);
-    hud_container_->set_size({0, 48});
+    hud_container_->set_size({0, 32});
     revector::StyleBox box;
     box.bg_color =
         GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
@@ -127,6 +130,7 @@ void PlayerRect::custom_ready() {
         video_info_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(video_info_label_);
         video_info_label_->set_text("");
+        video_info_label_->set_font_size(HUD_LABEL_FONT_SIZE);
         video_info_label_->set_visibility(false);
 
         auto on_decoder_ready = [this](uint32_t width, uint32_t height, float fps, std::string decoder_name) {
@@ -135,28 +139,34 @@ void PlayerRect::custom_ready() {
             video_info_label_->set_text(ss.str());
             video_info_label_->set_visibility(true);
 
-            hw_status_label_->set_text(FTR("hw decoder") + ": " + decoder_name);
-            hw_status_label_->set_visibility(true);
+            decoder_label_->set_text(FTR("decoder") + ": " + decoder_name);
+            decoder_label_->set_font_size(HUD_LABEL_FONT_SIZE);
+            decoder_label_->set_visibility(true);
         };
         GuiInterface::Instance().decoderReadyCallbacks.emplace_back(on_decoder_ready);
     }
 
     bitrate_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(bitrate_label_);
-    bitrate_label_->set_text(FTR("bit rate") + ": 0 bps");
+    bitrate_label_->set_font_size(HUD_LABEL_FONT_SIZE);
+    bitrate_label_->set_visibility(false);
 
     render_fps_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(render_fps_label_);
+    render_fps_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
-    hw_status_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(hw_status_label_);
-    hw_status_label_->set_visibility(false);
+    decoder_label_ = std::make_shared<revector::Label>();
+    hud_container_->add_child(decoder_label_);
+    decoder_label_->set_font_size(HUD_LABEL_FONT_SIZE);
+    decoder_label_->set_visibility(false);
 
 #ifndef _WIN32
     pl_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(pl_label_);
+    pl_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     fec_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(fec_label_);
+    fec_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 #endif
 
     rx_status_update_timer = std::make_shared<revector::Timer>();
@@ -199,6 +209,7 @@ void PlayerRect::custom_ready() {
     hud_container_->add_child(record_status_label_);
     record_status_label_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
     record_status_label_->set_text("");
+    record_status_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
     auto capture_button = std::make_shared<revector::Button>();
     vbox->add_child(capture_button);
@@ -292,7 +303,7 @@ void PlayerRect::custom_ready() {
     // }
 
     auto onBitrateUpdate = [this](uint64_t bitrate) {
-        std::string text = FTR("bit rate") + ": ";
+        std::string text = FTR("bitrate") + ": ";
         if (bitrate > 1024 * 1024) {
             text += std::format("{:.1f}", bitrate / 1024.0 / 1024.0) + " Mbps";
         } else if (bitrate > 1024) {
@@ -301,6 +312,7 @@ void PlayerRect::custom_ready() {
             text += std::format("{:d}", bitrate) + " bps";
         }
         bitrate_label_->set_text(text);
+        bitrate_label_->show();
     };
     GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
 

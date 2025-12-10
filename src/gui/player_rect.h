@@ -38,7 +38,7 @@ public:
 
     std::shared_ptr<revector::Label> bitrate_label_;
 
-    std::shared_ptr<revector::Label> hw_status_label_;
+    std::shared_ptr<revector::Label> decoder_label_;
 
     std::shared_ptr<revector::Label> pl_label_;
 

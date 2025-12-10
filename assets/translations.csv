@@ -1,9 +1,9 @@
 tag,en,zh,ru,ja
 lang,Language,语言,Язык,言語
 fullscreen,Fullscreen,全屏,Полноэкранный,全画面
-bit rate,Bit rate,码率,Битрейт,ビットレート
+bitrate,Bitrate,码率,Битрейт,ビットレート
 render fps,Render FPS,渲染帧率,FPS рендера,レンダリングFPS
-hw decoder,Hardware decoder,硬件解码器,Аппаратный декодер,ハードウェアデコーダー
+decoder,Decoder,解码器,Декодер,デコーダ
 capture frame,Capture frame,截图,кадр захвата,フレームキャプチャ
 player control,Player control,播放控制,контроль игрока,プレイヤーコントロール
 record mp4,Record MP4,录制 MP4,Запись MP4,MP4録画
