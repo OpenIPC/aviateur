@@ -24,7 +24,7 @@ chmod +x linuxdeploy*.AppImage
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
 
 # Hook GStreamer plugins
-bash ./linuxdeploy-plugin-gstreamer.sh
+bash ../linuxdeploy-plugin-gstreamer.sh
 
 # Copy icon, binary & assets
 cp ./bin/assets/logo.png ./AppDir/usr/share/icons/hicolor/128x128/apps/aviateur.png
