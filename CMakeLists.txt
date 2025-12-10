@@ -20,7 +20,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-option(AVIATEUR_ENABLE_GSTREAMER "Enable gstreamer" OFF)
+option(AVIATEUR_ENABLE_GSTREAMER "Enable GStreamer" OFF)
+option(AVIATEUR_ENABLE_OPENCV "Enable OpenCV" OFF)
 
 find_package(PkgConfig REQUIRED)
 
@@ -29,7 +30,6 @@ if (WIN32)
 
     find_package(FFmpeg REQUIRED)
     find_package(unofficial-sodium CONFIG REQUIRED)
-    find_package(OpenCV REQUIRED)
 
     if (AVIATEUR_ENABLE_GSTREAMER)
         # To ensure dll linking, add "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin" to your PATH
@@ -46,8 +46,6 @@ if (WIN32)
         set(GIO_INCLUDE_DIRS "${GST_ROOT}\\include\\gio-win32-2.0")
         set(GIO_LIBRARIES "${GST_LIB_ROOT}\\gio-2.0.lib")
     endif ()
-elseif (ANDROID)
-
 else ()
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavformat
@@ -58,8 +56,6 @@ else ()
     )
 
     pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
-
-    find_package(OpenCV REQUIRED)
 
     if (AVIATEUR_ENABLE_GSTREAMER)
         if (APPLE)
@@ -74,6 +70,10 @@ else ()
             pkg_check_modules(GIO REQUIRED gio-2.0)
         endif ()
     endif ()
+endif ()
+
+if (AVIATEUR_ENABLE_OPENCV)
+    find_package(OpenCV REQUIRED)
 endif ()
 
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
@@ -94,6 +94,13 @@ if (AVIATEUR_ENABLE_GSTREAMER)
     target_compile_definitions(
             ${PROJECT_NAME} PRIVATE
             AVIATEUR_USE_GSTREAMER
+    )
+endif ()
+
+if (AVIATEUR_ENABLE_OPENCV)
+    target_compile_definitions(
+            ${PROJECT_NAME} PRIVATE
+            AVIATEUR_USE_OPENCV
     )
 endif ()
 
@@ -146,7 +153,6 @@ if (WIN32)
             ${FFMPEG_LIBRARIES}
             PkgConfig::LIBUSB
             unofficial-sodium::sodium
-            ${OpenCV_LIBS}
             WiFiDriver
             revector
             SDL3::SDL3-static
@@ -155,11 +161,16 @@ else ()
     target_link_libraries(${PROJECT_NAME} PRIVATE
             PkgConfig::LIBAV
             PkgConfig::LIBSODIUM
-            ${OpenCV_LIBS}
             WiFiDriver
             revector
             SDL3::SDL3-static
             pcap
+    )
+endif ()
+
+if (AVIATEUR_ENABLE_OPENCV)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            ${OpenCV_LIBS}
     )
 endif ()
 

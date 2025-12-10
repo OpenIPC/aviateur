@@ -154,6 +154,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
+#ifdef AVIATEUR_USE_OPENCV
     if (mStabilize) {
         const auto frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, newFrameData->data[0]);
 
@@ -197,22 +198,30 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
         // Do this after submitting.
         mPrevFrameData = newFrameData;
-    } else {
+    } else
+#endif
+    {
+#ifdef AVIATEUR_USE_OPENCV
         if (mPreviousFrameY.has_value()) {
             mPreviousFrameY.reset();
         }
+#endif
+
         if (mPrevFrameData) {
             mPrevFrameData.reset();
         }
 
         mXform = Pathfinder::Mat3(1);
 
-        // Keep the cv frame alive until we call `submit_and_wait`
+// Keep the cv frame alive until we call `submit_and_wait`
+#ifdef AVIATEUR_USE_OPENCV
         cv::Mat enhancedFrameY;
+#endif
 
         if (newFrameData->linesize[0]) {
             const void* texYData = newFrameData->data[0];
 
+#ifdef AVIATEUR_USE_OPENCV
             if (mLowLightEnhancement) {
                 if (!mLowLightEnhancer.has_value()) {
                     mLowLightEnhancer = LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
@@ -225,6 +234,8 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
                 texYData = enhancedFrameY.data;
             }
+#endif
+
             encoder->write_texture(mTexY, {}, texYData);
         }
         if (newFrameData->linesize[1]) {

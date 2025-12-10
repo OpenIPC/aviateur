@@ -13,8 +13,10 @@
 #include <memory>
 #include <optional>
 
-#include "../feature/low_light_enhancer.h"
-#include "../feature/video_stabilizer.h"
+#ifdef AVIATEUR_USE_OPENCV
+    #include "../feature/low_light_enhancer.h"
+    #include "../feature/video_stabilizer.h"
+#endif
 
 namespace cv {
 class Mat;
@@ -36,10 +38,11 @@ public:
 
     void clear();
 
+#ifdef AVIATEUR_USE_OPENCV
     bool mStabilize = false;
-
     bool mLowLightEnhancement = false;
     std::optional<LowLightEnhancer> mLowLightEnhancer;
+#endif
 
 protected:
     void initPipeline();
@@ -59,15 +62,16 @@ private:
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
     std::shared_ptr<Pathfinder::Buffer> mUniformBuffer;
 
-    std::optional<cv::Mat> mPreviousFrameY;
-
     Pathfinder::Mat3 mXform;
     bool mXformChanged = true;
 
     int mPixFmt = 0;
     bool mTextureAllocated = false;
 
+#ifdef AVIATEUR_USE_OPENCV
     VideoStabilizer mStabilizer;
+    std::optional<cv::Mat> mPreviousFrameY;
+#endif
 
     bool mNeedClear = false;
 
