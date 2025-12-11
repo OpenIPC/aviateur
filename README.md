@@ -87,7 +87,8 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    ```
 
 5. Install GStreamer (both the runtime and development installer)
-   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows). Add `C:\Program Files\gstreamer\1.0\msvc_x86_64\bin` to your PATH environment variable.
+   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows). Add
+   `C:\Program Files\gstreamer\1.0\msvc_x86_64\bin` to your PATH environment variable.
 
 6. Build the project.
    ```bash
@@ -96,15 +97,33 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    make
    ```
 
-### How to build on Linux (tested on Ubuntu 24.04)
+### How to build on Linux
 
-1. Install dependencies.
+1. Clone submodules.
    ```bash
    git submodule update --init --recursive
-   sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
    ```
 
-2. Build the project.
+2. Install dependencies.
+
+   * GStreamer
+   ```bash
+   sudo apt install libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-bad
+   ```
+   * FFmpeg
+   ```bash
+   sudo apt install ffmpeg
+   ```
+   or
+   ```bash
+   sudo apt install libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
+   ```
+   * Other
+   ```bash
+   sudo apt install ffmpeg libusb-1.0-0-dev libsodium-dev libopencv-dev xorg-dev libpcap-dev
+   ```
+
+3. Build the project.
 
 ### How to build on macOS
 
