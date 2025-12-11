@@ -118,6 +118,10 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    ```bash
    sudo apt install libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
    ```
+   * Vulkan
+   ```bash
+   sudo apt install libvulkan-dev vulkan-tools vulkan-validationlayers spirv-tools
+   ```
    * Other
    ```bash
    sudo apt install ffmpeg libusb-1.0-0-dev libsodium-dev libopencv-dev xorg-dev libpcap-dev
