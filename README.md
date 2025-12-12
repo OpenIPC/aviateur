@@ -25,7 +25,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 2. Install the libusb driver for your adapter.
    Go *Options* → *List All Devices*
    ![](tutorials/zadig1.jpg)
-   Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
+   Select your adapter. Install the driver. Remember the USB ID.
    ![](tutorials/zadig2.jpg)
 3. Run Aviateur.
 
@@ -38,13 +38,11 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 ### How to run on macOS
 
-1. Build yourself.
+1. Build it from source yourself. Currently, I cannot find a way to distribute it on macOS.
 2. **Important**: Run the app from terminal to ensure proper environment variable handling:
    ```bash
    open ./build/bin/aviateur.app
    ```
-
-Currently, I cannot find a way to distribute it on macOS. So, you have to build it yourself.
 
 ### Common run issues
 
@@ -56,11 +54,9 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
 
 ![](tutorials/latency_test.jpg)
 
-> [!NOTE]
-> Generally, enabling the GStreamer backend can achieve a lower glass-to-glass latency.
-
 ### TODOs
 
+- Video capture with GStreamer backend
 - Ground side OSD
 
 ### How to build on Windows
@@ -112,10 +108,6 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    ```
    * FFmpeg
    ```bash
-   sudo apt install ffmpeg
-   ```
-   or
-   ```bash
    sudo apt install libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
    ```
    * Vulkan
@@ -124,7 +116,7 @@ Currently, I cannot find a way to distribute it on macOS. So, you have to build 
    ```
    * Other
    ```bash
-   sudo apt install ffmpeg libusb-1.0-0-dev libsodium-dev libopencv-dev xorg-dev libpcap-dev
+   sudo apt install libusb-1.0-0-dev libsodium-dev libopencv-dev xorg-dev libpcap-dev
    ```
 
 3. Build the project.
