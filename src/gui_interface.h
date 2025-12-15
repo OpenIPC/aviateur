@@ -216,11 +216,11 @@ public:
         auto dir = std::string(getenv("USERPROFILE")) + R"(\Videos\Aviateur Captures\)";
 #elif defined(__APPLE__)
         std::string home_dir = getenv("HOME");
-        auto dir = std::string(home_dir + "/Pictures/Aviateur Captures/");
+        auto dir = std::string(home_dir + "/Movies/Aviateur Captures/");
 #else
         passwd *pw = getpwuid(getuid());
         const char *home_dir = pw->pw_dir;
-        auto dir = std::string(home_dir) + "/Pictures/Aviateur Captures/";
+        auto dir = std::string(home_dir) + "/Videos/Aviateur Captures/";
 #endif
         return dir;
     }

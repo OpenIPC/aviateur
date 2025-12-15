@@ -92,6 +92,7 @@ void VideoPlayerGst::update(float dt) {
             gst_sample_unref(prev_sample_);
         }
         prev_sample_ = sample;
+        gst_sample_ref(sample);
     }
 
     if (video_info_changed_) {
@@ -221,7 +222,7 @@ bool VideoPlayerGst::start_mp4_recording() {
 
     record_filename_ = filePath.str();
 
-    return gst_decoder_->start_recording(record_filename_, "H265");
+    return gst_decoder_->start_recording(record_filename_, GuiInterface::Instance().rtp_codec_);
 }
 
 std::string VideoPlayerGst::stop_mp4_recording() const {
