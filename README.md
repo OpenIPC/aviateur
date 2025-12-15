@@ -56,7 +56,6 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 ### TODOs
 
-- Video capture with GStreamer backend
 - Ground side OSD
 
 ### How to build on Windows
