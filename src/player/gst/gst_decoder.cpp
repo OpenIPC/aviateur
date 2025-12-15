@@ -258,6 +258,7 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
         "rtpjitterbuffer latency=10 ! "
         "%s name=depay ! "
+        "tee name=tee ! "
         // "%sw_dec name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
         "decodebin3 name=decbin ! "
         "videoconvert ! "
@@ -360,6 +361,254 @@ void GstDecoder::destroy() {
         gst_object_unref(pipeline_);
         pipeline_ = nullptr;
     }
+}
+
+bool GstDecoder::start_recording(const std::string &filename, std::string codec) {
+    std::lock_guard lock(mutex_);
+
+    // 1. Get the tee element
+    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline_), "tee");
+    if (!tee) {
+        return false;
+    }
+
+    // --- Create recording elements ---
+    GstElement *queue = gst_element_factory_make("queue", "queue_rec"); // Renamed queue
+    g_object_set(G_OBJECT(queue),
+                 "max-size-time",
+                 5 * GST_SECOND, // 5 seconds max buffer time
+                 "leaky",
+                 TRUE, // Drop old buffers when full
+                 NULL);
+
+    GstElement *parser =
+        gst_element_factory_make((codec == "H265") ? "h265parse" : "h264parse", // ADDED: The parser is crucial
+                                 "parser_rec");
+    GstElement *mp4mux = gst_element_factory_make("mp4mux", "mp4mux_rec");
+    GstElement *file_sink = gst_element_factory_make("filesink", "filesink_rec");
+
+    if (!queue || !parser || !mp4mux || !file_sink) {
+        // Handle element creation failure
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to create recording elements.");
+
+        gst_object_unref(queue);
+        gst_object_unref(parser);
+        gst_object_unref(mp4mux);
+        gst_object_unref(file_sink);
+
+        gst_object_unref(tee);
+
+        return false;
+    }
+
+    // 2. Add all new elements to the pipeline bin
+    gst_bin_add_many(GST_BIN(pipeline_), queue, parser, mp4mux, file_sink, NULL);
+
+    g_object_set(G_OBJECT(file_sink), "location", filename.c_str(), NULL);
+
+    // Fragmented MP4 (fMP4)
+    g_object_set(G_OBJECT(mp4mux), "fragment-duration", 500, NULL); // e.g., 500ms fragments
+
+    // 3. Link the new elements: queue -> caps_filter -> parser -> muxer -> filesink
+
+    if (!gst_element_link_many(queue, parser, mp4mux, file_sink, NULL)) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to link recording elements.");
+        // Clean up elements that were added
+        gst_bin_remove(GST_BIN(pipeline_), queue);
+        gst_bin_remove(GST_BIN(pipeline_), parser);
+        gst_bin_remove(GST_BIN(pipeline_), mp4mux);
+        gst_bin_remove(GST_BIN(pipeline_), file_sink);
+
+        // ... remove others ...
+        gst_object_unref(queue);
+        gst_object_unref(parser);
+        gst_object_unref(mp4mux);
+        gst_object_unref(file_sink);
+
+        gst_object_unref(tee);
+
+        return false;
+    }
+
+    // 4. Request a src pad from the tee and link it to the recording branch's queue sink pad
+    GstPad *tee_src_pad = gst_element_request_pad_simple(tee, "src_%u");
+    GstPad *queue_sink_pad = gst_element_get_static_pad(queue, "sink");
+
+    // The linking process should happen atomically
+    if (gst_pad_link(tee_src_pad, queue_sink_pad) != GST_PAD_LINK_OK) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to link tee to recording branch.");
+
+        gst_object_unref(tee_src_pad);
+        gst_object_unref(queue_sink_pad);
+
+        // Clean up elements that were added
+        gst_bin_remove(GST_BIN(pipeline_), queue);
+        gst_bin_remove(GST_BIN(pipeline_), parser);
+        gst_bin_remove(GST_BIN(pipeline_), mp4mux);
+        gst_bin_remove(GST_BIN(pipeline_), file_sink);
+
+        // ... remove others ...
+        gst_object_unref(queue);
+        gst_object_unref(parser);
+        gst_object_unref(mp4mux);
+        gst_object_unref(file_sink);
+
+        gst_object_unref(tee);
+
+        return false;
+    }
+
+    // 5. Set new elements to the same state as the main pipeline (usually PLAYING)
+    // NOTE: This MUST happen *before* linking to the TEE in some scenarios to avoid deadlocks.
+    // // Setting to PLAYING handles both READY and PAUSED state transitions.
+    // GstState current_state;
+    // gst_element_get_state(pipeline_, &current_state, NULL, GST_CLOCK_TIME_NONE);
+
+    GstElement *elements[] = {queue, parser, mp4mux, file_sink};
+    for (int i = 0; i < G_N_ELEMENTS(elements); ++i) {
+        if (gst_element_set_state(elements[i], GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+            // Log the failing element and clean up
+            GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to set recording element state.");
+
+            gst_object_unref(tee_src_pad);
+            gst_object_unref(queue_sink_pad);
+
+            // Clean up elements that were added
+            gst_bin_remove(GST_BIN(pipeline_), queue);
+            gst_bin_remove(GST_BIN(pipeline_), parser);
+            gst_bin_remove(GST_BIN(pipeline_), mp4mux);
+            gst_bin_remove(GST_BIN(pipeline_), file_sink);
+
+            // ... remove others ...
+            gst_object_unref(queue);
+            gst_object_unref(parser);
+            gst_object_unref(mp4mux);
+            gst_object_unref(file_sink);
+
+            gst_object_unref(tee);
+
+            return false;
+        }
+    }
+
+    // Move reference
+    recording_tee_src_pad_ = tee_src_pad;
+
+    // 6. Clean up references
+    gst_object_unref(queue_sink_pad);
+    gst_object_unref(tee);
+
+    return true;
+}
+
+void GstDecoder::stop_recording() {
+    std::lock_guard lock(mutex_);
+
+    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipeline_), "tee");
+    GstElement *queue = gst_bin_get_by_name(GST_BIN(pipeline_), "queue_rec"); // Use the correct name
+    GstElement *filesink = gst_bin_get_by_name(GST_BIN(pipeline_), "filesink_rec");
+
+    if (!tee || !queue) {
+        if (tee) {
+            gst_object_unref(tee);
+        }
+        return;
+    }
+
+    // 1. Find the pad connecting the tee to the queue
+    GstPad *queue_sink_pad = gst_element_get_static_pad(queue, "sink");
+    if (!queue_sink_pad) {
+        gst_object_unref(tee);
+        return;
+    }
+
+    // 2. Unlink the pads (Crucial: stops data flow immediately)
+    gst_pad_unlink(recording_tee_src_pad_, queue_sink_pad);
+
+    // 3. Release the TEE's request pad (makes it available for future use)
+    gst_element_release_request_pad(tee, recording_tee_src_pad_);
+
+    gst_object_unref(recording_tee_src_pad_);
+    recording_tee_src_pad_ = nullptr;
+
+    // 4. Send EOS to the recording branch's first element (the queue)
+    // This tells the muxer and filesink to finalize the file.
+    gst_element_send_event(queue, gst_event_new_eos());
+    // --- CRITICAL STEP 3: Wait for EOS Confirmation ---
+    // We listen on the pipeline bus for the EOS message that came from the filesink element.
+    GstBus *bus = gst_element_get_bus(pipeline_);
+    GstMessage *msg = NULL;
+    gboolean done = FALSE;
+
+    // Listen for up to 5 seconds
+    gint timeout_ms = 5000;
+
+    while (!done &&
+           (msg = gst_bus_timed_pop_filtered(bus, timeout_ms, (GstMessageType)(GST_MESSAGE_EOS | GST_MESSAGE_ERROR)))) {
+        if (GST_MESSAGE_SRC(msg) == GST_OBJECT_CAST(filesink)) {
+            // Found the EOS from the filesink! The file should be finalized.
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Filesink confirmed EOS. File finalized.");
+            done = TRUE;
+        } else if (GST_MESSAGE_TYPE(msg) == GST_MESSAGE_ERROR) {
+            // An error occurred, file is probably corrupted
+            GError *err = NULL;
+            gchar *debug_info = NULL;
+            gst_message_parse_error(msg, &err, &debug_info);
+            GuiInterface::Instance().PutLog(LogLevel::Error,
+                                            g_strdup_printf("Error during EOS wait: %s", err->message));
+            g_clear_error(&err);
+            g_free(debug_info);
+            done = TRUE; // Stop waiting on error
+        }
+        gst_message_unref(msg);
+    }
+    gst_object_unref(bus);
+
+    if (!done) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn,
+                                        "Timed out waiting for EOS confirmation. File may be incomplete.");
+    }
+
+    // --- Post-EOS Cleanup ---
+    // Instead of waiting synchronously (which can block the main thread),
+    // you should monitor the bus for an EOS message from the entire pipeline
+    // OR set a timeout. For simplicity in this example, we proceed with cleanup,
+    // but in a multithreaded app, you should monitor the bus in your main loop.
+
+    // 5. Set the recording branch to NULL and remove it
+    // NOTE: It is best practice to set all elements in the branch to NULL individually
+    // or rely on GStreamer's state change to NULL propagation after EOS.
+    // For now, setting the first element to NULL might work, but it's risky.
+
+    // Set all elements to NULL state
+    GstElement *parser = gst_bin_get_by_name(GST_BIN(pipeline_), "parser_rec");
+    GstElement *mp4mux = gst_bin_get_by_name(GST_BIN(pipeline_), "mp4mux_rec");
+
+    // Setting the branch to NULL state
+    GstElement *elements[] = {queue, parser, mp4mux, filesink};
+    for (int i = 0; i < G_N_ELEMENTS(elements); ++i) {
+        if (gst_element_set_state(elements[i], GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
+            GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to set recording element state.");
+            // Log the failing element and clean up
+            return;
+        }
+    }
+
+    // Remove all elements from the bin
+    gst_bin_remove(GST_BIN(pipeline_), queue);
+    gst_bin_remove(GST_BIN(pipeline_), parser);
+    gst_bin_remove(GST_BIN(pipeline_), mp4mux);
+    gst_bin_remove(GST_BIN(pipeline_), filesink);
+
+    // 6. Clean up references
+    gst_object_unref(queue_sink_pad);
+    gst_object_unref(tee);
+    gst_object_unref(queue);
+    gst_object_unref(parser);
+    gst_object_unref(mp4mux);
+    gst_object_unref(filesink);
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Recording stopped and elements removed.");
 }
 
 #endif

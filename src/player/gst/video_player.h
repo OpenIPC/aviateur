@@ -21,25 +21,17 @@ public:
 
     void set_muted(bool muted) override;
 
-    std::string capture_jpeg() override {
-        return "";
-    }
+    std::string capture_jpeg() override;
 
-    bool start_mp4_recording() override {
-        return false;
-    }
+    bool start_mp4_recording() override;
 
-    std::string stop_mp4_recording() const override {
-        return "";
-    }
+    std::string stop_mp4_recording() const override;
 
     bool start_gif_recording() override {
         return false;
     }
 
-    std::string stop_gif_recording() const override {
-        return "";
-    }
+    std::string stop_gif_recording() const override;
 
 protected:
     std::shared_ptr<GstDecoder> gst_decoder_;
@@ -47,4 +39,9 @@ protected:
     std::shared_ptr<Pathfinder::Device> device_;
 
     std::shared_ptr<Pathfinder::Queue> queue_;
+
+    GstSample *prev_sample_ = nullptr;
+    std::mutex prev_sample_mutex_;
+
+    std::string record_filename_;
 };

@@ -34,6 +34,10 @@ public:
 
     void destroy();
 
+    bool start_recording(const std::string& filename, std::string codec);
+
+    void stop_recording();
+
     GstSample* try_pull_sample();
 
     GstElement* appsink_{};
@@ -44,6 +48,9 @@ public:
 private:
     GstElement* pipeline_{};
 
+    std::mutex mutex_;
+
+    GstPad * recording_tee_src_pad_ =  nullptr;
     bool initialized_ = false;
 
     guint timeout_src_id_dot_data_;

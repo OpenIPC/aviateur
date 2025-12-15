@@ -419,11 +419,7 @@ void PlayerRect::start_playing(const std::string &url) {
 
     texture = render_image_;
 
-    if (GuiInterface::Instance().use_gstreamer_) {
-        collapse_panel_->set_visibility(false);
-    } else {
-        collapse_panel_->set_visibility(true);
-    }
+    collapse_panel_->set_visibility(true);
 
     hud_container_->set_visibility(true);
 }
