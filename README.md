@@ -33,8 +33,8 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 1. (Optional) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
    `SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", MODE="0666"` in it.
-2. (Optional) Call `sudo udevadm control --reload-rules`, then reboot (this is definitely required).
-3. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
+   Call `sudo udevadm control --reload-rules`, then reboot (this is definitely required).
+2. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
 
 ### How to run on macOS
 

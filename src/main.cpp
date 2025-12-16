@@ -12,11 +12,10 @@ int main() {
     GuiInterface::Instance().init();
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
-    auto app =
-        new revector::App({1080, 480}, GuiInterface::Instance().dark_mode_, GuiInterface::Instance().use_vulkan_);
+    auto app = std::make_shared<revector::App>(revector::Vec2I{1280, 720},
+                                               GuiInterface::Instance().dark_mode_,
+                                               GuiInterface::Instance().use_vulkan_);
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
-
-    GuiInterface::Instance().PutLog(LogLevel::Info, "revector app created");
 
     revector::TranslationServer::get_singleton()->load_translations(revector::get_asset_dir("translations.csv"));
 
@@ -41,14 +40,14 @@ int main() {
         std::weak_ptr control_panel_weak = control_panel;
         std::weak_ptr player_rect_weak = player_rect;
 
-        auto onWifiStop = [control_panel_weak, player_rect_weak] {
+        auto on_wifi_stopped = [control_panel_weak, player_rect_weak] {
             if (!control_panel_weak.expired() && !player_rect_weak.expired()) {
                 player_rect_weak.lock()->stop_playing();
                 player_rect_weak.lock()->show_red_tip(FTR("wi-fi stopped msg"));
                 control_panel_weak.lock()->update_adapter_start_button_looking(true);
             }
         };
-        GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
+        GuiInterface::Instance().wifiStopCallbacks.emplace_back(on_wifi_stopped);
 
         {
             player_rect->top_control_container = std::make_shared<revector::HBoxContainer>();
@@ -59,24 +58,25 @@ int main() {
             player_rect->top_control_container->add_child(player_rect->fullscreen_button_);
             player_rect->fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
 
-            auto callback = [app, control_panel_weak](bool toggled) {
-                if (!control_panel_weak.expired()) {
-                    app->set_fullscreen(toggled);
+            std::weak_ptr app_weak = app;
+            auto on_fullscreen_toggled = [app_weak](bool toggled) {
+                if (!app_weak.expired()) {
+                    app_weak.lock()->set_fullscreen(toggled);
                 }
             };
-            player_rect->fullscreen_button_->connect_signal("toggled", callback);
+            player_rect->fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
 
             auto control_panel_button = std::make_shared<revector::CheckButton>();
             player_rect->top_control_container->add_child(control_panel_button);
             control_panel_button->set_text(FTR("control panel"));
             control_panel_button->set_toggled(true);
 
-            auto callback2 = [control_panel_weak](bool toggled) {
+            auto on_control_panel_toggled = [control_panel_weak](bool toggled) {
                 if (!control_panel_weak.expired()) {
                     control_panel_weak.lock()->set_visibility(toggled);
                 }
             };
-            control_panel_button->connect_signal("toggled", callback2);
+            control_panel_button->connect_signal("toggled", on_control_panel_toggled);
         }
     }
 
@@ -86,9 +86,7 @@ int main() {
 
     GuiInterface::SaveConfig();
 
-    // Quit app.
-    delete app;
-    app = nullptr;
+    app.reset();
 
     libusb_exit(nullptr);
 
