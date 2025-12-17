@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 
 class BitrateCalculator {
@@ -50,7 +51,7 @@ private:
 
     std::mutex mutex_;
 
-    GstPad * recording_tee_src_pad_ =  nullptr;
+    GstPad* recording_tee_src_pad_ = nullptr;
     bool initialized_ = false;
 
     guint timeout_src_id_dot_data_;
