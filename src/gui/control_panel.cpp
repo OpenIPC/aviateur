@@ -357,6 +357,7 @@ void ControlPanel::custom_ready() {
                 bool start = play_button_->get_text() == FTR("start") + " (F5)";
 
                 GuiInterface::Instance().is_using_wifi = true;
+                GuiInterface::Instance().links_.clear();
 
                 if (start) {
                     bool all_started = true;
