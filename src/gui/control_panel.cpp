@@ -349,7 +349,7 @@ void ControlPanel::custom_ready() {
 
         {
             forward_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
-            forward_con->set_title(FTR("forward (without decoding)"));
+            forward_con->set_title(FTR("forward"));
             forward_con->set_collapse(true);
             forward_con->set_color(revector::ColorU(110.0, 137, 94));
             vbox_blockable->add_child(forward_con);
@@ -357,7 +357,6 @@ void ControlPanel::custom_ready() {
             auto on_collapsed = [this](bool collapsed) {
                 if (collapsed) {
                     GuiInterface::Instance().forward_port_.reset();
-                    // GuiInterface::Instance().forward_port_ = forward_port->get_text();
                 }
             };
             forward_con->connect_signal("collapsed", on_collapsed);
@@ -367,7 +366,7 @@ void ControlPanel::custom_ready() {
             forward_con->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
-            label->set_text(FTR("port"));
+            label->set_text(FTR("target port"));
             hbox_container->add_child(label);
 
             forward_port = std::make_shared<revector::TextEdit>();

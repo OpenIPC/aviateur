@@ -189,8 +189,6 @@ public:
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
-
-        links_.clear();
     }
 
     static std::vector<DeviceId> GetDeviceList() {
