@@ -314,7 +314,12 @@ public:
         Instance().ini_[CONFIG_WIFI][WIFI_GS_KEY] = gsKeyPath;
 
         // Set port.
-        Instance().playerPort = GetFreePort(DEFAULT_PORT);
+        if (Instance().forward_port_.has_value()) {
+            Instance().playerPort = std::stoi(Instance().forward_port_.value());
+        } else {
+            Instance().playerPort = GetFreePort(DEFAULT_PORT);
+        }
+
         Instance().PutLog(LogLevel::Info, "Using port: {}", Instance().playerPort);
 
         // If no custom key provided by the user, use the default key.
@@ -393,6 +398,10 @@ public:
     }
 
     void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string &codec) {
+        if (Instance().forward_port_.has_value()) {
+            return;
+        }
+
         const auto dir = GetAppDataDir();
 
         std::string sdpFile = dir + "sdp/port-" + std::to_string(port) + ".sdp";
@@ -517,6 +526,8 @@ public:
 
     bool alink_enabled_ = false;
     int alink_tx_power_ = 0;
+
+    std::optional<std::string> forward_port_;
 
 #ifdef __APPLE__
     bool use_vulkan_ = true;
