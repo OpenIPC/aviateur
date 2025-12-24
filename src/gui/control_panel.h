@@ -25,7 +25,7 @@ public:
     std::shared_ptr<revector::CollapseContainer> device_b_con;
 
     std::shared_ptr<revector::CollapseContainer> forward_con;
-    std::shared_ptr<revector::TextEdit> forward_port;
+    std::shared_ptr<revector::TextEdit> forward_port_edit;
 
     std::shared_ptr<revector::Button> play_button_;
 
