@@ -29,6 +29,7 @@
 #define WIFI_GS_KEY "key"
 #define WIFI_ALINK_ENABLED "alink_enabled"
 #define WIFI_ALINK_TX_POWER "alink_tx_power"
+#define WIFI_FORWARD_PORT "forward_port"
 
 #define CONFIG_LOCALHOST "localhost"
 #define CONFIG_LOCALHOST_PORT "port"
@@ -189,8 +190,6 @@ public:
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
-
-        links_.clear();
     }
 
     static std::vector<DeviceId> GetDeviceList() {
@@ -255,6 +254,7 @@ public:
             ini[CONFIG_WIFI][WIFI_GS_KEY] = "";
             ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "false";
             ini[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = "20";
+            ini[CONFIG_WIFI][WIFI_FORWARD_PORT] = "5600";
 
             ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = "5600";
             ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = "H264";
@@ -307,14 +307,26 @@ public:
         return write_success;
     }
 
-    static bool Start(const DeviceId &deviceId, int channel, int channelWidthMode, std::string gsKeyPath) {
+    static bool Start(const DeviceId &deviceId,
+                      int channel,
+                      int channelWidthMode,
+                      std::string gsKeyPath,
+                      const std::optional<std::string> &forward_port) {
         Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = deviceId.display_name;
         Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL] = std::to_string(channel);
         Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
         Instance().ini_[CONFIG_WIFI][WIFI_GS_KEY] = gsKeyPath;
+        Instance().forward_port_ = forward_port;
 
         // Set port.
-        Instance().playerPort = GetFreePort(DEFAULT_PORT);
+        if (forward_port.has_value()) {
+            Instance().ini_[CONFIG_WIFI][WIFI_FORWARD_PORT] = forward_port.value();
+            Instance().playerPort = std::stoi(forward_port.value());
+        } else {
+            Instance().ini_[CONFIG_WIFI][WIFI_FORWARD_PORT] = "";
+            Instance().playerPort = GetFreePort(DEFAULT_PORT);
+        }
+
         Instance().PutLog(LogLevel::Info, "Using port: {}", Instance().playerPort);
 
         // If no custom key provided by the user, use the default key.
@@ -393,6 +405,10 @@ public:
     }
 
     void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string &codec) {
+        if (Instance().forward_port_.has_value()) {
+            return;
+        }
+
         const auto dir = GetAppDataDir();
 
         std::string sdpFile = dir + "sdp/port-" + std::to_string(port) + ".sdp";
@@ -517,6 +533,8 @@ public:
 
     bool alink_enabled_ = false;
     int alink_tx_power_ = 0;
+
+    std::optional<std::string> forward_port_;
 
 #ifdef __APPLE__
     bool use_vulkan_ = true;

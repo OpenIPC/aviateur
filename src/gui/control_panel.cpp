@@ -146,7 +146,7 @@ void ControlPanel::custom_ready() {
             device_b_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
             device_b_con->set_title(FTR("dual adapter"));
             device_b_con->set_collapse(true);
-            device_b_con->set_color(revector::ColorU(110.0, 137, 94));
+            device_b_con->set_color(revector::ColorU(110, 137, 94));
             vbox_blockable->add_child(device_b_con);
 
             auto callback2 = [this](bool collapsed) {
@@ -302,7 +302,7 @@ void ControlPanel::custom_ready() {
             auto alink_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
             alink_con->set_title(FTR("alink"));
             alink_con->set_collapse(false);
-            alink_con->set_color(revector::ColorU(210.0, 137, 94));
+            alink_con->set_color(revector::ColorU(210, 137, 94));
             vbox_unblockable->add_child(alink_con);
 
             auto callback2 = [](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
@@ -348,6 +348,39 @@ void ControlPanel::custom_ready() {
 #endif
 
         {
+            forward_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
+            forward_con->set_title(FTR("forward"));
+            forward_con->set_collapse(true);
+            forward_con->set_color(revector::ColorU(147, 115, 165));
+            vbox_blockable->add_child(forward_con);
+
+            auto on_collapsed = [](bool collapsed) {
+                // if (collapsed) {
+                //     GuiInterface::Instance().forward_port_.reset();
+                // }
+            };
+            forward_con->connect_signal("collapsed", on_collapsed);
+
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            hbox_container->set_separation(8);
+            forward_con->add_child(hbox_container);
+
+            auto label = std::make_shared<revector::Label>();
+            label->set_text(FTR("target port"));
+            hbox_container->add_child(label);
+
+            forward_port_edit = std::make_shared<revector::TextEdit>();
+            forward_port_edit->set_custom_minimum_size({0, 32});
+            forward_port_edit->set_numbers_only(true);
+            forward_port_edit->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            forward_port_edit->set_text("");
+            hbox_container->add_child(forward_port_edit);
+
+            // auto callback = [this](uint32_t) { dongle_names[1] = dongle_menu_button_b_->get_selected_item_text(); };
+            // dongle_menu_button_b_->connect_signal("item_selected", callback);
+        }
+
+        {
             play_button_ = std::make_shared<revector::Button>();
             play_button_->set_custom_minimum_size({0, 48});
             play_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
@@ -380,8 +413,23 @@ void ControlPanel::custom_ready() {
                             }
 
                             if (target_device_id.has_value()) {
-                                bool res =
-                                    GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath);
+                                bool res = false;
+
+                                std::optional<std::string> forward_port;
+                                if (!forward_con->get_collapse()) {
+                                    if (forward_port_edit->get_text().empty()) {
+                                        GuiInterface::Instance().ShowTip("Invalid port for RTP forwarding");
+                                        all_started = false;
+                                        break;
+                                    }
+                                    forward_port = forward_port_edit->get_text();
+                                }
+
+                                res = GuiInterface::Start(target_device_id.value(),
+                                                          channel,
+                                                          channelWidthMode,
+                                                          keyPath,
+                                                          forward_port);
 
                                 if (!res) {
                                     GuiInterface::Instance().ShowTip("Device failed to start");
