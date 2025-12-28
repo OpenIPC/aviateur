@@ -343,7 +343,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
 
     encoder->bind_render_pipeline(mPipeline);
 
-    encoder->bind_vertex_buffers({mVertexBuffer});
+    encoder->bind_vertex_buffers({{mVertexBuffer, 0}});
 
     encoder->bind_descriptor_set(mDescriptorSet);
 
