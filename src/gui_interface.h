@@ -336,12 +336,17 @@ public:
         }
 
         auto link = std::make_shared<WfbngLink>();
-        Instance().links_.push_back(link);
 
         link->enable_alink(Instance().alink_enabled_);
         link->set_alink_tx_power(Instance().alink_tx_power_);
 
-        return link->start(deviceId, channel, channelWidthMode, gsKeyPath);
+        const bool started = link->start(deviceId, channel, channelWidthMode, gsKeyPath);
+
+        if (started) {
+            Instance().links_.push_back(link);
+        }
+
+        return started;
     }
 
     static bool Stop() {
