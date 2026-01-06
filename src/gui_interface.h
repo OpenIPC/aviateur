@@ -312,10 +312,6 @@ public:
                       int channelWidthMode,
                       std::string gsKeyPath,
                       const std::optional<std::string> &forward_port) {
-        Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = deviceId.display_name;
-        Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL] = std::to_string(channel);
-        Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
-        Instance().ini_[CONFIG_WIFI][WIFI_GS_KEY] = gsKeyPath;
         Instance().forward_port_ = forward_port;
 
         // Set port.

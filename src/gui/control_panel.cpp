@@ -123,7 +123,10 @@ void ControlPanel::custom_ready() {
             update_dongle_list(dongle_menu_button_, dongle_names[0].value());
             dongle_menu_button_->set_text(dongle_names[0].value());
 
-            auto callback = [this](uint32_t) { dongle_names[0] = dongle_menu_button_->get_selected_item_text(); };
+            auto callback = [this](uint32_t) {
+                dongle_names[0] = dongle_menu_button_->get_selected_item_text();
+                GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = *dongle_names[0];
+            };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<revector::Button>();
@@ -202,7 +205,11 @@ void ControlPanel::custom_ready() {
             {
                 auto channel_menu = channel_button_->get_popup_menu();
 
-                auto callback = [this](uint32_t) { channel = std::stoi(channel_button_->get_selected_item_meta()); };
+                auto callback = [this](uint32_t) {
+                    const auto meta = channel_button_->get_selected_item_meta();
+                    channel = std::stoi(meta);
+                    GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL] = meta;
+                };
                 channel_button_->connect_signal("item_selected", callback);
 
                 uint32_t selected = 0;
@@ -238,6 +245,9 @@ void ControlPanel::custom_ready() {
                     auto selected = channel_width_button_->get_selected_item_index();
                     if (selected.has_value()) {
                         channelWidthMode = selected.value();
+
+                        GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] =
+                            std::to_string(channelWidthMode);
                     }
                 };
                 channel_width_button_->connect_signal("item_selected", callback);
@@ -291,6 +301,7 @@ void ControlPanel::custom_ready() {
                     std::filesystem::path p(path.value());
                     text_edit_weak.lock()->set_text(p.filename().string());
                     keyPath = path.value();
+                    GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_GS_KEY] = keyPath;
                 }
             };
             select_button->connect_signal("triggered", callback);
