@@ -80,6 +80,9 @@ protected:
     std::shared_ptr<std::thread> usbThread;
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
 
+    // In case a link is stopped before initializing an RTL device.
+    std::atomic<bool> exit_requested{false};
+
     std::string keyPath;
 
     int socketFd = INVALID_SOCKET;

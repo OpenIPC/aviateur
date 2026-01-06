@@ -269,7 +269,15 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
         try {
+            if (exit_requested) {
+                return;
+            }
+
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
+
+            if (exit_requested) {
+                return;
+            }
 
 #ifndef _WIN32
             // if (!usb_event_thread) {
@@ -731,6 +739,9 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
 #endif
 
 void WfbngLink::stop() {
+    // Signal the thread immediately.
+    exit_requested = true;
+
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
