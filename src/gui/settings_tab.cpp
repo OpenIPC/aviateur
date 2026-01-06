@@ -3,7 +3,7 @@
 #include "resources/default_resource.h"
 #include "resources/theme.h"
 
-const std::string AVIATEUR_VERSION = "0.1.8";
+const std::string AVIATEUR_VERSION = "v0.1.9";
 const std::string AVIATEUR_REPO = "https://github.com/OpenIPC/aviateur";
 
 void open_explorer(const std::string& dir) {
@@ -264,6 +264,6 @@ void SettingsContainer::custom_ready() {
         auto version_label = std::make_shared<revector::Label>();
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
-        version_label->set_text(FTR("version") + " " + AVIATEUR_VERSION);
+        version_label->set_text(AVIATEUR_VERSION);
     }
 }

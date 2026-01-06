@@ -41,7 +41,6 @@ low light enhancement,Low light enhancement,低光增强,Улучшение пр
 control panel,Control panel,控制面板,Панель управления,コントロールパネル
 alink,Adaptive link,自适应链路,Адаптивная ссылка,アダプティブリンク
 tx power,TX power,发射功率,мощность передачи,送信電力
-version,Version,版本,версия,バージョン
 use gstreamer,Use GStreamer,使用GStreamer,использовать GStreamer,GStreamerの使用
 use vulkan,Use Vulkan,使用Vulkan,использовать Vulkan,Vulkanの使用
 codec,Codec,编码,Кодек,コーディング
