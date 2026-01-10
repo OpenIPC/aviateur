@@ -125,7 +125,7 @@ protected:
 
     void destroy_thread(std::unique_ptr<std::thread> &thread);
 #endif
-    bool alink_enabled = true;
+    bool alink_enabled = false;
     int alink_tx_power = 30;
     // --------------- Adaptive link
 
