@@ -92,7 +92,6 @@ void VideoPlayerGst::update(float dt) {
             gst_sample_unref(prev_sample_);
         }
         prev_sample_ = sample;
-        gst_sample_ref(sample);
     }
 
     if (video_info_changed_) {
