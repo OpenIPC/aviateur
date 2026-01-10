@@ -94,24 +94,11 @@ void PlayerRect::custom_ready() {
     tip_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     add_child(tip_label_);
 
-    hud_container_ = std::make_shared<revector::HBoxContainer>();
-    add_child(hud_container_);
-    hud_container_->set_size({0, 32});
-    revector::StyleBox box;
-    box.bg_color =
-        GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
-    box.border_width = 0;
-    box.corner_radius = 0;
-    hud_container_->theme_override_bg = box;
-    hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
-    hud_container_->set_visibility(false);
-    hud_container_->set_separation(16);
-
     {
         auto vbox_container = std::make_shared<revector::VBoxContainer>();
         add_child(vbox_container);
         vbox_container->set_separation(2);
-        vbox_container->set_size({0, 0});
+        vbox_container->set_size({0, 32});
         vbox_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
 
         lq_bars_.push_back(std::make_shared<SignalBar>());
@@ -125,6 +112,19 @@ void PlayerRect::custom_ready() {
             bar->set_visibility(false);
         }
     }
+
+    hud_container_ = std::make_shared<revector::HBoxContainer>();
+    add_child(hud_container_);
+    hud_container_->set_size({0, 32});
+    revector::StyleBox box;
+    box.bg_color =
+        GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
+    box.border_width = 0;
+    box.corner_radius = 0;
+    hud_container_->theme_override_bg = box;
+    hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
+    hud_container_->set_visibility(false);
+    hud_container_->set_separation(16);
 
     {
         video_info_label_ = std::make_shared<revector::Label>();
