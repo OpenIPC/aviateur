@@ -49,7 +49,11 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     // av_dict_set(&options, "probesize", "10000000", 0); // Increase to 10 MB
     // av_dict_set(&options, "analyzeduration", "5000000", 0); // Increase to 5 seconds
 
-    if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options) != 0) {
+    int ret = avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options);
+    if (ret != 0) {
+        GuiInterface::Instance().PutLog(LogLevel::Error,
+                                        "avformat_open_input failed: " + std::to_string(ret),
+                                        __FUNCTION__);
         CloseInput();
         return false;
     }
@@ -66,7 +70,11 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     };
     pFormatCtx->interrupt_callback.opaque = &startTime;
 
-    if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
+    ret = avformat_find_stream_info(pFormatCtx, nullptr);
+    if (ret < 0) {
+        GuiInterface::Instance().PutLog(LogLevel::Error,
+                                        "avformat_find_stream_info failed: " + std::to_string(ret),
+                                        __FUNCTION__);
         CloseInput();
         return false;
     }
@@ -74,6 +82,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     // Timeout
     if (const std::chrono::duration<double> duration = std::chrono::steady_clock::now() - startTime;
         duration.count() > timeout) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "timeout", __FUNCTION__);
         CloseInput();
         return false;
     }
