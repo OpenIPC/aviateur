@@ -93,11 +93,17 @@ void PlayerRect::custom_ready() {
     tip_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     add_child(tip_label_);
 
+    hud_container_ = std::make_shared<revector::VBoxContainer>();
+    add_child(hud_container_);
+    hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
+    hud_container_->set_visibility(false);
+    hud_container_->set_separation(2);
+
     {
-        auto vbox_container = std::make_shared<revector::GridContainer>();
-        add_child(vbox_container);
-        vbox_container->set_separation(2);
-        vbox_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
+        auto lq_container = std::make_shared<revector::GridContainer>();
+        hud_container_->add_child(lq_container);
+        lq_container->set_separation(2);
+        lq_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < ANTENNA_COUNT; j++) {
@@ -113,7 +119,7 @@ void PlayerRect::custom_ready() {
         }
 
         for (const auto &bar : lq_bars_) {
-            vbox_container->add_child(bar);
+            lq_container->add_child(bar);
             bar->set_value(0);
             bar->set_custom_minimum_size({0, 4});
             bar->set_size({0, 4});
@@ -121,22 +127,19 @@ void PlayerRect::custom_ready() {
         }
     }
 
-    hud_container_ = std::make_shared<revector::HBoxContainer>();
-    add_child(hud_container_);
-    hud_container_->set_size({0, 32});
+    auto label_container_ = std::make_shared<revector::HBoxContainer>();
+    hud_container_->add_child(label_container_);
     revector::StyleBox box;
     box.bg_color =
         GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
     box.border_width = 0;
     box.corner_radius = 0;
-    hud_container_->theme_override_bg = box;
-    hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
-    hud_container_->set_visibility(false);
-    hud_container_->set_separation(16);
+    label_container_->theme_override_bg = box;
+    label_container_->set_separation(16);
 
     {
         video_info_label_ = std::make_shared<revector::Label>();
-        hud_container_->add_child(video_info_label_);
+        label_container_->add_child(video_info_label_);
         video_info_label_->set_text("");
         video_info_label_->set_font_size(HUD_LABEL_FONT_SIZE);
         video_info_label_->set_visibility(false);
@@ -155,25 +158,25 @@ void PlayerRect::custom_ready() {
     }
 
     bitrate_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(bitrate_label_);
+    label_container_->add_child(bitrate_label_);
     bitrate_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     bitrate_label_->set_visibility(false);
 
     render_fps_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(render_fps_label_);
+    label_container_->add_child(render_fps_label_);
     render_fps_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
     decoder_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(decoder_label_);
+    label_container_->add_child(decoder_label_);
     decoder_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     decoder_label_->set_visibility(false);
 
 #ifndef _WIN32
     pl_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(pl_label_);
+    label_container_->add_child(pl_label_);
     pl_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     fec_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(fec_label_);
+    label_container_->add_child(fec_label_);
     fec_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 #endif
 
@@ -218,7 +221,7 @@ void PlayerRect::custom_ready() {
     rx_status_update_timer->start_timer(0.1);
 
     record_status_label_ = std::make_shared<revector::Label>();
-    hud_container_->add_child(record_status_label_);
+    label_container_->add_child(record_status_label_);
     record_status_label_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
     record_status_label_->set_text("");
     record_status_label_->set_font_size(HUD_LABEL_FONT_SIZE);

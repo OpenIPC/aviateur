@@ -32,7 +32,7 @@ public:
 
     std::shared_ptr<revector::CollapseContainer> collapse_panel_;
 
-    std::shared_ptr<revector::HBoxContainer> hud_container_;
+    std::shared_ptr<revector::VBoxContainer> hud_container_;
 
     std::shared_ptr<revector::Label> record_status_label_;
 
