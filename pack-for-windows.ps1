@@ -2,7 +2,9 @@
 # ----------------------------------------------------------
 $sourcePath = "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin"
 $destinationPath = "./cmake-build-release/bin"
-$excludeFiles = @("cairo-2.dll", "cairo-gobject-2.dll", "cairo-script-interpreter-2.dll", "gstd3dshader-1.0-0.dll", "gstwebrtc-1.0-0.dll", "gstwebrtcnice-1.0-0.dll", "nice-10.dll", "opencore-amrnb-0.dll", "opencore-amrwb-0.dll", "soup-3.0-0.dll", "sqlite3-0.dll", "SvtAv1Enc.dll", "rsvg-2-2.dll", "libsrt.dll", "libssl-3-x64.dll", "libstdc++-6.dll", "libcrypto-3-x64.dll", "libspandsp-2.dll")
+
+# Must ensure the original ffmpeg dlls are not replaced by the ones that come with GStreamer.
+$excludeFiles = @("cairo-2.dll", "cairo-gobject-2.dll", "cairo-script-interpreter-2.dll", "gstd3dshader-1.0-0.dll", "gstwebrtc-1.0-0.dll", "gstwebrtcnice-1.0-0.dll", "nice-10.dll", "opencore-amrnb-0.dll", "opencore-amrwb-0.dll", "soup-3.0-0.dll", "sqlite3-0.dll", "SvtAv1Enc.dll", "rsvg-2-2.dll", "libsrt.dll", "libssl-3-x64.dll", "libstdc++-6.dll", "libcrypto-3-x64.dll", "libspandsp-2.dll", "avcodec-61.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
 
 if (-not (Test-Path $destinationPath))
 {
