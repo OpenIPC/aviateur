@@ -646,6 +646,9 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         signal_quality_calculator->add_fec(video_aggregator->count_p_all,
                                            video_aggregator->count_p_fec_recovered,
                                            video_aggregator->count_p_lost);
+
+        // This is necessary.
+        video_aggregator->clear_stats();
 #else
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
@@ -658,9 +661,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         link_score_[0] = quality.link_score[0];
         link_score_[1] = quality.link_score[1];
         packets_lost_ = quality.lost_last_second;
-
-        // This is necessary.
-        video_aggregator->clear_stats();
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
