@@ -8,7 +8,11 @@
 #include <vector>
 
 inline double map_range(double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-    return outputMin + (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin);
+    // Map
+    double val = outputMin + (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin);
+    // Clamp
+    val = std::max(outputMin, std::min(outputMax, val));
+    return val;
 }
 
 class SignalQualityCalculator {
@@ -17,8 +21,8 @@ public:
         int lost_last_second;
         int recovered_last_second;
         int total_last_second;
-        int rssi;  // [0, 100]
-        float snr; // Signal to noice ratio
+        float rssi[2]; // [0, 100]
+        float snr[2];  // Signal to noice ratio
         std::string idr_code;
     };
 
@@ -35,7 +39,7 @@ public:
     void add_fec(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost);
 
     template <class T>
-    float get_average(const T &array) {
+    std::pair<float, float> get_average(const T &array) {
         std::lock_guard lock(mutex_);
 
         float sum1 = 0.f;
@@ -51,9 +55,7 @@ public:
             sum2 /= count;
         }
 
-        // We'll take the maximum of the two average RSSI values
-        const float avg = std::max(sum1, sum2);
-        return avg;
+        return {sum1, sum2};
     }
 
     /// Calculate signal quality over the averaging window

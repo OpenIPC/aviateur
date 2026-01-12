@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "signal_quality.h"
 
 #if defined(_WIN32) || defined(__APPLE__)
@@ -40,6 +42,8 @@ struct DeviceId {
 
 class AggregatorX;
 
+constexpr int ANTENNA_COUNT = 2;
+
 /// Receive packets from a Wi-Fi adapter.
 class WfbngLink {
 public:
@@ -69,7 +73,7 @@ public:
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
-    float get_link_quality() const;
+    std::array<float, ANTENNA_COUNT> get_rssi() const;
 
     float get_packet_loss() const;
 
@@ -103,8 +107,8 @@ protected:
 #endif
 
     std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
-    float link_quality_ = 0; // Percentage
-    float packet_loss_ = 0;  // Percentage
+    std::array<float, ANTENNA_COUNT> rssi_ = {}; // Percentage
+    float packet_loss_ = 0;                      // Percentage
 
 #ifndef _WIN32
     // --------------- Adaptive link

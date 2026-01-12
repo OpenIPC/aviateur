@@ -17,7 +17,6 @@ class SignalBar : public revector::ProgressBar {
 
         set_lerp_enabled(true);
         set_label_visibility(false);
-        set_fill_mode(FillMode::CenterToSide);
     }
 
     void custom_update(double dt) override {
@@ -95,14 +94,23 @@ void PlayerRect::custom_ready() {
     add_child(tip_label_);
 
     {
-        auto vbox_container = std::make_shared<revector::VBoxContainer>();
+        auto vbox_container = std::make_shared<revector::GridContainer>();
         add_child(vbox_container);
         vbox_container->set_separation(2);
-        vbox_container->set_size({0, 32});
         vbox_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
 
-        lq_bars_.push_back(std::make_shared<SignalBar>());
-        lq_bars_.push_back(std::make_shared<SignalBar>());
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < ANTENNA_COUNT; j++) {
+                auto bar = std::make_shared<SignalBar>();
+                if (j == 0) {
+                    bar->set_fill_mode(revector::ProgressBar::FillMode::RightToLeft);
+                } else {
+                    bar->set_fill_mode(revector::ProgressBar::FillMode::LeftToRight);
+                }
+
+                lq_bars_.push_back(bar);
+            }
+        }
 
         for (const auto &bar : lq_bars_) {
             vbox_container->add_child(bar);
@@ -173,13 +181,17 @@ void PlayerRect::custom_ready() {
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
-        for (const auto bar : lq_bars_) {
+        for (const auto &bar : lq_bars_) {
             bar->set_visibility(false);
         }
 
         for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
-            lq_bars_[i]->set_visibility(true);
-            lq_bars_[i]->set_value(GuiInterface::Instance().links_[i]->get_link_quality());
+            auto rssi = GuiInterface::Instance().links_[i]->get_rssi();
+
+            for (int j = 0; j != ANTENNA_COUNT; ++j) {
+                lq_bars_[i * 2 + j]->set_visibility(true);
+                lq_bars_[i * 2 + j]->set_value(rssi[j]);
+            }
         }
 
 #ifndef _WIN32

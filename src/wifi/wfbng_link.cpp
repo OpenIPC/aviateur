@@ -442,6 +442,9 @@ void WfbngLink::start_link_quality_thread() {
         while (!this->alink_should_stop) {
             auto quality = signal_quality_calculator->calculate_signal_quality();
 
+            float best_rssi = std::max(quality.rssi[0], quality.rssi[1]);
+            float best_snr = std::max(quality.snr[0], quality.snr[1]);
+
             if (quality.total_last_second != 0) {
                 packet_loss_ =
                     std::round((float)quality.lost_last_second / quality.total_last_second * 1000.0f) / 10.0f;
@@ -452,7 +455,7 @@ void WfbngLink::start_link_quality_thread() {
             time_t currentEpoch = time(nullptr);
 
             // Map to 1000..2000
-            quality.rssi = map_range(quality.rssi, 0, 100, 1000, 2000);
+            best_rssi = map_range(best_rssi, 0, 100, 1000, 2000);
 
             // Prepare & send a message
             {
@@ -507,12 +510,12 @@ void WfbngLink::start_link_quality_thread() {
                          sizeof(message) - sizeof(len),
                          "%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s\n",
                          static_cast<long>(currentEpoch),
-                         quality.rssi,
-                         quality.rssi,
+                         best_rssi,
+                         best_rssi,
                          quality.recovered_last_second,
                          quality.lost_last_second,
-                         quality.rssi,
-                         quality.snr,
+                         best_rssi,
+                         best_snr,
                          fec_lvl,
                          quality.idr_code.c_str());
 
@@ -657,7 +660,8 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 #endif
 
         const auto quality = signal_quality_calculator->calculate_signal_quality();
-        link_quality_ = quality.rssi;
+        rssi_[0] = quality.rssi[0];
+        rssi_[1] = quality.rssi[1];
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
@@ -684,8 +688,8 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     }
 }
 
-float WfbngLink::get_link_quality() const {
-    return link_quality_;
+std::array<float, ANTENNA_COUNT> WfbngLink::get_rssi() const {
+    return rssi_;
 }
 
 float WfbngLink::get_packet_loss() const {
