@@ -21,8 +21,9 @@ public:
         int lost_last_second;
         int recovered_last_second;
         int total_last_second;
-        float rssi[2]; // [0, 100]
-        float snr[2];  // Signal to noice ratio
+        float rssi[2];       // Received signal strength indicator
+        float snr[2];        // Signal to noice ratio
+        float link_score[2]; // Based on RSSI and SNR [0, 100]
         std::string idr_code;
     };
 

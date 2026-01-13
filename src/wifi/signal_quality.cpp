@@ -78,12 +78,13 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     auto avg_snr = get_average(snr_data_);
 
     // Map the RSSI from range 0..126 to 0..100
-    avg_rssi.first = map_range(avg_rssi.first, 0.f, 126.f, 0.f, 100.f);
-    avg_rssi.second = map_range(avg_rssi.second, 0.f, 126.f, 0.f, 100.f);
+    float rssi0 = map_range(avg_rssi.first, 0.f, 126.f, 0.f, 100.f);
+    float rssi1 = map_range(avg_rssi.second, 0.f, 126.f, 0.f, 100.f);
 
-    // Return final clamped quality
-    // formula: quality = avg_rssi - p_recovered * 5 - p_lost * 100
-    // clamp between -1024 and 1024
+    // Map the SNR from range 0..60 to 0..100
+    float snr0 = map_range(avg_snr.first, 0.f, 60.f, 0.f, 100.f);
+    float snr1 = map_range(avg_snr.second, 0.f, 60.f, 0.f, 100.f);
+
     auto [p_recovered, p_lost, p_total] = get_accumulated_fec_data();
 
     ret.lost_last_second = p_lost;
@@ -95,6 +96,10 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     ret.snr[0] = avg_snr.first;
     ret.snr[1] = avg_snr.second;
     ret.idr_code = idr_code_;
+
+    // Link Quality = (w1 * RSSI) + (w2 * SNR)
+    ret.link_score[0] = 0.3f * rssi0 + 0.7f * snr0;
+    ret.link_score[1] = 0.3f * rssi1 + 0.7f * snr1;
 
     return ret;
 }

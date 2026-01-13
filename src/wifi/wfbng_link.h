@@ -73,7 +73,7 @@ public:
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
-    std::array<float, ANTENNA_COUNT> get_rssi() const;
+    std::array<float, ANTENNA_COUNT> get_link_score() const;
 
     float get_packet_loss() const;
 
@@ -107,8 +107,8 @@ protected:
 #endif
 
     std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
-    std::array<float, ANTENNA_COUNT> rssi_ = {}; // Percentage
-    float packet_loss_ = 0;                      // Percentage
+    std::array<float, ANTENNA_COUNT> link_score_ = {}; // Percentage
+    float packet_loss_ = 0;                            // Percentage
 
 #ifndef _WIN32
     // --------------- Adaptive link

@@ -189,11 +189,11 @@ void PlayerRect::custom_ready() {
         }
 
         for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
-            auto rssi = GuiInterface::Instance().links_[i]->get_rssi();
+            auto link_score = GuiInterface::Instance().links_[i]->get_link_score();
 
             for (int j = 0; j != ANTENNA_COUNT; ++j) {
                 lq_bars_[i * 2 + j]->set_visibility(true);
-                lq_bars_[i * 2 + j]->set_value(rssi[j]);
+                lq_bars_[i * 2 + j]->set_value(link_score[j]);
             }
         }
 
