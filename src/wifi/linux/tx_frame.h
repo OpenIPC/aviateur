@@ -23,10 +23,28 @@ struct TxArgs {
     int log_interval = 1000;
 
     int bandwidth = 20;
+
+    // Standard GI (800ns): This is the default gap used in Wi-Fi (802.11n/ac). It is long enough to handle most echoes
+    // in large or complex environments. Best for flying around buildings/trees (High multipath).
+    // Short GI (400ns): This shrinks the gap between data symbols by half. Best for Open fields / Long-range
+    // line-of-sight.
     int short_gi = 0;
+
+    // Space-Time Block Coding: combat signal fading and "dead zones".
     int stbc = 0;
+
+    // Low-Density Parity-Check: repair corrupted data bits.
     int ldpc = 0;
+
+    // MCS (Modulation and Coding Scheme)
     int mcs_index = 1;
+
+    // VHT (Very High Throughput)
+    // NSS (Number of Spatial Streams)
+    // NSS = 1: The system sends one stream of data. This is the most common setting for FPV because it is the most
+    // stable at long distances.
+    // NSS = 2: The system sends two different streams of data at the same time on the same
+    // frequency. This theoretically doubles your bandwidth without increasing the channel width.
     int vht_nss = 1;
 
     // Send packets to an IP:PORT for debugging

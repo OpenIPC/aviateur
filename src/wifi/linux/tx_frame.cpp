@@ -362,7 +362,6 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
     // Radiotap header preparation
     std::unique_ptr<uint8_t[]> rtHeader;
     size_t rtHeaderLen = 0;
-    uint8_t frameType = FRAME_TYPE_RTS;
 
     // Construct the appropriate radiotap header (HT vs. VHT)
     if (!arg->vht_mode) {
@@ -388,13 +387,13 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
             case 0:
                 break;
             case 1:
-                flags |= (IEEE80211_RADIOTAP_MCS_STBC_1 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT);
+                flags |= IEEE80211_RADIOTAP_MCS_STBC_1 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT;
                 break;
             case 2:
-                flags |= (IEEE80211_RADIOTAP_MCS_STBC_2 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT);
+                flags |= IEEE80211_RADIOTAP_MCS_STBC_2 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT;
                 break;
             case 3:
-                flags |= (IEEE80211_RADIOTAP_MCS_STBC_3 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT);
+                flags |= IEEE80211_RADIOTAP_MCS_STBC_3 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT;
                 break;
             default:
                 throw std::runtime_error(string_format("Unsupported STBC type: %d", arg->stbc));
@@ -501,6 +500,8 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
                                                            arg->epoch,
                                                            channelId);
         } else {
+            uint8_t frameType = FRAME_TYPE_RTS;
+
             // Use the USB-based transmitter
             transmitter = std::make_shared<UsbTransmitter>(arg->k,
                                                            arg->n,
