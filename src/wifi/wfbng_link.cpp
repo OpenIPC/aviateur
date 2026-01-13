@@ -445,10 +445,10 @@ void WfbngLink::start_link_quality_thread() {
             // Best values of the antennas.
             float best_rssi = round(std::max(quality.rssi[0], quality.rssi[1]));
             float best_snr = std::max(quality.snr[0], quality.snr[1]);
-            float best_lq = std::max(quality.lq[0], quality.lq[1]);
+            float best_link_score = std::max(quality.link_score[0], quality.link_score[1]);
 
             // Map to 1000..2000
-            int lq_for_uplink = round(map_range(best_lq, 0, 100, 1000, 2000));
+            int lq_for_uplink = round(map_range(best_link_score, 0, 100, 1000, 2000));
 
             if (quality.total_last_second != 0) {
                 packet_loss_ =
