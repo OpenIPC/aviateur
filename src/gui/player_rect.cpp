@@ -200,15 +200,18 @@ void PlayerRect::custom_ready() {
 #ifndef _WIN32
         if (GuiInterface::Instance().is_using_wifi) {
             pl_label_->set_visibility(true);
-            fec_label_->set_visibility(true);
+            fec_label_->set_visibility(false);
 
-            std::string pl_text;
+            int min_loss = std::numeric_limits<int>::max();
             for (const auto &link : GuiInterface::Instance().links_) {
-                pl_text += std::format(" {:.1f}%", link->get_packet_loss());
+                min_loss = std::min(min_loss, link->get_packet_loss());
             }
-            pl_label_->set_text(FTR("packet loss") + ":" + pl_text);
+            pl_label_->set_text(FTR("packet loss") + ": " + std::to_string(min_loss));
 
-            fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
+            if (GuiInterface::Instance().alink_enabled_) {
+                fec_label_->set_visibility(true);
+                fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
+            }
         } else {
             pl_label_->set_visibility(false);
             fec_label_->set_visibility(false);

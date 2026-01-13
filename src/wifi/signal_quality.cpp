@@ -108,6 +108,7 @@ std::tuple<uint32_t, uint32_t, uint32_t> SignalQualityCalculator::get_accumulate
     uint32_t p_recovered = 0;
     uint32_t p_all = 0;
     uint32_t p_lost = 0;
+
     for (const auto &data : fec_data_) {
         p_all += data.all;
         p_recovered += data.recovered;

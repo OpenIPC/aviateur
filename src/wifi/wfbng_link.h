@@ -75,7 +75,7 @@ public:
 
     std::array<float, ANTENNA_COUNT> get_link_score() const;
 
-    float get_packet_loss() const;
+    int get_packet_loss() const;
 
 protected:
     libusb_context *ctx{};
@@ -108,7 +108,7 @@ protected:
 
     std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
     std::array<float, ANTENNA_COUNT> link_score_ = {}; // Percentage
-    float packet_loss_ = 0;                            // Percentage
+    int packets_lost_ = 0;                              // Number over the last second
 
 #ifndef _WIN32
     // --------------- Adaptive link

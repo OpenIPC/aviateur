@@ -74,23 +74,23 @@ private:
     // We store a timestamp for each RSSI entry
     struct RssiEntry {
         std::chrono::steady_clock::time_point timestamp;
-        uint8_t ant1;
-        uint8_t ant2;
+        uint8_t ant1{};
+        uint8_t ant2{};
     };
 
     // We store a timestamp for each RSSI entry
     struct SnrEntry {
         std::chrono::steady_clock::time_point timestamp;
-        int8_t ant1;
-        int8_t ant2;
+        int8_t ant1{};
+        int8_t ant2{};
     };
 
     // We store a timestamp for each FEC entry
     struct FecEntry {
         std::chrono::steady_clock::time_point timestamp;
-        uint32_t all;
-        uint32_t recovered;
-        uint32_t lost;
+        uint32_t all{};
+        uint32_t recovered{};
+        uint32_t lost{};
     };
 
 private:

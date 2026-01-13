@@ -443,19 +443,12 @@ void WfbngLink::start_link_quality_thread() {
             auto quality = signal_quality_calculator->calculate_signal_quality();
 
             // Best values of the antennas.
-            float best_rssi = round(std::max(quality.rssi[0], quality.rssi[1]));
+            int best_rssi = round(std::max(quality.rssi[0], quality.rssi[1]));
             float best_snr = std::max(quality.snr[0], quality.snr[1]);
             float best_link_score = std::max(quality.link_score[0], quality.link_score[1]);
 
             // Map to 1000..2000
             int lq_for_uplink = round(map_range(best_link_score, 0, 100, 1000, 2000));
-
-            if (quality.total_last_second != 0) {
-                packet_loss_ =
-                    std::round((float)quality.lost_last_second / quality.total_last_second * 1000.0f) / 10.0f;
-            } else {
-                packet_loss_ = 100;
-            }
 
             time_t currentEpoch = time(nullptr);
 
@@ -483,7 +476,7 @@ void WfbngLink::start_link_quality_thread() {
                    packets)
                  */
 
-                // Change FEC
+                // Change FEC level.
                 if (quality.lost_last_second > 2)
                     fec_controller.bump(5);
                 else {
@@ -664,6 +657,10 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         const auto quality = signal_quality_calculator->calculate_signal_quality();
         link_score_[0] = quality.link_score[0];
         link_score_[1] = quality.link_score[1];
+        packets_lost_ = quality.lost_last_second;
+
+        // This is necessary.
+        video_aggregator->clear_stats();
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
@@ -694,8 +691,8 @@ std::array<float, ANTENNA_COUNT> WfbngLink::get_link_score() const {
     return link_score_;
 }
 
-float WfbngLink::get_packet_loss() const {
-    return packet_loss_;
+int WfbngLink::get_packet_loss() const {
+    return packets_lost_;
 }
 
 #if defined(_WIN32)
