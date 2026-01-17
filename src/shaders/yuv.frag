@@ -53,7 +53,6 @@ void main() {
         1.0, 1.0, 1.0,
         0.0, -0.3455, 1.779,
         1.4075, -0.7169, 0.0) * yuv;
-
     } else {
         //YUV444P
         yuv.x = texture(tex_y, v_texCoord).r;

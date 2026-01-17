@@ -66,6 +66,7 @@ private:
     bool mXformChanged = true;
 
     int mPixFmt = 0;
+    bool mPixFmtChanged = true;
     bool mTextureAllocated = false;
 
 #ifdef AVIATEUR_USE_OPENCV

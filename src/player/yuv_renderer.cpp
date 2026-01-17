@@ -124,6 +124,7 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     }
 
     mPixFmt = format;
+    mPixFmtChanged = true;
 
     mTexY = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "y texture");
 
@@ -330,7 +331,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
 
     // Update uniform buffers.
     FragUniformBlock uniform;
-    if (mXformChanged) {
+    if (mXformChanged || mPixFmtChanged) {
         uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
 
         // We don't need to preserve the data until the upload commands are implemented because
@@ -338,6 +339,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
         encoder->write_buffer(mUniformBuffer, 0, sizeof(FragUniformBlock), &uniform);
 
         mXformChanged = false;
+        mPixFmtChanged = false;
     }
 
     // Update descriptor set.
