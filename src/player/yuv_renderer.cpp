@@ -15,6 +15,7 @@
 // GLSL
 #include "../shaders/generated/yuv_frag.h"
 #include "../shaders/generated/yuv_vert.h"
+#include "src/gui_interface.h"
 // clang-format on
 
 struct FragUniformBlock {
@@ -127,23 +128,32 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mTexY = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "y texture");
 
     if (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUVJ420P) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "YUV pixel format is YUV420P/YUVJ420P", __FUNCTION__);
+
         mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::R8}, "u texture");
 
         mTexV = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::R8}, "v texture");
     } else if (format == AV_PIX_FMT_NV12) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "YUV pixel format is NV12", __FUNCTION__);
+
         mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::Rg8}, "u texture");
 
         // V is not used for NV12.
         if (mTexV == nullptr) {
             mTexV = mDevice->create_texture({{2, 2}, Pathfinder::TextureFormat::R8}, "dummy v texture");
         }
-    }
-    //  yuv444p
-    else {
+    } else if (format == AV_PIX_FMT_YUV444P) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "YUV pixel format is YUV444P", __FUNCTION__);
+
         mTexU = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "u texture");
 
         mTexV = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "v texture");
+    } else {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "YUV pixel format is unsupported!", __FUNCTION__);
+
+        abort();
     }
+
     mTextureAllocated = true;
 }
 
