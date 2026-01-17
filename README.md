@@ -56,6 +56,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 ### TODOs
 
+- Zero-Copy YUV renderer
 - Ground side OSD
 
 ### How to build on Windows
@@ -101,19 +102,19 @@ OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https:
 
 2. Install dependencies.
 
-   * GStreamer
+    * GStreamer
    ```bash
    sudo apt install libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-bad
    ```
-   * FFmpeg
+    * FFmpeg
    ```bash
    sudo apt install libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
    ```
-   * Vulkan
+    * Vulkan
    ```bash
    sudo apt install libvulkan-dev vulkan-tools vulkan-validationlayers spirv-tools
    ```
-   * Other
+    * Other
    ```bash
    sudo apt install libusb-1.0-0-dev libsodium-dev libopencv-dev xorg-dev libpcap-dev
    ```
