@@ -239,6 +239,49 @@ gboolean check_pipeline_dot_data(GstElement *pipeline) {
     return G_SOURCE_CONTINUE;
 }
 
+static GstPadProbeReturn caps_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+    // 1. Check if the data in the probe is an event
+    GstEvent *event = gst_pad_probe_info_get_event(info);
+
+    // 2. We only care about the CAPS event
+    if (GST_EVENT_TYPE(event) != GST_EVENT_CAPS) {
+        return GST_PAD_PROBE_OK;
+    }
+
+    // 3. Extract the actual Caps from the event
+    GstCaps *caps;
+    gst_event_parse_caps(event, &caps);
+
+    // 4. Extract metadata (Width, Height, Format)
+    GstStructure *s = gst_caps_get_structure(caps, 0);
+
+    gint width, height;
+    gboolean res = gst_structure_get_int(s, "width", &width);
+    if (!res) {
+        g_print("Could not get width from caps.\n");
+        return GST_PAD_PROBE_OK;
+    }
+
+    res = gst_structure_get_int(s, "height", &height);
+    if (!res) {
+        g_print("Could not get height from caps.\n");
+        return GST_PAD_PROBE_OK;
+    }
+
+    gint numerator, denominator;
+    res = gst_structure_get_fraction(s, "framerate", &numerator, &denominator);
+    if (!res) {
+        g_print("Could not get framerate from caps.\n");
+        return GST_PAD_PROBE_OK;
+    }
+
+    GuiInterface::Instance().EmitDecoderReady(width, height, (gdouble)numerator / denominator, "Software");
+
+    // Usually, you only need to catch the initial caps once.
+    // Return REMOVE to detach the probe and save CPU cycles.
+    return GST_PAD_PROBE_REMOVE;
+}
+
 void GstDecoder::create_pipeline(const std::string &codec, bool force_sw_decoding) {
     if (pipeline_) {
         return;
@@ -253,9 +296,9 @@ void GstDecoder::create_pipeline(const std::string &codec, bool force_sw_decodin
         sw_dec = "avdec_h265";
     }
 
-    std::string decoder = "decodebin3 name=decbin ! ";
+    std::string decoder = "decodebin3 name=dec ! ";
     if (force_sw_decoding) {
-        decoder = sw_dec + " name=decbin max-threads=1 lowres=0 skip-frame=0 ! ";
+        decoder = sw_dec + " name=dec max-threads=1 lowres=0 skip-frame=0 ! ";
     }
 
     gchar *pipeline_str = g_strdup_printf(
@@ -296,8 +339,8 @@ void GstDecoder::create_pipeline(const std::string &codec, bool force_sw_decodin
     gst_bus_add_watch(bus, gst_bus_cb, pipeline_);
     gst_clear_object(&bus);
 
-    {
-        GstElement *decodebin3 = gst_bin_get_by_name(GST_BIN(pipeline_), "decbin");
+    if (!force_sw_decoding) {
+        GstElement *decodebin3 = gst_bin_get_by_name(GST_BIN(pipeline_), "dec");
         if (!decodebin3) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Could not find decodebin3 element");
             return;
@@ -306,6 +349,14 @@ void GstDecoder::create_pipeline(const std::string &codec, bool force_sw_decodin
         g_signal_connect(decodebin3, "pad-added", G_CALLBACK(on_decodebin3_pad_added), this);
 
         gst_object_unref(decodebin3);
+    } else {
+        GstElement *dec = gst_bin_get_by_name(GST_BIN(pipeline_), "dec");
+        GstPad *src_pad = gst_element_get_static_pad(dec, "src");
+
+        // We use GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM to catch events flowing from decoder -> sink.
+        gst_pad_add_probe(src_pad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, (GstPadProbeCallback)caps_probe_cb, NULL, NULL);
+
+        gst_object_unref(src_pad);
     }
 
     {
