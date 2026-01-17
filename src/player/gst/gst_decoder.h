@@ -27,7 +27,7 @@ public:
 
     ~GstDecoder();
 
-    void create_pipeline(const std::string& codec);
+    void create_pipeline(const std::string& codec, bool force_sw_decoding);
 
     void play_pipeline(const std::string& uri);
 

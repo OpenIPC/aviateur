@@ -110,10 +110,10 @@ void VideoPlayerGst::play(const std::string &playUrl, bool forceSoftwareDecoding
     url = playUrl;
 
     if (url.starts_with("udp://")) {
-        gst_decoder_->create_pipeline(GuiInterface::Instance().rtp_codec_);
+        gst_decoder_->create_pipeline(GuiInterface::Instance().rtp_codec_, forceSoftwareDecoding);
         gst_decoder_->play_pipeline(url);
     } else {
-        gst_decoder_->create_pipeline(GuiInterface::Instance().playerCodec);
+        gst_decoder_->create_pipeline(GuiInterface::Instance().playerCodec, forceSoftwareDecoding);
         gst_decoder_->play_pipeline("");
     }
 }

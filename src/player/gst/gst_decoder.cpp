@@ -239,7 +239,7 @@ gboolean check_pipeline_dot_data(GstElement *pipeline) {
     return G_SOURCE_CONTINUE;
 }
 
-void GstDecoder::create_pipeline(const std::string &codec) {
+void GstDecoder::create_pipeline(const std::string &codec, bool force_sw_decoding) {
     if (pipeline_) {
         return;
     }
@@ -253,20 +253,25 @@ void GstDecoder::create_pipeline(const std::string &codec) {
         sw_dec = "avdec_h265";
     }
 
+    std::string decoder = "decodebin3 name=decbin ! ";
+    if (force_sw_decoding) {
+        decoder = sw_dec + " name=decbin max-threads=1 lowres=0 skip-frame=0 ! ";
+    }
+
     gchar *pipeline_str = g_strdup_printf(
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
         "rtpjitterbuffer latency=10 ! "
         "%s name=depay ! "
         "tee name=tee ! "
-        // "%sw_dec name=decbin max-threads=1 lowres=0 skip-frame=0 ! "
-        "decodebin3 name=decbin ! "
+        "%s"
         "videoconvert ! "
         "video/x-raw,format=NV12 ! "
         "appsink name=mysink max-buffers=1 drop=true",
         // "autovideosink name=glsink sync=false",
         codec.c_str(),
-        depay.c_str());
+        depay.c_str(),
+        decoder.c_str());
 
     pipeline_ = gst_parse_launch(pipeline_str, &error);
 
