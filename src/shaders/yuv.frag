@@ -9,9 +9,15 @@ layout(location=0) out vec4 oFragColor;
 
 layout(location=0) in vec2 v_texCoord;
 
+#ifdef VULKAN
 layout(binding = 1) uniform sampler2D tex_y;
 layout(binding = 2) uniform sampler2D tex_u;
 layout(binding = 3) uniform sampler2D tex_v;
+#else
+uniform sampler2D tex_y;
+uniform sampler2D tex_u;
+uniform sampler2D tex_v;
+#endif
 
 #ifdef VULKAN
 layout(binding = 0) uniform bUniform0 {
