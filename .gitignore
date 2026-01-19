@@ -53,3 +53,7 @@ include/*
 lib/*
 bin/*
 test/test_runner
+
+**/build
+**/build-release
+**/build-debug

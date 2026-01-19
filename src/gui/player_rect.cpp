@@ -72,9 +72,9 @@ void PlayerRect::custom_ready() {
     collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
     collapse_panel_->set_color(revector::ColorU(106, 171, 114));
-    collapse_panel_->set_anchor_flag(revector::AnchorFlag::TopRight);
     collapse_panel_->set_visibility(false);
-    add_child(collapse_panel_);
+    collapse_panel_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
+    top_control_container->add_child_at_index(collapse_panel_, 0);
 
     auto vbox = std::make_shared<revector::VBoxContainer>();
     collapse_panel_->add_child(vbox);

@@ -80,8 +80,8 @@ void ControlPanel::custom_ready() {
     {
         auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
+        margin_container->name = "Wi-Fi";
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(0, "Wi-Fi");
 
         auto vbox = std::make_shared<revector::VBoxContainer>();
         vbox->set_separation(8);
@@ -473,8 +473,8 @@ void ControlPanel::custom_ready() {
     {
         auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
+        margin_container->name = FTR("local");
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(1, FTR("local"));
 
         auto vbox = std::make_shared<revector::VBoxContainer>();
         vbox->set_separation(8);
@@ -589,8 +589,8 @@ void ControlPanel::custom_ready() {
     // Settings tab
     {
         auto margin_container = std::make_shared<SettingsContainer>();
+        margin_container->name = FTR("settings");
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(2, FTR("settings"));
     }
 }
 
