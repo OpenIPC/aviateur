@@ -1,7 +1,7 @@
 mkdir appimage-build-release
 cd appimage-build-release
 
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DAVIATEUR_ENABLE_GSTREAMER=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
 
 make -j$(nproc)
 
