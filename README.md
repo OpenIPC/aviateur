@@ -6,9 +6,9 @@
   </a>
 </p>
 
-OpenIPC FPV ground station for Linux/Windows/macOS. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win).
+OpenIPC FPV ground station for Linux/Windows/macOS.
 
-![](tutorials/interface.png)
+![](tutorials/interface.jpg)
 
 > [!NOTE]
 > No Adaptive Link support for Windows.
