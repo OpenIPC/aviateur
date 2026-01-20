@@ -61,25 +61,15 @@ int main() {
             player_rect->fullscreen_button_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
 
             std::weak_ptr app_weak = app;
-            auto on_fullscreen_toggled = [app_weak](bool toggled) {
+            auto on_fullscreen_toggled = [app_weak, control_panel_weak](bool toggled) {
                 if (!app_weak.expired()) {
                     app_weak.lock()->set_fullscreen(toggled);
                 }
-            };
-            player_rect->fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
-            
-            auto control_panel_button = std::make_shared<revector::CheckButton>();
-            player_rect->top_control_container->add_child(control_panel_button);
-            control_panel_button->set_text(FTR("control panel"));
-            control_panel_button->set_toggled(true);
-            control_panel_button->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
-
-            auto on_control_panel_toggled = [control_panel_weak](bool toggled) {
                 if (!control_panel_weak.expired()) {
-                    control_panel_weak.lock()->set_visibility(toggled);
+                    control_panel_weak.lock()->set_visibility(!toggled);
                 }
             };
-            control_panel_button->connect_signal("toggled", on_control_panel_toggled);
+            player_rect->fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
         }
     }
 
