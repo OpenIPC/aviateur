@@ -3,8 +3,8 @@
 #include "resources/default_resource.h"
 #include "resources/theme.h"
 
-const std::string AVIATEUR_VERSION = "v0.2.0";
-const std::string AVIATEUR_REPO = "https://github.com/OpenIPC/aviateur";
+const std::string AVIATEUR_VERSION_NUM = "v0.2.1";
+const std::string AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 void open_explorer(const std::string& dir) {
     // Check if the directory exists
@@ -256,7 +256,7 @@ void SettingsContainer::custom_ready() {
         button->set_flat(true);
         button->set_text("");
 
-        auto callback = [] { open_url(AVIATEUR_REPO); };
+        auto callback = [] { open_url(AVIATEUR_REPO_URL); };
         button->connect_signal("triggered", callback);
     }
 
@@ -264,6 +264,6 @@ void SettingsContainer::custom_ready() {
         auto version_label = std::make_shared<revector::Label>();
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
-        version_label->set_text(AVIATEUR_VERSION);
+        version_label->set_text(AVIATEUR_VERSION_NUM);
     }
 }
