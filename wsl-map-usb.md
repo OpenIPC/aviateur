@@ -1,13 +1,13 @@
 Refer to https://learn.microsoft.com/en-us/windows/wsl/connect-usb first.
 
-```bash
+```powershell
 usbipd list
 ```
 
-```bash
+```powershell
 usbipd bind --busid 3-4
 ```
 
-```bash
+```powershell
 usbipd attach --wsl --busid 3-4
 ```
