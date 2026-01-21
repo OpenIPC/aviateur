@@ -114,13 +114,15 @@ void PlayerRect::custom_ready() {
                     bar->set_fill_mode(revector::ProgressBar::FillMode::LeftToRight);
                 }
 
-                lq_bars_.push_back(bar);
+                link_score_bars_.push_back(bar);
             }
         }
 
-        for (const auto &bar : lq_bars_) {
+        for (const auto &bar : link_score_bars_) {
             lq_container->add_child(bar);
             bar->set_value(0);
+            bar->set_min_value(1000);
+            bar->set_max_value(2000);
             bar->set_custom_minimum_size({0, 4});
             bar->set_size({0, 4});
             bar->set_visibility(false);
@@ -184,7 +186,7 @@ void PlayerRect::custom_ready() {
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
-        for (const auto &bar : lq_bars_) {
+        for (const auto &bar : link_score_bars_) {
             bar->set_visibility(false);
         }
 
@@ -192,8 +194,8 @@ void PlayerRect::custom_ready() {
             auto link_score = GuiInterface::Instance().links_[i]->get_link_score();
 
             for (int j = 0; j != ANTENNA_COUNT; ++j) {
-                lq_bars_[i * 2 + j]->set_visibility(true);
-                lq_bars_[i * 2 + j]->set_value(link_score[j]);
+                link_score_bars_[i * 2 + j]->set_visibility(true);
+                link_score_bars_[i * 2 + j]->set_value(link_score[j]);
             }
         }
 
@@ -449,7 +451,7 @@ void PlayerRect::stop_playing() {
     play_url_ = "";
     play_mutex_.unlock();
 
-    for (const auto &bar : lq_bars_) {
+    for (const auto &bar : link_score_bars_) {
         bar->set_value(0);
     }
 

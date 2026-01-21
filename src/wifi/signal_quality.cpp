@@ -77,29 +77,30 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     auto avg_rssi = get_average(rssi_data_);
     auto avg_snr = get_average(snr_data_);
 
-    // Map the RSSI from range 0..126 to 0..100
-    float rssi0 = map_range(avg_rssi.first, 0.f, 126.f, 0.f, 100.f);
-    float rssi1 = map_range(avg_rssi.second, 0.f, 126.f, 0.f, 100.f);
-
-    // Map the SNR from range 0..60 to 0..100
-    float snr0 = map_range(avg_snr.first, 0.f, 60.f, 0.f, 100.f);
-    float snr1 = map_range(avg_snr.second, 0.f, 60.f, 0.f, 100.f);
-
     auto [p_recovered, p_lost, p_total] = get_accumulated_fec_data();
 
     ret.lost_last_second = p_lost;
     ret.recovered_last_second = p_recovered;
     ret.total_last_second = p_total;
 
-    ret.rssi[0] = avg_rssi.first;
-    ret.rssi[1] = avg_rssi.second;
-    ret.snr[0] = avg_snr.first;
-    ret.snr[1] = avg_snr.second;
+    ret.rssi[0] = round(avg_rssi.first);
+    ret.rssi[1] = round(avg_rssi.second);
+    ret.snr[0] = round(avg_snr.first);
+    ret.snr[1] = round(avg_snr.second);
     ret.idr_code = idr_code_;
 
-    // Link Quality = (w1 * RSSI) + (w2 * SNR)
-    ret.link_score[0] = 0.3f * rssi0 + 0.7f * snr0;
-    ret.link_score[1] = 0.3f * rssi1 + 0.7f * snr1;
+    // RSSI falls in range [0, 126], and we map it from range [0, 126] to [1000, 2000].
+    float rssi0 = map_range(avg_rssi.first, 50.f, 110.f, 1000.f, 2000.f);
+    float rssi1 = map_range(avg_rssi.second, 50.f, 110.f, 1000.f, 2000.f);
+
+    // SNR falls in range [0, 60], and we map it from range [0, 60] to [1000, 2000].
+    float snr0 = map_range(avg_snr.first, 20.f, 50.f, 1000.f, 2000.f);
+    float snr1 = map_range(avg_snr.second, 20.f, 50.f, 1000.f, 2000.f);
+
+    // Link Score = (weight1 * RSSI) + (weight2 * SNR)
+    // See https://github.com/OpenIPC/adaptive-link
+    ret.link_score[0] = round(0.5f * rssi0 + 0.5f * snr0);
+    ret.link_score[1] = round(0.5f * rssi1 + 0.5f * snr1);
 
     return ret;
 }

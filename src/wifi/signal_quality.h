@@ -7,12 +7,12 @@
 #include <utility>
 #include <vector>
 
-inline double map_range(double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-    // Map
-    double val = outputMin + (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin);
-    // Clamp
-    val = std::max(outputMin, std::min(outputMax, val));
-    return val;
+inline double map_range(double input, double input_min, double input_max, double output_min, double output_max) {
+    // 1. Clamp the input value first
+    const double clamped_input = std::clamp(input, input_min, input_max);
+
+    // 2. Map the clamped value
+    return output_min + (clamped_input - input_min) * (output_max - output_min) / (input_max - input_min);
 }
 
 class SignalQualityCalculator {
@@ -21,9 +21,9 @@ public:
         int lost_last_second;
         int recovered_last_second;
         int total_last_second;
-        float rssi[2];       // Received signal strength indicator
-        float snr[2];        // Signal to noice ratio
-        float link_score[2]; // Based on RSSI and SNR [0, 100]
+        int rssi[2];       // Received signal strength indicator
+        int snr[2];        // Signal to noice ratio
+        int link_score[2]; // Based on RSSI and SNR [1000, 2000]
         std::string idr_code;
     };
 

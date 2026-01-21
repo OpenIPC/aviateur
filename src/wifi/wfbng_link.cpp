@@ -443,12 +443,9 @@ void WfbngLink::start_link_quality_thread() {
             auto quality = signal_quality_calculator->calculate_signal_quality();
 
             // Best values of the antennas.
-            int best_rssi = round(std::max(quality.rssi[0], quality.rssi[1]));
-            float best_snr = std::max(quality.snr[0], quality.snr[1]);
-            float best_link_score = std::max(quality.link_score[0], quality.link_score[1]);
-
-            // Map to 1000..2000
-            int lq_for_uplink = round(map_range(best_link_score, 0, 100, 1000, 2000));
+            int best_rssi = std::max(quality.rssi[0], quality.rssi[1]);
+            int best_snr = std::max(quality.snr[0], quality.snr[1]);
+            int best_link_score = std::max(quality.link_score[0], quality.link_score[1]);
 
             time_t currentEpoch = time(nullptr);
 
@@ -505,12 +502,12 @@ void WfbngLink::start_link_quality_thread() {
                          sizeof(message) - sizeof(len),
                          "%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s\n",
                          static_cast<long>(currentEpoch),
-                         lq_for_uplink,
-                         lq_for_uplink,
+                         best_link_score,
+                         best_link_score,
                          quality.recovered_last_second,
                          quality.lost_last_second,
                          best_rssi,
-                         best_snr,
+                         (float)best_snr,
                          fec_lvl,
                          quality.idr_code.c_str());
 
@@ -687,7 +684,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     }
 }
 
-std::array<float, ANTENNA_COUNT> WfbngLink::get_link_score() const {
+std::array<int, ANTENNA_COUNT> WfbngLink::get_link_score() const {
     return link_score_;
 }
 
