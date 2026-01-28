@@ -35,6 +35,7 @@ int main() {
 
         auto control_panel = std::make_shared<ControlPanel>();
         control_panel->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
+        control_panel->set_custom_minimum_size({340, 0});
         hbox_container->add_child(control_panel);
 
         std::weak_ptr control_panel_weak = control_panel;
