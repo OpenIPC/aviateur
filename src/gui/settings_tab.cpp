@@ -3,7 +3,7 @@
 #include "resources/default_resource.h"
 #include "resources/theme.h"
 
-const std::string AVIATEUR_VERSION_NUM = "v0.2.1";
+const std::string AVIATEUR_VERSION_NUM = "v0.2.2";
 const std::string AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 void open_explorer(const std::string& dir) {
