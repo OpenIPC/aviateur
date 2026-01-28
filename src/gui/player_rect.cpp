@@ -464,10 +464,7 @@ void PlayerRect::stop_playing() {
         player_->stop();
     }
 
-    if (!GuiInterface::Instance().use_gstreamer_) {
-        texture = logo_;
-        collapse_panel_->set_visibility(false);
-    }
-
+    texture = logo_;
+    collapse_panel_->set_visibility(false);
     hud_container_->set_visibility(false);
 }
