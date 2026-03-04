@@ -46,11 +46,11 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
     if (event.type == revector::InputEventType::Key) {
         auto key_args = event.args.key;
 
-        if (key_args.key == revector::KeyCode::F11) {
-            if (key_args.pressed) {
-                fullscreen_button_->set_toggled(!fullscreen_button_->get_toggled());
-            }
-        }
+        // if (key_args.key == revector::KeyCode::F11) {
+        //     if (key_args.pressed) {
+        //         fullscreen_button_->set_toggled(!fullscreen_button_->get_toggled());
+        //     }
+        // }
 
         if (playing_ && key_args.key == revector::KeyCode::F10) {
             if (key_args.pressed) {
@@ -73,8 +73,8 @@ void PlayerRect::custom_ready() {
     collapse_panel_->set_collapse(true);
     collapse_panel_->set_color(revector::ColorU(106, 171, 114));
     collapse_panel_->set_visibility(false);
-    collapse_panel_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
-    top_control_container->add_child_at_index(collapse_panel_, 0);
+    collapse_panel_->set_anchor_flag(revector::AnchorFlag::TopRight);
+    add_child(collapse_panel_);
 
     auto vbox = std::make_shared<revector::VBoxContainer>();
     collapse_panel_->add_child(vbox);

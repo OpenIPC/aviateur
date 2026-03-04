@@ -53,8 +53,7 @@ public:
     std::shared_ptr<revector::Button> video_stabilization_button_;
     std::shared_ptr<revector::Button> low_light_enhancement_button_;
 
-    std::shared_ptr<revector::HBoxContainer> top_control_container;
-    std::shared_ptr<revector::Button> fullscreen_button_;
+    std::shared_ptr<revector::Button> control_panel_button_;
 
     std::shared_ptr<revector::Button> record_button_;
 

@@ -99,6 +99,32 @@ void SettingsContainer::custom_ready() {
         lang_menu_button->connect_signal("item_selected", callback);
     }
 
+    {
+        fullscreen_button_ = std::make_shared<revector::CheckButton>();
+        vbox_container->add_child(fullscreen_button_);
+        fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
+
+        auto on_fullscreen_toggled = [](bool toggled) {
+            auto render_server = revector::RenderServer::get_singleton();
+
+            render_server->window_builder_->set_fullscreen(toggled);
+        };
+        fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
+    }
+
+    {
+        auto dark_mode_btn = std::make_shared<revector::CheckButton>();
+        dark_mode_btn->set_text(FTR("dark mode"));
+        vbox_container->add_child(dark_mode_btn);
+        dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
+        auto callback = [](const bool toggled) {
+            GuiInterface::Instance().dark_mode_ = toggled;
+            const auto theme = toggled ? revector::Theme::default_dark() : revector::Theme::default_light();
+            revector::DefaultResource::get_singleton()->set_default_theme(theme);
+        };
+        dark_mode_btn->connect_signal("toggled", callback);
+    }
+
     revector::StyleBox radio_group_bg;
     if (GuiInterface::Instance().dark_mode_) {
         radio_group_bg.bg_color = revector::ColorU(0, 0, 0, 50);
@@ -193,19 +219,6 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto dark_mode_btn = std::make_shared<revector::CheckButton>();
-        dark_mode_btn->set_text(FTR("dark mode"));
-        vbox_container->add_child(dark_mode_btn);
-        dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
-        auto callback = [](const bool toggled) {
-            GuiInterface::Instance().dark_mode_ = toggled;
-            const auto theme = toggled ? revector::Theme::default_dark() : revector::Theme::default_light();
-            revector::DefaultResource::get_singleton()->set_default_theme(theme);
-        };
-        dark_mode_btn->connect_signal("toggled", callback);
-    }
-
-    {
         auto open_capture_folder_button = std::make_shared<revector::MenuButton>();
 
         open_capture_folder_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
@@ -265,5 +278,17 @@ void SettingsContainer::custom_ready() {
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
         version_label->set_text(AVIATEUR_VERSION_NUM);
+    }
+}
+
+void SettingsContainer::custom_input(revector::InputEvent& event) {
+    if (event.type == revector::InputEventType::Key) {
+        auto key_args = event.args.key;
+
+        if (key_args.key == revector::KeyCode::F11) {
+            if (key_args.pressed) {
+                fullscreen_button_->set_toggled(!fullscreen_button_->get_toggled());
+            }
+        }
     }
 }

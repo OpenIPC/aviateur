@@ -51,26 +51,31 @@ int main() {
         GuiInterface::Instance().wifiStopCallbacks.emplace_back(on_wifi_stopped);
 
         {
-            player_rect->top_control_container = std::make_shared<revector::HBoxContainer>();
-            player_rect->top_control_container->set_anchor_flag(revector::AnchorFlag::TopRight);
-            player_rect->top_control_container->set_alignment(revector::BoxContainerAlignment::End);
-            player_rect->add_child(player_rect->top_control_container);
+            player_rect->control_panel_button_ = std::make_shared<revector::Button>();
+            player_rect->add_child(player_rect->control_panel_button_);
+            player_rect->control_panel_button_->set_text(">");
+            player_rect->control_panel_button_->set_size({24, 64});
+            player_rect->control_panel_button_->set_anchor_flag(revector::AnchorFlag::CenterRight);
+            player_rect->control_panel_button_->theme_override_normal = revector::StyleBox::from_empty();
+            player_rect->control_panel_button_->theme_override_normal->bg_color = revector::ColorU{30, 30, 30, 100};
+            player_rect->control_panel_button_->theme_override_hovered = revector::StyleBox::from_empty();
+            player_rect->control_panel_button_->theme_override_hovered->bg_color = revector::ColorU{30, 30, 30, 150};
+            player_rect->control_panel_button_->theme_override_pressed = revector::StyleBox::from_empty();
+            player_rect->control_panel_button_->theme_override_pressed->bg_color = revector::ColorU{30, 30, 30, 200};
 
-            player_rect->fullscreen_button_ = std::make_shared<revector::CheckButton>();
-            player_rect->top_control_container->add_child(player_rect->fullscreen_button_);
-            player_rect->fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
-            player_rect->fullscreen_button_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkStart;
-
-            std::weak_ptr app_weak = app;
-            auto on_fullscreen_toggled = [app_weak, control_panel_weak](bool toggled) {
-                if (!app_weak.expired()) {
-                    app_weak.lock()->set_fullscreen(toggled);
-                }
+            auto on_control_panel_triggered = [player_rect_weak, control_panel_weak]() {
+                bool visible = false;
                 if (!control_panel_weak.expired()) {
-                    control_panel_weak.lock()->set_visibility(!toggled);
+                    visible = control_panel_weak.lock()->get_visibility();
                 }
+                if (visible) {
+                    player_rect_weak.lock()->control_panel_button_->set_text("<");
+                } else {
+                    player_rect_weak.lock()->control_panel_button_->set_text(">");
+                }
+                control_panel_weak.lock()->set_visibility(!visible);
             };
-            player_rect->fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
+            player_rect->control_panel_button_->connect_signal("triggered", on_control_panel_triggered);
         }
     }
 
