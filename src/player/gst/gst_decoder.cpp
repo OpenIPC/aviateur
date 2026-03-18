@@ -304,7 +304,7 @@ void GstDecoder::create_pipeline(const std::string &codec, bool force_sw_decodin
     gchar *pipeline_str = g_strdup_printf(
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
-        "rtpjitterbuffer latency=30 mode=2 drop-on-latency=true ! "
+        "rtpjitterbuffer latency=10 ! "
         "%s name=depay ! "
         "tee name=tee ! "
         "%s"

@@ -280,16 +280,18 @@ void SettingsContainer::custom_ready() {
         version_label->set_text(AVIATEUR_VERSION_NUM);
     }
 
-    {
-        auto exit_button = std::make_shared<revector::MenuButton>();
 
-        exit_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-        vbox_container->add_child(exit_button);
-        exit_button->set_text(FTR("exit"));
 
-        auto callback = [this] { get_tree()->quit(); };
-        exit_button->connect_signal("triggered", callback);
-    }
+{
+    auto exit_button = std::make_shared<revector::MenuButton>();
+
+    exit_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+    vbox_container->add_child(exit_button);
+    exit_button->set_text(FTR("exit"));
+
+    auto callback = [this] { get_tree()->quit(); };
+    exit_button->connect_signal("triggered", callback);
+}
 }
 
 void SettingsContainer::custom_input(revector::InputEvent& event) {
