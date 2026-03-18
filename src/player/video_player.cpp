@@ -4,8 +4,7 @@
 
 #include "../gui_interface.h"
 
-VideoPlayer::VideoPlayer(std::shared_ptr<Pathfinder::Device> device,
-                                     std::shared_ptr<Pathfinder::Queue> queue) {
+VideoPlayer::VideoPlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
     yuvRenderer_ = std::make_shared<YuvRenderer>(device, queue);
     yuvRenderer_->init();
 
