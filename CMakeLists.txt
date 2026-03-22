@@ -28,7 +28,7 @@ find_package(PkgConfig REQUIRED)
 if (WIN32)
     pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 
-    find_package(FFmpeg REQUIRED)
+    find_package(FFMPEG REQUIRED)
     find_package(unofficial-sodium CONFIG REQUIRED)
 
     if (AVIATEUR_ENABLE_GSTREAMER)
