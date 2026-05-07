@@ -62,7 +62,7 @@ void YuvRenderer::initGeometry() {
 
     auto encoder = mDevice->create_command_encoder("upload yuv vertex buffer");
     encoder->write_buffer(mVertexBuffer, 0, sizeof(vertices), vertices);
-    mQueue->submit_and_wait(encoder);
+    mQueue->submit(encoder, mFence);
 }
 
 void YuvRenderer::initPipeline() {
@@ -256,7 +256,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             encoder->write_texture(mTexV, {}, newFrameData->data[2]);
         }
 
-        mQueue->submit_and_wait(encoder);
+        mQueue->submit(encoder, mFence);
     }
 }
 
