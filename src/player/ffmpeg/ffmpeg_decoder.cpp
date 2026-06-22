@@ -52,6 +52,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     // av_dict_set(&options, "analyzeduration", "5000000", 0); // Increase to 5 seconds
 
     int ret = avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options);
+    av_dict_free(&options); // Free remaining options
+
     if (ret != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error,
                                         "avformat_open_input failed: " + std::to_string(ret),
@@ -382,6 +384,10 @@ void FfmpegDecoder::CloseVideo() {
         pVideoCodecCtx = nullptr;
         videoStreamIndex = -1;
     }
+    if (hwDeviceCtx) {
+        av_buffer_unref(&hwDeviceCtx);
+        hwDeviceCtx = nullptr;
+    }
 }
 
 void FfmpegDecoder::CloseAudio() {
@@ -410,10 +416,11 @@ size_t FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, s
     }
 
     while (true) {
-        uint8_t *pDest = pOutBuffer + decodedSize;
-        if (nOutBufferSize - decodedSize < 0) {
+        if (decodedSize >= nOutBufferSize) {
             break;
         }
+
+        uint8_t *pDest = pOutBuffer + decodedSize;
 
         bool shouldBreakLoop = false;
 
@@ -516,7 +523,7 @@ void FfmpegDecoder::ClearAudioBuff() {
     std::lock_guard lck(abBuffMtx);
 
     if (audioFifoBuffer) {
-        av_fifo_reset2(audioFifoBuffer);
+        av_fifo_freep2(&audioFifoBuffer);
         audioFifoBuffer = nullptr;
     }
 }
