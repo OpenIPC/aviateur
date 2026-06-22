@@ -44,9 +44,9 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&options, "fflags", "nobuffer", 0);
     av_dict_set(&options, "flags", "low_delay", 0);
 
-    // Speed up stream analysis
-    av_dict_set(&options, "probesize", "100000", 0);
-    av_dict_set(&options, "analyzeduration", "100000", 0);
+    // Speed up stream analysis - balanced for HEVC
+    av_dict_set(&options, "probesize", "512000", 0);
+    av_dict_set(&options, "analyzeduration", "500000", 0);
 
     // av_dict_set(&options, "probesize", "10000000", 0); // Increase to 10 MB
     // av_dict_set(&options, "analyzeduration", "5000000", 0); // Increase to 5 seconds
@@ -176,6 +176,16 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
             int ret = avcodec_receive_frame(pVideoCodecCtx, frameToReceive);
             if (ret == 0) {
+                // Check if resolution has changed or was initially unknown
+                if (pFrameVideo->width != width || pFrameVideo->height != height) {
+                    width = pFrameVideo->width;
+                    height = pFrameVideo->height;
+                    GuiInterface::Instance().PutLog(LogLevel::Info, "Video resolution updated: {}x{}", width, height);
+                    if (videoConfigChangedCallback) {
+                        videoConfigChangedCallback(width, height, GetVideoFrameFormat());
+                    }
+                }
+
                 if (hwDecoderEnabled) {
                     if (dropCurrentVideoFrame) continue;
                     if (av_hwframe_transfer_data(pFrameVideo.get(), hwFrame.get(), 0) < 0) continue;

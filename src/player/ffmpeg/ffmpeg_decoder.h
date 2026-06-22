@@ -109,6 +109,8 @@ private:
         bitrateUpdateCallback(pBitrate);
     }
 
+    std::function<void(int width, int height, AVPixelFormat format)> videoConfigChangedCallback;
+
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 
     AVFormatContext *pFormatCtx = nullptr;

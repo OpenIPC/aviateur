@@ -98,6 +98,11 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         // Bitrate callback.
         decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
 
+        // Handle dynamic resolution change
+        decoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) {
+            update_video_info(w, h, fmt);
+        };
+
         decodeThread = std::thread([this] {
             decodeResMtx.lock();
 
