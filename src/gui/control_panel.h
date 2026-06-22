@@ -6,7 +6,6 @@
 class ControlPanel : public revector::Container {
 public:
     std::shared_ptr<revector::MenuButton> dongle_menu_button_;
-    std::shared_ptr<revector::MenuButton> dongle_menu_button_b_;
     std::shared_ptr<revector::MenuButton> channel_button_;
     std::shared_ptr<revector::MenuButton> channel_width_button_;
     std::shared_ptr<revector::Button> refresh_dongle_button_;
@@ -21,8 +20,6 @@ public:
     uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
     std::string keyPath;
-
-    std::shared_ptr<revector::CollapseContainer> device_b_con;
 
     std::shared_ptr<revector::CollapseContainer> forward_con;
     std::shared_ptr<revector::TextEdit> forward_port_edit;
@@ -46,6 +43,4 @@ public:
     void custom_ready() override;
 
     void custom_input(revector::InputEvent& event) override;
-
-    void custom_update(double dt) override;
 };

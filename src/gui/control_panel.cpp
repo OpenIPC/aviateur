@@ -135,59 +135,8 @@ void ControlPanel::custom_ready() {
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
 
-            auto callback2 = [this] {
-                update_dongle_list(dongle_menu_button_, dongle_names[0].value());
-
-                if (dongle_names[1].has_value()) {
-                    update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
-                }
-            };
+            auto callback2 = [this] { update_dongle_list(dongle_menu_button_, dongle_names[0].value()); };
             refresh_dongle_button_->connect_signal("triggered", callback2);
-        }
-
-        {
-            device_b_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
-            device_b_con->set_title(FTR("dual adapter"));
-            device_b_con->set_collapse(true);
-            device_b_con->set_color(revector::ColorU(110, 137, 94));
-            vbox_blockable->add_child(device_b_con);
-
-            auto callback2 = [this](bool collapsed) {
-                if (collapsed) {
-                    // GuiInterface::Instance().links_.resize(1);
-                    dongle_names[1] = {};
-                } else {
-                    // GuiInterface::Instance().links_.resize(2);
-                    // GuiInterface::Instance().links_.back() = std::make_shared<WfbngLink>();
-                    dongle_names[1] = "";
-
-                    update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
-                }
-            };
-            device_b_con->connect_signal("collapsed", callback2);
-
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
-            hbox_container->set_separation(8);
-            device_b_con->add_child(hbox_container);
-
-            auto label = std::make_shared<revector::Label>();
-            label->set_text(FTR("device"));
-            hbox_container->add_child(label);
-
-            dongle_menu_button_b_ = std::make_shared<revector::MenuButton>();
-            dongle_menu_button_b_->set_custom_minimum_size({0, 32});
-            dongle_menu_button_b_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-            dongle_menu_button_b_->set_text("");
-            hbox_container->add_child(dongle_menu_button_b_);
-
-            // Do this before setting dongle button text.
-            if (dongle_names[1].has_value()) {
-                update_dongle_list(dongle_menu_button_b_, dongle_names[1].value());
-                dongle_menu_button_b_->set_text(dongle_names[1].value());
-            }
-
-            auto callback = [this](uint32_t) { dongle_names[1] = dongle_menu_button_b_->get_selected_item_text(); };
-            dongle_menu_button_b_->connect_signal("item_selected", callback);
         }
 
         {
@@ -560,14 +509,10 @@ void ControlPanel::custom_ready() {
                 if (start) {
                     std::string port = local_listener_port_edit_->get_text();
 
-                    if (GuiInterface::Instance().use_gstreamer_) {
-                        GuiInterface::Instance().EmitRtpStream("udp://0.0.0.0:" + port);
-                    } else {
-                        GuiInterface::Instance().NotifyRtpStream(96,
-                                                                 0,
-                                                                 std::stoi(port),
-                                                                 GuiInterface::Instance().rtp_codec_);
-                    }
+                    GuiInterface::Instance().NotifyRtpStream(96,
+                                                             0,
+                                                             std::stoi(port),
+                                                             GuiInterface::Instance().rtp_codec_);
 
                     GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = port;
 
@@ -607,21 +552,6 @@ void ControlPanel::custom_input(revector::InputEvent &event) {
                         play_port_button_->trigger();
                     }
                 }
-            }
-        }
-    }
-}
-
-void ControlPanel::custom_update(double dt) {
-    if (device_b_con) {
-        if (GuiInterface::Instance().use_gstreamer_) {
-            if (!device_b_con->get_visibility()) {
-                device_b_con->show();
-            }
-        } else {
-            if (device_b_con->get_visibility()) {
-                device_b_con->set_collapse(true);
-                device_b_con->hide();
             }
         }
     }

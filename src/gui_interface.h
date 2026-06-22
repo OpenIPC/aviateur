@@ -38,7 +38,6 @@
 #define CONFIG_SETTINGS "settings"
 #define CONFIG_SETTINGS_LANG "language"
 #define CONFIG_SETTINGS_DARK_MODE "dark_mode"
-#define CONFIG_SETTINGS_MEDIA_BACKEND "media_backend"
 #define CONFIG_SETTINGS_RENDER_BACKEND "render_backend"
 
 #define DEFAULT_PORT 52356
@@ -46,7 +45,7 @@
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 6;
+constexpr auto CONFIG_VERSION_NUM = 7;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -181,7 +180,6 @@ public:
         // Load config.
         if (bool read_success = ReadConfig(ini_)) {
             set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
-            use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] == "gstreamer";
             use_vulkan_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] == "vulkan";
 #ifdef __APPLE__
             // No OpenGL on macOS
@@ -260,7 +258,6 @@ public:
             ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = "H264";
 
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
-            ini[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] = "ffmpeg";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = "opengl";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = "true";
         }
@@ -280,8 +277,6 @@ public:
         Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = std::to_string(Instance().alink_tx_power_);
 
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
-        Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] =
-            Instance().use_gstreamer_ ? "gstreamer" : "ffmpeg";
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = Instance().use_vulkan_ ? "vulkan" : "opengl";
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = Instance().dark_mode_ ? "true" : "false";
 
@@ -533,9 +528,6 @@ public:
     // float link_quality_ = 0; // Percentage
     // float packet_loss_ = 0;  // Percentage
     int drone_fec_level_ = 0;
-
-    // Use gstreamer for decoding instead of ffmpeg
-    bool use_gstreamer_ = false;
 
     bool alink_enabled_ = false;
     int alink_tx_power_ = 0;

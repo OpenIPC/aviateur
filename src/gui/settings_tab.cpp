@@ -3,7 +3,7 @@
 #include "resources/default_resource.h"
 #include "resources/theme.h"
 
-const std::string AVIATEUR_VERSION_NUM = "v0.2.3";
+const std::string AVIATEUR_VERSION_NUM = "v0.2.4";
 const std::string AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 void open_explorer(const std::string& dir) {
@@ -130,47 +130,6 @@ void SettingsContainer::custom_ready() {
         radio_group_bg.bg_color = revector::ColorU(0, 0, 0, 50);
     } else {
         radio_group_bg.bg_color = revector::ColorU(255, 255, 255, 50);
-    }
-
-    {
-        auto hbox_container = std::make_shared<revector::HBoxContainer>();
-        hbox_container->theme_override_bg = radio_group_bg;
-        vbox_container->add_child(hbox_container);
-
-        auto label = std::make_shared<revector::Label>();
-        label->set_text(FTR("codec backend"));
-        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
-        hbox_container->add_child(label);
-
-        auto vbox_container2 = std::make_shared<revector::VBoxContainer>();
-        vbox_container2->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-        hbox_container->add_child(vbox_container2);
-
-        media_btn_group = std::make_shared<revector::ToggleButtonGroup>();
-        {
-            auto ffmpeg_btn = std::make_shared<revector::RadioButton>();
-            ffmpeg_btn->set_text("FFmpeg");
-            ffmpeg_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-            vbox_container2->add_child(ffmpeg_btn);
-            ffmpeg_btn->set_toggled_no_signal(!GuiInterface::Instance().use_gstreamer_);
-            auto callback = [](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
-            ffmpeg_btn->connect_signal("toggled", callback);
-
-            media_btn_group->add_button(ffmpeg_btn);
-        }
-
-#ifdef AVIATEUR_USE_GSTREAMER
-        {
-            auto gst_btn = std::make_shared<revector::RadioButton>();
-            gst_btn->set_text("GStreamer");
-            gst_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-            vbox_container2->add_child(gst_btn);
-            gst_btn->set_toggled_no_signal(GuiInterface::Instance().use_gstreamer_);
-            auto callback = [](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
-            gst_btn->connect_signal("toggled", callback);
-            media_btn_group->add_button(gst_btn);
-        }
-#endif
     }
 
     {

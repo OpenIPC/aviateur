@@ -82,11 +82,7 @@ OpenIPC FPV ground station for Linux/Windows/macOS.
    git submodule update --init --recursive
    ```
 
-5. Install GStreamer (both the runtime and development installer)
-   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows). Add
-   `C:\Program Files\gstreamer\1.0\msvc_x86_64\bin` to your PATH environment variable.
-
-6. Build the project.
+5. Build the project.
    ```bash
    mkdir build && cd build
    cmake ../
@@ -102,10 +98,6 @@ OpenIPC FPV ground station for Linux/Windows/macOS.
 
 2. Install dependencies.
 
-    * GStreamer
-   ```bash
-   sudo apt install libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-bad
-   ```
     * FFmpeg
    ```bash
    sudo apt install libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev

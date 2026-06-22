@@ -20,7 +20,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-option(AVIATEUR_ENABLE_GSTREAMER "Enable GStreamer" ON)
 option(AVIATEUR_ENABLE_OPENCV "Enable OpenCV" OFF)
 
 find_package(PkgConfig REQUIRED)
@@ -30,22 +29,6 @@ if (WIN32)
 
     find_package(FFMPEG REQUIRED)
     find_package(unofficial-sodium CONFIG REQUIRED)
-
-    if (AVIATEUR_ENABLE_GSTREAMER)
-        # To ensure dll linking, add "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin" to your PATH
-        set(GST_ROOT "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64")
-
-        set(GST_LIB_ROOT "${GST_ROOT}\\lib")
-
-        set(GST_INCLUDE_DIRS "${GST_ROOT}\\include\\gstreamer-1.0")
-        set(GST_LIBRARIES "${GST_LIB_ROOT}\\gstreamer-1.0.lib" "${GST_LIB_ROOT}\\gstapp-1.0.lib" "${GST_LIB_ROOT}\\gstvideo-1.0.lib")
-
-        set(GLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\glib-2.0" "${GST_LIB_ROOT}\\glib-2.0\\include")
-        set(GLIB_LIBRARIES "${GST_LIB_ROOT}\\gobject-2.0.lib" "${GST_LIB_ROOT}\\glib-2.0.lib")
-
-        set(GIO_INCLUDE_DIRS "${GST_ROOT}\\include\\gio-win32-2.0")
-        set(GIO_LIBRARIES "${GST_LIB_ROOT}\\gio-2.0.lib")
-    endif ()
 else ()
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavformat
@@ -56,20 +39,6 @@ else ()
     )
 
     pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
-
-    if (AVIATEUR_ENABLE_GSTREAMER)
-        if (APPLE)
-            find_library(GST_FRAMEWORK GStreamer
-                    PATHS /System/Library/Frameworks/
-                    /Library/Frameworks/
-                    macOS_BUNDLE_DIRECTORY
-            )
-        else ()
-            pkg_check_modules(GLIB REQUIRED glib-2.0)
-            pkg_check_modules(GST REQUIRED gstreamer-1.0 gstreamer-app-1.0 gstreamer-plugins-base-1.0 gstreamer-plugins-bad-1.0 gstreamer-video-1.0)
-            pkg_check_modules(GIO REQUIRED gio-2.0)
-        endif ()
-    endif ()
 endif ()
 
 if (AVIATEUR_ENABLE_OPENCV)
@@ -87,13 +56,6 @@ else ()
     add_executable(${PROJECT_NAME}
             src/main.cpp
             src/gui_interface.h
-    )
-endif ()
-
-if (AVIATEUR_ENABLE_GSTREAMER)
-    target_compile_definitions(
-            ${PROJECT_NAME} PRIVATE
-            AVIATEUR_USE_GSTREAMER
     )
 endif ()
 
@@ -172,29 +134,6 @@ if (AVIATEUR_ENABLE_OPENCV)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ${OpenCV_LIBS}
     )
-endif ()
-
-if (AVIATEUR_ENABLE_GSTREAMER)
-    if (APPLE)
-        target_link_libraries(
-                ${PROJECT_NAME} PRIVATE
-                ${GST_FRAMEWORK}
-        )
-    else ()
-        target_link_libraries(
-                ${PROJECT_NAME} PRIVATE
-                ${GST_LIBRARIES}
-                ${GLIB_LIBRARIES}
-                ${GIO_LIBRARIES}
-        )
-
-        target_include_directories(
-                ${PROJECT_NAME} PRIVATE
-                ${GST_INCLUDE_DIRS}
-                ${GLIB_INCLUDE_DIRS}
-                ${GIO_INCLUDE_DIRS}
-        )
-    endif ()
 endif ()
 
 if (APPLE)
