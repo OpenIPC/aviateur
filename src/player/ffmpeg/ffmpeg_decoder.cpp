@@ -148,14 +148,12 @@ void freeSwrCtx(SwrContext *s) {
 std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
     std::lock_guard lck(_releaseLock);
 
-    std::shared_ptr<AVFrame> res;
-
     if (videoStreamIndex == -1 && audioStreamIndex == -1) {
-        return res;
+        return nullptr;
     }
 
     if (!sourceIsOpened) {
-        return res;
+        return nullptr;
     }
 
     while (true) {
@@ -163,88 +161,79 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             throw std::runtime_error("AVFormatContext is null");
         }
 
-        auto timestamp = std::make_shared<revector::Timestamp>("Aviateur");
-        timestamp->set_enabled(false);
+        // 1. First, try to receive a frame from the decoder (drain)
+        if (pVideoCodecCtx) {
+            std::shared_ptr<AVFrame> pFrameVideo = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+            AVFrame *frameToReceive = hwDecoderEnabled ? hwFrame.get() : pFrameVideo.get();
+            if (hwDecoderEnabled && !hwFrame) {
+                hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+                frameToReceive = hwFrame.get();
+            }
 
+            int ret = avcodec_receive_frame(pVideoCodecCtx, frameToReceive);
+            if (ret == 0) {
+                if (hwDecoderEnabled) {
+                    if (dropCurrentVideoFrame) continue;
+                    if (av_hwframe_transfer_data(pFrameVideo.get(), hwFrame.get(), 0) < 0) continue;
+                    av_frame_copy_props(pFrameVideo.get(), hwFrame.get());
+                }
+                if (gotVideoFrameCallback) gotVideoFrameCallback(pFrameVideo);
+                return pFrameVideo;
+            } else if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+                char errStr[AV_ERROR_MAX_STRING_SIZE];
+                av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
+                throw std::runtime_error("avcodec_receive_frame failed: " + std::string(errStr));
+            }
+        }
+
+        // 2. If no frame available, read a new packet
         std::shared_ptr<AVPacket> packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
-
         int ret = av_read_frame(pFormatCtx, packet.get());
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-
             throw ReadFrameException("av_read_frame failed: " + std::string(errStr));
         }
 
-        timestamp->record("av_read_frame");
-
         // Calculate bitrate
-        {
-            bytesSecond += packet->size;
-
-            uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
-                               std::chrono::system_clock::now().time_since_epoch())
-                               .count();
-            if (now - lastCountBitrateTime >= 1000) {
-                // 计算码率定时器
-                bitrate = bytesSecond * 8 * 1000 / (now - lastCountBitrateTime);
-                bytesSecond = 0;
-
-                emitBitrateUpdate(bitrate);
-
-                lastCountBitrateTime = now;
-            }
+        bytesSecond += packet->size;
+        uint64_t now =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+                .count();
+        if (now - lastCountBitrateTime >= 1000) {
+            bitrate = bytesSecond * 8 * 1000 / (now - lastCountBitrateTime);
+            bytesSecond = 0;
+            emitBitrateUpdate(bitrate);
+            lastCountBitrateTime = now;
         }
 
-        // Handle video
+        // 3. Handle video packet
         if (packet->stream_index == videoStreamIndex) {
-            if (gotPktCallback) {
-                gotPktCallback(packet);
+            if (gotPktCallback) gotPktCallback(packet);
+            ret = avcodec_send_packet(pVideoCodecCtx, packet.get());
+            if (ret < 0) {
+                char errStr[AV_ERROR_MAX_STRING_SIZE];
+                av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
+                throw SendPacketException("avcodec_send_packet failed: " + std::string(errStr));
             }
-
-            timestamp->record("gotPktCallback");
-
-            std::shared_ptr<AVFrame> pFrameVideo = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
-
-            if (bool successful = DecodeVideo(packet.get(), pFrameVideo)) {
-                res = pFrameVideo;
-            }
-
-            timestamp->record("DecodeVideo");
-
-            // Trigger callback
-            if (gotVideoFrameCallback) {
-                gotVideoFrameCallback(pFrameVideo);
-            }
-
-            timestamp->record("gotVideoFrameCallback");
-            timestamp->print();
-
-            break;
+            // After sending a packet, loop back to try receive_frame
+            continue;
         }
 
-        // Handle audio
+        // 4. Handle audio packet
         if (packet->stream_index == audioStreamIndex) {
-            if (gotPktCallback) {
-                gotPktCallback(packet);
-            }
-
+            if (gotPktCallback) gotPktCallback(packet);
             if (packet->dts != AV_NOPTS_VALUE) {
                 constexpr int audioFrameSize = MAX_AUDIO_PACKET;
                 auto pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
-
                 if (const size_t nDecodedSize = DecodeAudio(packet.get(), pFrameAudio.get(), audioFrameSize);
                     nDecodedSize > 0) {
                     writeAudioBuff(pFrameAudio.get(), nDecodedSize);
                 }
             }
-
-            if (!HasVideo()) {
-                return res;
-            }
+            if (!HasVideo()) return nullptr;
         }
     }
-    return res;
 }
 
 bool FfmpegDecoder::createHwCtx(AVCodecContext *ctx, const AVHWDeviceType type) {
@@ -346,60 +335,6 @@ bool FfmpegDecoder::OpenVideo() {
 
     if (!res) {
         CloseVideo();
-    }
-
-    return res;
-}
-
-bool FfmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame> &pOutFrame) {
-    bool res = false;
-
-    if (pVideoCodecCtx && av_pkt && pOutFrame) {
-        int ret = avcodec_send_packet(pVideoCodecCtx, av_pkt);
-        if (ret < 0) {
-            char errStr[AV_ERROR_MAX_STRING_SIZE];
-            av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw SendPacketException("avcodec_send_packet failed: " + std::string(errStr));
-        }
-
-        if (hwDecoderEnabled) {
-            // Initialize the hardware frame.
-            if (!hwFrame) {
-                hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
-            }
-
-            ret = avcodec_receive_frame(pVideoCodecCtx, hwFrame.get());
-        } else {
-            ret = avcodec_receive_frame(pVideoCodecCtx, pOutFrame.get());
-        }
-
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            // No output available right now or end of stream
-            res = false;
-        } else if (ret < 0) {
-            char errStr[AV_ERROR_MAX_STRING_SIZE];
-            av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw std::runtime_error("avcodec_receive_frame failed: " + std::string(errStr));
-        } else {
-            // Successfully decoded a frame
-            res = true;
-        }
-
-        if (res && hwDecoderEnabled) {
-            if (dropCurrentVideoFrame) {
-                pOutFrame.reset();
-                return false;
-            }
-
-            // Copy data from the hw surface to the out frame.
-            ret = av_hwframe_transfer_data(pOutFrame.get(), hwFrame.get(), 0);
-
-            if (ret < 0) {
-                char errStr[AV_ERROR_MAX_STRING_SIZE];
-                av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                throw std::runtime_error("av_hwframe_transfer_data failed: " + std::string(errStr));
-            }
-        }
     }
 
     return res;

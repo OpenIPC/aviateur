@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -95,8 +96,6 @@ private:
 
     size_t DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
 
-    bool DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame> &pOutFrame);
-
     void writeAudioBuff(const uint8_t *aSample, size_t aSize);
 
     /// NALU callback (video/audio)
@@ -143,7 +142,7 @@ private:
 
     int height{};
 
-    volatile uint64_t bytesSecond = 0;
+    std::atomic<uint64_t> bytesSecond = 0;
     uint64_t bitrate = 0;
     uint64_t lastCountBitrateTime = 0;
     std::function<void(uint64_t bitrate)> bitrateUpdateCallback;
