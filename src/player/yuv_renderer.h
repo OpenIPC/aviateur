@@ -70,5 +70,9 @@ private:
 
     std::shared_ptr<Pathfinder::Device> mDevice;
 
+    std::vector<uint8_t> mPackedY;
+    std::vector<uint8_t> mPackedU;
+    std::vector<uint8_t> mPackedV;
+
     volatile bool mInited = false;
 };
