@@ -111,7 +111,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
 
                     // Push frame to the buffer queue.
                     std::lock_guard lck(mtx);
-                    if (videoFrameQueue.size() > 10) {
+                    if (videoFrameQueue.size() > 1) {
                         videoFrameQueue.pop();
                     }
                     videoFrameQueue.push(frame);
