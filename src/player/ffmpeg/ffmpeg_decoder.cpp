@@ -36,15 +36,17 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     AVDictionary *options = nullptr;
 
-    av_dict_set(&options, "preset", "ultrafast", 0);
-    av_dict_set(&options, "tune", "zerolatency", 0);
     av_dict_set(&options, "buffer_size", "425984", 0);
-    av_dict_set(&options, "rtsp_transport", "tcp", 0);
+    av_dict_set(&options, "rtsp_transport", "udp", 0);
     av_dict_set(&options, "protocol_whitelist", "file,udp,tcp,rtp,rtmp,rtsp,http", 0);
 
     // Reduce latency
     av_dict_set(&options, "fflags", "nobuffer", 0);
     av_dict_set(&options, "flags", "low_delay", 0);
+
+    // Speed up stream analysis
+    av_dict_set(&options, "probesize", "100000", 0);
+    av_dict_set(&options, "analyzeduration", "100000", 0);
 
     // av_dict_set(&options, "probesize", "10000000", 0); // Increase to 10 MB
     // av_dict_set(&options, "analyzeduration", "5000000", 0); // Increase to 5 seconds
@@ -319,6 +321,9 @@ bool FfmpegDecoder::OpenVideo() {
             }
 
             if (avcodec_parameters_to_context(pVideoCodecCtx, pFormatCtx->streams[i]->codecpar) >= 0) {
+                // Disable multi-threaded frame decoding to minimize latency
+                pVideoCodecCtx->thread_count = 1;
+
                 res = avcodec_open2(pVideoCodecCtx, codec, nullptr) >= 0;
                 if (res) {
                     width = pVideoCodecCtx->width;
@@ -399,15 +404,15 @@ size_t FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, s
         throw SendPacketException("avcodec_send_packet failed: " + std::string(errStr));
     }
 
+    AVFrame *audioFrame = av_frame_alloc();
+    if (!audioFrame) {
+        throw std::runtime_error("Failed to allocate audio frame");
+    }
+
     while (true) {
         uint8_t *pDest = pOutBuffer + decodedSize;
         if (nOutBufferSize - decodedSize < 0) {
             break;
-        }
-
-        AVFrame *audioFrame = av_frame_alloc();
-        if (!audioFrame) {
-            throw std::runtime_error("Failed to allocate audio frame");
         }
 
         bool shouldBreakLoop = false;
@@ -460,26 +465,22 @@ size_t FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, s
                     decodedSize += sizeToDecode;
                 }
             } break;
-            case AVERROR(EAGAIN): {
+            case AVERROR(EAGAIN):
+            case AVERROR_EOF:
+            case AVERROR_INVALIDDATA:
+            default:
                 shouldBreakLoop = true;
-            } break;
-            case AVERROR_EOF: {
-                shouldBreakLoop = true;
-            } break;
-            case AVERROR_INVALIDDATA: {
-                shouldBreakLoop = true;
-            } break;
-            default: {
-                shouldBreakLoop = true;
-            } break;
+                break;
         }
 
-        av_frame_free(&audioFrame);
+        av_frame_unref(audioFrame);
 
         if (shouldBreakLoop) {
             break;
         }
     }
+
+    av_frame_free(&audioFrame);
 
     return decodedSize;
 }
