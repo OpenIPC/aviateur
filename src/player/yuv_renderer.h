@@ -49,6 +49,7 @@ private:
     std::shared_ptr<Pathfinder::Texture> mTexU;
     std::shared_ptr<Pathfinder::Texture> mTexV;
     std::shared_ptr<AVFrame> mPrevFrameData;
+    std::shared_ptr<Pathfinder::DescriptorSetLayout> mDescriptorSetLayout;
     std::shared_ptr<Pathfinder::DescriptorSet> mDescriptorSet;
     std::shared_ptr<Pathfinder::Sampler> mSampler;
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;

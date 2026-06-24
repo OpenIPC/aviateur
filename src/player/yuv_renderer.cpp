@@ -92,12 +92,20 @@ void YuvRenderer::initPipeline() {
         {Pathfinder::BufferType::Uniform, sizeof(FragUniformBlock), Pathfinder::MemoryProperty::HostVisibleAndCoherent},
         "yuv renderer uniform buffer");
 
-    mDescriptorSet = mDevice->create_descriptor_set();
+    {
+        std::vector<Pathfinder::DescriptorLayout> layouts = {
+            {0, Pathfinder::ShaderStage::VertexAndFragment, Pathfinder::DescriptorType::UniformBuffer, "bUniform0"},
+            {1, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler, "tex_y"},
+            {2, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler, "tex_u"},
+            {3, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler, "tex_v"},
+        };
+
+        mDescriptorSetLayout = mDevice->create_descriptor_set_layout(layouts);
+    }
+
+    mDescriptorSet = mDevice->create_descriptor_set(mDescriptorSetLayout);
     mDescriptorSet->add_or_update({
-        Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::VertexAndFragment, "bUniform0", mUniformBuffer),
-        Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y"),
-        Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u"),
-        Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
+        Pathfinder::Descriptor::uniform(0, mUniformBuffer),
     });
 
     Pathfinder::SamplerDescriptor sampler_desc{};
@@ -113,7 +121,7 @@ void YuvRenderer::initPipeline() {
         mDevice->create_shader_module(frag_source, Pathfinder::ShaderStage::Fragment, "yuv frag"),
         attribute_descriptions,
         blend_state,
-        mDescriptorSet,
+        mDescriptorSetLayout,
         Pathfinder::TextureFormat::Rgba8Unorm,
         "yuv pipeline");
 }
@@ -167,7 +175,11 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
 #ifdef AVIATEUR_USE_OPENCV
     if (mStabilize) {
-        const auto frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, (void*)newFrameData->data[0], newFrameData->linesize[0]);
+        const auto frameY = cv::Mat(mTexY->get_size().y,
+                                    mTexY->get_size().x,
+                                    CV_8UC1,
+                                    (void*)newFrameData->data[0],
+                                    newFrameData->linesize[0]);
 
         if (mPreviousFrameY.has_value()) {
             auto stabXform = mStabilizer.stabilize(mPreviousFrameY.value(), frameY);
@@ -197,7 +209,9 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             if (mPrevFrameData->linesize[0] != width) {
                 mPackedY.resize(width * height);
                 for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedY.data() + i * width, mPrevFrameData->data[0] + i * mPrevFrameData->linesize[0], width);
+                    memcpy(mPackedY.data() + i * width,
+                           mPrevFrameData->data[0] + i * mPrevFrameData->linesize[0],
+                           width);
                 }
                 texYData = mPackedY.data();
             }
@@ -210,7 +224,9 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             if (mPrevFrameData->linesize[1] != rowWidth) {
                 mPackedU.resize(rowWidth * height);
                 for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedU.data() + i * rowWidth, mPrevFrameData->data[1] + i * mPrevFrameData->linesize[1], rowWidth);
+                    memcpy(mPackedU.data() + i * rowWidth,
+                           mPrevFrameData->data[1] + i * mPrevFrameData->linesize[1],
+                           rowWidth);
                 }
                 texUData = mPackedU.data();
             }
@@ -223,7 +239,9 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             if (mPrevFrameData->linesize[2] != width) {
                 mPackedV.resize(width * height);
                 for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedV.data() + i * width, mPrevFrameData->data[2] + i * mPrevFrameData->linesize[2], width);
+                    memcpy(mPackedV.data() + i * width,
+                           mPrevFrameData->data[2] + i * mPrevFrameData->linesize[2],
+                           width);
                 }
                 texVData = mPackedV.data();
             }
@@ -273,7 +291,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
                 texYData = enhancedFrameY.data;
             } else
 #endif
-            if (newFrameData->linesize[0] != width) {
+                if (newFrameData->linesize[0] != width) {
                 mPackedY.resize(width * height);
                 for (int i = 0; i < height; ++i) {
                     memcpy(mPackedY.data() + i * width, newFrameData->data[0] + i * newFrameData->linesize[0], width);
@@ -290,7 +308,9 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             if (newFrameData->linesize[1] != rowWidth) {
                 mPackedU.resize(rowWidth * height);
                 for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedU.data() + i * rowWidth, newFrameData->data[1] + i * newFrameData->linesize[1], rowWidth);
+                    memcpy(mPackedU.data() + i * rowWidth,
+                           newFrameData->data[1] + i * newFrameData->linesize[1],
+                           rowWidth);
                 }
                 texUData = mPackedU.data();
             }
@@ -340,9 +360,9 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
 
     // Update descriptor set.
     mDescriptorSet->add_or_update({
-        Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y", mTexY, mSampler),
-        Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u", mTexU, mSampler),
-        Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v", mTexV, mSampler),
+        Pathfinder::Descriptor::sampled(1, mTexY, mSampler),
+        Pathfinder::Descriptor::sampled(2, mTexU, mSampler),
+        Pathfinder::Descriptor::sampled(3, mTexV, mSampler),
     });
 
     encoder->begin_render_pass(mRenderPass, outputTex, Pathfinder::ColorF::black());
