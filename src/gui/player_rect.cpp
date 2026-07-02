@@ -5,7 +5,7 @@
 
 constexpr uint32_t HUD_LABEL_FONT_SIZE = 20;
 
-class SignalBar : public revector::ProgressBar {
+class SignalBar : public vecgui::ProgressBar {
     void custom_ready() override {
         theme_fg = {};
         theme_bg = {};
@@ -39,17 +39,17 @@ void PlayerRect::show_green_tip(std::string tip) {
     tip_label_->show_tip(tip);
 }
 
-void PlayerRect::custom_input(revector::InputEvent &event) {
-    if (event.type == revector::InputEventType::Key) {
+void PlayerRect::custom_input(vecgui::InputEvent &event) {
+    if (event.type == vecgui::InputEventType::Key) {
         auto key_args = event.args.key;
 
-        // if (key_args.key == revector::KeyCode::F11) {
+        // if (key_args.key == vecgui::KeyCode::F11) {
         //     if (key_args.pressed) {
         //         fullscreen_button_->set_toggled(!fullscreen_button_->get_toggled());
         //     }
         // }
 
-        if (playing_ && key_args.key == revector::KeyCode::F10) {
+        if (playing_ && key_args.key == vecgui::KeyCode::F10) {
             if (key_args.pressed) {
                 record_button_->trigger();
             }
@@ -65,50 +65,50 @@ void PlayerRect::custom_ready() {
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
-    collapse_panel_ = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Default);
+    collapse_panel_ = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Default);
     collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
-    collapse_panel_->set_color(revector::ColorU(106, 171, 114));
+    collapse_panel_->set_color(vecgui::ColorU(106, 171, 114));
     collapse_panel_->set_visibility(false);
-    collapse_panel_->set_anchor_flag(revector::AnchorFlag::TopRight);
+    collapse_panel_->set_anchor_flag(vecgui::AnchorFlag::TopRight);
     add_child(collapse_panel_);
 
-    auto vbox = std::make_shared<revector::VBoxContainer>();
+    auto vbox = std::make_shared<vecgui::VBoxContainer>();
     collapse_panel_->add_child(vbox);
 
-    logo_ = std::make_shared<revector::VectorImage>(revector::get_asset_dir("openipc-logo-white.svg"));
+    logo_ = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("openipc-logo-white.svg"));
     texture = logo_;
 
-    render_image_ = std::make_shared<revector::RenderImage>(Pathfinder::Vec2I{1920, 1080});
+    render_image_ = std::make_shared<vecgui::RenderImage>(Pathfinder::Vec2I{1920, 1080});
 
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
     tip_label_ = std::make_shared<TipLabel>();
-    tip_label_->set_anchor_flag(revector::AnchorFlag::VCenterWide);
+    tip_label_->set_anchor_flag(vecgui::AnchorFlag::VCenterWide);
     tip_label_->set_visibility(false);
     tip_label_->set_word_wrap(true);
     tip_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     add_child(tip_label_);
 
-    hud_container_ = std::make_shared<revector::VBoxContainer>();
+    hud_container_ = std::make_shared<vecgui::VBoxContainer>();
     add_child(hud_container_);
-    hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
+    hud_container_->set_anchor_flag(vecgui::AnchorFlag::BottomWide);
     hud_container_->set_visibility(false);
     hud_container_->set_separation(2);
 
     {
-        auto lq_container = std::make_shared<revector::GridContainer>();
+        auto lq_container = std::make_shared<vecgui::GridContainer>();
         hud_container_->add_child(lq_container);
         lq_container->set_separation(2);
-        lq_container->set_anchor_flag(revector::AnchorFlag::BottomWide);
+        lq_container->set_anchor_flag(vecgui::AnchorFlag::BottomWide);
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < ANTENNA_COUNT; j++) {
                 auto bar = std::make_shared<SignalBar>();
                 if (j == 0) {
-                    bar->set_fill_mode(revector::ProgressBar::FillMode::RightToLeft);
+                    bar->set_fill_mode(vecgui::ProgressBar::FillMode::RightToLeft);
                 } else {
-                    bar->set_fill_mode(revector::ProgressBar::FillMode::LeftToRight);
+                    bar->set_fill_mode(vecgui::ProgressBar::FillMode::LeftToRight);
                 }
 
                 link_score_bars_.push_back(bar);
@@ -126,18 +126,18 @@ void PlayerRect::custom_ready() {
         }
     }
 
-    auto label_container_ = std::make_shared<revector::HBoxContainer>();
+    auto label_container_ = std::make_shared<vecgui::HBoxContainer>();
     hud_container_->add_child(label_container_);
-    revector::StyleBox box;
+    vecgui::StyleBox box;
     box.bg_color =
-        GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
+        GuiInterface::Instance().dark_mode_ ? vecgui::ColorU(27, 27, 27, 100) : vecgui::ColorU(228, 228, 228, 100);
     box.border_width = 0;
     box.corner_radius = 0;
     label_container_->theme_override_bg = box;
     label_container_->set_separation(16);
 
     {
-        video_info_label_ = std::make_shared<revector::Label>();
+        video_info_label_ = std::make_shared<vecgui::Label>();
         label_container_->add_child(video_info_label_);
         video_info_label_->set_text("");
         video_info_label_->set_font_size(HUD_LABEL_FONT_SIZE);
@@ -156,30 +156,30 @@ void PlayerRect::custom_ready() {
         GuiInterface::Instance().decoderReadyCallbacks.emplace_back(on_decoder_ready);
     }
 
-    bitrate_label_ = std::make_shared<revector::Label>();
+    bitrate_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(bitrate_label_);
     bitrate_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     bitrate_label_->set_visibility(false);
 
-    render_fps_label_ = std::make_shared<revector::Label>();
+    render_fps_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(render_fps_label_);
     render_fps_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
-    decoder_label_ = std::make_shared<revector::Label>();
+    decoder_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(decoder_label_);
     decoder_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     decoder_label_->set_visibility(false);
 
 #ifndef _WIN32
-    pl_label_ = std::make_shared<revector::Label>();
+    pl_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(pl_label_);
     pl_label_->set_font_size(HUD_LABEL_FONT_SIZE);
-    fec_label_ = std::make_shared<revector::Label>();
+    fec_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(fec_label_);
     fec_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 #endif
 
-    rx_status_update_timer = std::make_shared<revector::Timer>();
+    rx_status_update_timer = std::make_shared<vecgui::Timer>();
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
@@ -222,16 +222,16 @@ void PlayerRect::custom_ready() {
     rx_status_update_timer->connect_signal("timeout", callback);
     rx_status_update_timer->start_timer(0.1);
 
-    record_status_label_ = std::make_shared<revector::Label>();
+    record_status_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(record_status_label_);
-    record_status_label_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
+    record_status_label_->container_sizing.flag_h = vecgui::ContainerSizingFlag::ShrinkEnd;
     record_status_label_->set_text("");
     record_status_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
-    auto capture_button = std::make_shared<revector::Button>();
+    auto capture_button = std::make_shared<vecgui::Button>();
     vbox->add_child(capture_button);
     capture_button->set_text(FTR("capture frame"));
-    auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("CaptureImage.svg"), true);
+    auto icon = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("CaptureImage.svg"), true);
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this] {
         auto output_file = player_->capture_jpeg();
@@ -243,9 +243,9 @@ void PlayerRect::custom_ready() {
     };
     capture_button->connect_signal("triggered", capture_callback);
 
-    record_button_ = std::make_shared<revector::Button>();
+    record_button_ = std::make_shared<vecgui::Button>();
     vbox->add_child(record_button_);
-    auto icon2 = std::make_shared<revector::VectorImage>(revector::get_asset_dir("RecordVideo.svg"), true);
+    auto icon2 = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("RecordVideo.svg"), true);
     record_button_->set_icon_normal(icon2);
     record_button_->set_text(FTR("record mp4") + " (F10)");
 
@@ -282,7 +282,7 @@ void PlayerRect::custom_ready() {
     record_button_->connect_signal("triggered", record_callback);
 
     {
-        auto button = std::make_shared<revector::CheckButton>();
+        auto button = std::make_shared<vecgui::CheckButton>();
         button->set_text(FTR("force sw decoding"));
         vbox->add_child(button);
 
@@ -297,7 +297,7 @@ void PlayerRect::custom_ready() {
     }
 
     // {
-    //     video_stabilization_button_ = std::make_shared<revector::CheckButton>();
+    //     video_stabilization_button_ = std::make_shared<vecgui::CheckButton>();
     //     video_stabilization_button_->set_text(FTR("video stab"));
     //     vbox->add_child(video_stabilization_button_);
     //
@@ -311,7 +311,7 @@ void PlayerRect::custom_ready() {
     // }
     //
     // {
-    //     low_light_enhancement_button_ = std::make_shared<revector::CheckButton>();
+    //     low_light_enhancement_button_ = std::make_shared<vecgui::CheckButton>();
     //     low_light_enhancement_button_->set_text(FTR("low light enhancement"));
     //     vbox->add_child(low_light_enhancement_button_);
     //
@@ -356,7 +356,7 @@ void PlayerRect::custom_update(double dt) {
     }
 
     render_fps_label_->set_text(FTR("render fps") + ": " +
-                                std::to_string(revector::Engine::get_singleton()->get_fps_int()));
+                                std::to_string(vecgui::Engine::get_singleton()->get_fps_int()));
 
     if (is_recording) {
         std::chrono::duration<double> duration = std::chrono::steady_clock::now() - record_start_time;
@@ -383,7 +383,7 @@ void PlayerRect::custom_draw() {
         return;
     }
     if (player_) {
-        auto render_image = (revector::RenderImage *)texture.get();
+        auto render_image = (vecgui::RenderImage *)texture.get();
         player_->render(render_image->get_texture());
     }
 }
@@ -400,7 +400,7 @@ void PlayerRect::start_playing(const std::string &url) {
 
     playing_ = true;
 
-    auto render_server = revector::RenderServer::get_singleton();
+    auto render_server = vecgui::RenderServer::get_singleton();
 
     bool recreate_player = true;
     if (player_) {

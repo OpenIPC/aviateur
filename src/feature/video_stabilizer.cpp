@@ -44,7 +44,7 @@ VideoStabilizer::VideoStabilizer() {
 }
 
 cv::Mat VideoStabilizer::stabilize(cv::Mat prev, cv::Mat cur_grey) {
-    auto timestamp = revector::Timestamp("Aviateur");
+    auto timestamp = vecgui::Timestamp("Aviateur");
 
     prev_grey = prev;
 

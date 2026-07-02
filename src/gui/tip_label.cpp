@@ -3,13 +3,13 @@
 void TipLabel::custom_ready() {
     set_font_size(32);
 
-    auto style_box = revector::StyleBox();
-    style_box.bg_color = revector::ColorU(201, 79, 79);
+    auto style_box = vecgui::StyleBox();
+    style_box.bg_color = vecgui::ColorU(201, 79, 79);
     style_box.corner_radius = 0;
     theme_override_bg = style_box;
 
-    display_timer = std::make_shared<revector::Timer>();
-    fade_timer = std::make_shared<revector::Timer>();
+    display_timer = std::make_shared<vecgui::Timer>();
+    fade_timer = std::make_shared<vecgui::Timer>();
 
     add_child(display_timer);
     add_child(fade_timer);

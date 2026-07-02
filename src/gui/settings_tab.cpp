@@ -43,22 +43,22 @@ void open_url(const std::string& url) {
 void SettingsContainer::custom_ready() {
     set_margin_all(8);
 
-    auto vbox_container = std::make_shared<revector::VBoxContainer>();
+    auto vbox_container = std::make_shared<vecgui::VBoxContainer>();
     vbox_container->set_separation(8);
     add_child(vbox_container);
 
     {
-        auto hbox_container = std::make_shared<revector::HBoxContainer>();
+        auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->set_separation(8);
         vbox_container->add_child(hbox_container);
 
-        auto label = std::make_shared<revector::Label>();
+        auto label = std::make_shared<vecgui::Label>();
         label->set_text(FTR("lang"));
         hbox_container->add_child(label);
 
-        auto lang_menu_button = std::make_shared<revector::MenuButton>();
+        auto lang_menu_button = std::make_shared<vecgui::MenuButton>();
 
-        lang_menu_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        lang_menu_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         hbox_container->add_child(lang_menu_button);
 
         if (GuiInterface::Instance().locale_ == "en") {
@@ -100,12 +100,12 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        fullscreen_button_ = std::make_shared<revector::CheckButton>();
+        fullscreen_button_ = std::make_shared<vecgui::CheckButton>();
         vbox_container->add_child(fullscreen_button_);
         fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
 
         auto on_fullscreen_toggled = [](bool toggled) {
-            auto render_server = revector::RenderServer::get_singleton();
+            auto render_server = vecgui::RenderServer::get_singleton();
 
             render_server->window_builder_->set_fullscreen(toggled);
         };
@@ -113,59 +113,59 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto dark_mode_btn = std::make_shared<revector::CheckButton>();
+        auto dark_mode_btn = std::make_shared<vecgui::CheckButton>();
         dark_mode_btn->set_text(FTR("dark mode"));
         vbox_container->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
         auto callback = [](const bool toggled) {
             GuiInterface::Instance().dark_mode_ = toggled;
-            const auto theme = toggled ? revector::Theme::default_dark() : revector::Theme::default_light();
-            revector::DefaultResource::get_singleton()->set_default_theme(theme);
+            const auto theme = toggled ? vecgui::Theme::default_dark() : vecgui::Theme::default_light();
+            vecgui::DefaultResource::get_singleton()->set_default_theme(theme);
         };
         dark_mode_btn->connect_signal("toggled", callback);
     }
 
-    revector::StyleBox radio_group_bg;
+    vecgui::StyleBox radio_group_bg;
     if (GuiInterface::Instance().dark_mode_) {
-        radio_group_bg.bg_color = revector::ColorU(0, 0, 0, 50);
+        radio_group_bg.bg_color = vecgui::ColorU(0, 0, 0, 50);
     } else {
-        radio_group_bg.bg_color = revector::ColorU(255, 255, 255, 50);
+        radio_group_bg.bg_color = vecgui::ColorU(255, 255, 255, 50);
     }
 
     {
-        auto hbox_container = std::make_shared<revector::HBoxContainer>();
+        auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->theme_override_bg = radio_group_bg;
         vbox_container->add_child(hbox_container);
 
-        auto label = std::make_shared<revector::Label>();
+        auto label = std::make_shared<vecgui::Label>();
         label->set_text(FTR("render backend"));
-        label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
+        label->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkCenter;
         hbox_container->add_child(label);
 
-        auto vbox_container2 = std::make_shared<revector::VBoxContainer>();
-        vbox_container2->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        auto vbox_container2 = std::make_shared<vecgui::VBoxContainer>();
+        vbox_container2->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         hbox_container->add_child(vbox_container2);
 
-        render_btn_group = std::make_shared<revector::ToggleButtonGroup>();
+        render_btn_group = std::make_shared<vecgui::ToggleButtonGroup>();
 
 #ifndef __APPLE__
         {
-            auto gl_btn = std::make_shared<revector::RadioButton>();
+            auto gl_btn = std::make_shared<vecgui::RadioButton>();
             gl_btn->set_text("OpenGL");
             vbox_container2->add_child(gl_btn);
             gl_btn->set_toggled_no_signal(!GuiInterface::Instance().use_vulkan_);
             auto callback = [](bool toggled) { GuiInterface::Instance().use_vulkan_ = toggled; };
             gl_btn->connect_signal("toggled", callback);
-            gl_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            gl_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
 
             render_btn_group->add_button(gl_btn);
         }
 #endif
 
         {
-            auto vk_btn = std::make_shared<revector::RadioButton>();
+            auto vk_btn = std::make_shared<vecgui::RadioButton>();
             vk_btn->set_text("Vulkan");
-            vk_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            vk_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             vbox_container2->add_child(vk_btn);
             vk_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
             auto callback = [](bool toggled) {
@@ -178,9 +178,9 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto open_capture_folder_button = std::make_shared<revector::MenuButton>();
+        auto open_capture_folder_button = std::make_shared<vecgui::MenuButton>();
 
-        open_capture_folder_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        open_capture_folder_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(FTR("capture folder"));
 
@@ -189,9 +189,9 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto open_appdata_button = std::make_shared<revector::Button>();
+        auto open_appdata_button = std::make_shared<vecgui::Button>();
 
-        open_appdata_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        open_appdata_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_appdata_button);
         open_appdata_button->set_text(FTR("config folder"));
 
@@ -201,9 +201,9 @@ void SettingsContainer::custom_ready() {
 
 #ifdef _WIN32
     {
-        auto open_crash_dumps_button = std::make_shared<revector::Button>();
+        auto open_crash_dumps_button = std::make_shared<vecgui::Button>();
 
-        open_crash_dumps_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        open_crash_dumps_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_crash_dumps_button);
         open_crash_dumps_button->set_text(FTR("crash dump folder"));
 
@@ -219,11 +219,11 @@ void SettingsContainer::custom_ready() {
 #endif
 
     {
-        auto button = std::make_shared<revector::Button>();
-        button->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkCenter;
-        button->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkEnd;
+        auto button = std::make_shared<vecgui::Button>();
+        button->container_sizing.flag_h = vecgui::ContainerSizingFlag::ShrinkCenter;
+        button->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
         vbox_container->add_child(button);
-        auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("icon-github.svg"));
+        auto icon = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("icon-github.svg"));
         button->set_icon_normal(icon);
         button->set_flat(true);
         button->set_text("");
@@ -233,16 +233,16 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto version_label = std::make_shared<revector::Label>();
-        version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        auto version_label = std::make_shared<vecgui::Label>();
+        version_label->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
         version_label->set_text(AVIATEUR_VERSION_NUM);
     }
 
     {
-        auto exit_button = std::make_shared<revector::MenuButton>();
+        auto exit_button = std::make_shared<vecgui::MenuButton>();
 
-        exit_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        exit_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(exit_button);
         exit_button->set_text(FTR("exit"));
 
@@ -251,11 +251,11 @@ void SettingsContainer::custom_ready() {
     }
 }
 
-void SettingsContainer::custom_input(revector::InputEvent& event) {
-    if (event.type == revector::InputEventType::Key) {
+void SettingsContainer::custom_input(vecgui::InputEvent& event) {
+    if (event.type == vecgui::InputEventType::Key) {
         auto key_args = event.args.key;
 
-        if (key_args.key == revector::KeyCode::F11) {
+        if (key_args.key == vecgui::KeyCode::F11) {
             if (key_args.pressed) {
                 fullscreen_button_->set_toggled(!fullscreen_button_->get_toggled());
             }

@@ -64,20 +64,20 @@ public:
 
     // Signals
 
-    std::vector<revector::AnyCallable<void>> connectionLostCallbacks;
+    std::vector<vecgui::AnyCallable<void>> connectionLostCallbacks;
     void emit_connection_lost();
 
     // void gotRecordVol(double vol);
-    revector::AnyCallable<void> gotRecordVolume;
+    vecgui::AnyCallable<void> gotRecordVolume;
 
     // void onBitrate(long bitrate);
-    revector::AnyCallable<void> onBitrateUpdate;
+    vecgui::AnyCallable<void> onBitrateUpdate;
 
     // void onMutedChanged(bool muted);
-    revector::AnyCallable<void> onMutedChanged;
+    vecgui::AnyCallable<void> onMutedChanged;
 
     // void onHasAudio(bool has);
-    revector::AnyCallable<void> onHasAudio;
+    vecgui::AnyCallable<void> onHasAudio;
 
     std::shared_ptr<YuvRenderer> yuvRenderer_;
 

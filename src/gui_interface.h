@@ -47,9 +47,9 @@ constexpr auto LOGGER_MODULE = "Aviateur";
 /// Bump this if the config structure changes.
 constexpr auto CONFIG_VERSION_NUM = 7;
 
-const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
-const revector::ColorU RED = revector::ColorU(201, 79, 79);
-const revector::ColorU YELLOW = revector::ColorU(255, 201, 14);
+const vecgui::ColorU GREEN = vecgui::ColorU(78, 135, 82);
+const vecgui::ColorU RED = vecgui::ColorU(201, 79, 79);
+const vecgui::ColorU YELLOW = vecgui::ColorU(255, 201, 14);
 
 const std::map<int, std::string> CHANNELS = {
     // 2.4GHz
@@ -153,23 +153,23 @@ public:
 
         // Set up loggers
         {
-            // revector::Logger::set_default_level(revector::Logger::Level::Info);
-            revector::Logger::set_module_level("revector", revector::Logger::Level::Info);
-            revector::Logger::set_module_level(LOGGER_MODULE, revector::Logger::Level::Info);
+            // vecgui::Logger::set_default_level(vecgui::Logger::Level::Info);
+            vecgui::Logger::set_module_level("revector", vecgui::Logger::Level::Info);
+            vecgui::Logger::set_module_level(LOGGER_MODULE, vecgui::Logger::Level::Info);
 
             auto logCallback = [](LogLevel level, std::string msg) {
                 switch (level) {
                     case LogLevel::Info: {
-                        revector::Logger::info(msg, LOGGER_MODULE);
+                        vecgui::Logger::info(msg, LOGGER_MODULE);
                     } break;
                     case LogLevel::Debug: {
-                        revector::Logger::debug(msg, LOGGER_MODULE);
+                        vecgui::Logger::debug(msg, LOGGER_MODULE);
                     } break;
                     case LogLevel::Warn: {
-                        revector::Logger::warn(msg, LOGGER_MODULE);
+                        vecgui::Logger::warn(msg, LOGGER_MODULE);
                     } break;
                     case LogLevel::Error: {
-                        revector::Logger::error(msg, LOGGER_MODULE);
+                        vecgui::Logger::error(msg, LOGGER_MODULE);
                     } break;
                     default:;
                 }
@@ -322,7 +322,7 @@ public:
 
         // If no custom key provided by the user, use the default key.
         if (gsKeyPath.empty()) {
-            gsKeyPath = revector::get_asset_dir("gs.key");
+            gsKeyPath = vecgui::get_asset_dir("gs.key");
             Instance().PutLog(LogLevel::Info, "Using GS key: {}", gsKeyPath);
         }
 
@@ -499,7 +499,7 @@ public:
 
     void set_locale(std::string locale) {
         locale_ = locale;
-        revector::TranslationServer::get_singleton()->set_locale(locale_);
+        vecgui::TranslationServer::get_singleton()->set_locale(locale_);
     }
 
     mINI::INIStructure ini_;
@@ -541,17 +541,17 @@ public:
 #endif
 
     // Signals.
-    std::vector<revector::AnyCallable<void>> logCallbacks;
-    std::vector<revector::AnyCallable<void>> tipCallbacks;
-    std::vector<revector::AnyCallable<void>> wifiStopCallbacks;
-    std::vector<revector::AnyCallable<void>> wifiFrameCountCallbacks;
-    std::vector<revector::AnyCallable<void>> wfbFrameCountCallbacks;
-    std::vector<revector::AnyCallable<void>> rtpPktCountCallbacks;
-    std::vector<revector::AnyCallable<void>> rtpStreamCallbacks;
-    std::vector<revector::AnyCallable<void>> bitrateUpdateCallbacks;
-    std::vector<revector::AnyCallable<void>> decoderReadyCallbacks;
+    std::vector<vecgui::AnyCallable<void>> logCallbacks;
+    std::vector<vecgui::AnyCallable<void>> tipCallbacks;
+    std::vector<vecgui::AnyCallable<void>> wifiStopCallbacks;
+    std::vector<vecgui::AnyCallable<void>> wifiFrameCountCallbacks;
+    std::vector<vecgui::AnyCallable<void>> wfbFrameCountCallbacks;
+    std::vector<vecgui::AnyCallable<void>> rtpPktCountCallbacks;
+    std::vector<vecgui::AnyCallable<void>> rtpStreamCallbacks;
+    std::vector<vecgui::AnyCallable<void>> bitrateUpdateCallbacks;
+    std::vector<vecgui::AnyCallable<void>> decoderReadyCallbacks;
 
-    std::vector<revector::AnyCallable<void>> urlStreamShouldStopCallbacks;
+    std::vector<vecgui::AnyCallable<void>> urlStreamShouldStopCallbacks;
 
     void EmitLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {

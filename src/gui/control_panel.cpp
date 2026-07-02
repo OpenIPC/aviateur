@@ -4,7 +4,7 @@
 
 #include "settings_tab.h"
 
-void ControlPanel::update_dongle_list(const std::shared_ptr<revector::MenuButton> &menu_button,
+void ControlPanel::update_dongle_list(const std::shared_ptr<vecgui::MenuButton> &menu_button,
                                       std::string &dongle_name) {
     auto menu = menu_button->get_popup_menu().lock();
 
@@ -28,8 +28,8 @@ void ControlPanel::update_dongle_list(const std::shared_ptr<revector::MenuButton
 void ControlPanel::update_adapter_start_button_looking(bool start_status) const {
     tab_container_->set_tab_disabled(!start_status);
 
-    play_button_->theme_override_normal = revector::StyleBox();
-    play_button_->theme_override_pressed = revector::StyleBox();
+    play_button_->theme_override_normal = vecgui::StyleBox();
+    play_button_->theme_override_pressed = vecgui::StyleBox();
 
     if (!start_status) {
         play_button_->theme_override_normal.value().bg_color = RED;
@@ -47,8 +47,8 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
 void ControlPanel::update_url_start_button_looking(bool start_status) const {
     tab_container_->set_tab_disabled(!start_status);
 
-    play_port_button_->theme_override_normal = revector::StyleBox();
-    play_port_button_->theme_override_pressed = revector::StyleBox();
+    play_port_button_->theme_override_normal = vecgui::StyleBox();
+    play_port_button_->theme_override_pressed = vecgui::StyleBox();
 
     if (!start_status) {
         play_port_button_->theme_override_normal.value().bg_color = RED;
@@ -70,53 +70,53 @@ void ControlPanel::custom_ready() {
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
 
-    set_anchor_flag(revector::AnchorFlag::RightWide);
+    set_anchor_flag(vecgui::AnchorFlag::RightWide);
 
-    tab_container_ = std::make_shared<revector::TabContainer>();
+    tab_container_ = std::make_shared<vecgui::TabContainer>();
     add_child(tab_container_);
-    tab_container_->set_anchor_flag(revector::AnchorFlag::FullRect);
+    tab_container_->set_anchor_flag(vecgui::AnchorFlag::FullRect);
 
     // Wi-Fi adapter tab
     {
-        auto margin_container = std::make_shared<revector::MarginContainer>();
+        auto margin_container = std::make_shared<vecgui::MarginContainer>();
         margin_container->set_margin_all(8);
         margin_container->name = "Wi-Fi";
         tab_container_->add_child(margin_container);
 
-        auto vbox = std::make_shared<revector::VBoxContainer>();
+        auto vbox = std::make_shared<vecgui::VBoxContainer>();
         vbox->set_separation(8);
         margin_container->add_child(vbox);
 
-        auto con = std::make_shared<revector::Container>();
+        auto con = std::make_shared<vecgui::Container>();
         vbox->add_child(con);
 
-        auto vbox_blockable = std::make_shared<revector::VBoxContainer>();
+        auto vbox_blockable = std::make_shared<vecgui::VBoxContainer>();
         con->add_child(vbox_blockable);
 
-        adapter_prop_block_ = std::make_shared<revector::Panel>();
-        revector::StyleBox new_theme;
-        new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
+        adapter_prop_block_ = std::make_shared<vecgui::Panel>();
+        vecgui::StyleBox new_theme;
+        new_theme.bg_color = vecgui::ColorU(0, 0, 0, 150);
         new_theme.border_width = 0;
         new_theme.corner_radius = 0;
-        new_theme.border_color = revector::ColorU(0, 0, 0);
+        new_theme.border_color = vecgui::ColorU(0, 0, 0);
         adapter_prop_block_->theme_override_bg_ = new_theme;
         con->add_child(adapter_prop_block_);
 
-        auto vbox_unblockable = std::make_shared<revector::VBoxContainer>();
+        auto vbox_unblockable = std::make_shared<vecgui::VBoxContainer>();
         vbox->add_child(vbox_unblockable);
 
         {
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             hbox_container->set_separation(8);
             vbox_blockable->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("device"));
             hbox_container->add_child(label);
 
-            dongle_menu_button_ = std::make_shared<revector::MenuButton>();
+            dongle_menu_button_ = std::make_shared<vecgui::MenuButton>();
             dongle_menu_button_->set_custom_minimum_size({0, 32});
-            dongle_menu_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            dongle_menu_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
 
             // Do this before setting dongle button text.
@@ -129,8 +129,8 @@ void ControlPanel::custom_ready() {
             };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
-            refresh_dongle_button_ = std::make_shared<revector::Button>();
-            auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("Refresh.svg"), true);
+            refresh_dongle_button_ = std::make_shared<vecgui::Button>();
+            auto icon = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("Refresh.svg"), true);
             refresh_dongle_button_->set_icon_normal(icon);
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
@@ -140,15 +140,15 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             vbox_blockable->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("channel"));
             hbox_container->add_child(label);
 
-            channel_button_ = std::make_shared<revector::MenuButton>();
-            channel_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            channel_button_ = std::make_shared<vecgui::MenuButton>();
+            channel_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_button_);
 
             {
@@ -176,15 +176,15 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             vbox_blockable->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("channel width"));
             hbox_container->add_child(label);
 
-            channel_width_button_ = std::make_shared<revector::MenuButton>();
-            channel_width_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            channel_width_button_ = std::make_shared<vecgui::MenuButton>();
+            channel_width_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_width_button_);
 
             {
@@ -214,24 +214,24 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             vbox_blockable->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("key"));
             hbox_container->add_child(label);
 
-            auto text_edit = std::make_shared<revector::TextEdit>();
+            auto text_edit = std::make_shared<vecgui::TextEdit>();
             text_edit->set_editable(false);
             if (keyPath.empty()) {
                 text_edit->set_text(FTR("default"));
             } else {
                 text_edit->set_text(std::filesystem::path(keyPath).filename().string());
             }
-            text_edit->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            text_edit->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
 
-            auto file_dialog = std::make_shared<revector::FileDialog>();
+            auto file_dialog = std::make_shared<vecgui::FileDialog>();
             add_child(file_dialog);
 
             if (!keyPath.empty()) {
@@ -239,7 +239,7 @@ void ControlPanel::custom_ready() {
                 file_dialog->set_default_path(defaultKeyPath);
             }
 
-            auto select_button = std::make_shared<revector::Button>();
+            auto select_button = std::make_shared<vecgui::Button>();
             select_button->set_text(FTR("open"));
 
             std::weak_ptr file_dialog_weak = file_dialog;
@@ -259,32 +259,32 @@ void ControlPanel::custom_ready() {
 
 #ifndef _WIN32
         {
-            auto alink_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
+            auto alink_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);
             alink_con->set_title(FTR("alink"));
             alink_con->set_collapse(false);
-            alink_con->set_color(revector::ColorU(210, 137, 94));
+            alink_con->set_color(vecgui::ColorU(210, 137, 94));
             vbox_unblockable->add_child(alink_con);
 
             auto callback2 = [](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
             alink_con->connect_signal("collapsed", callback2);
 
-            auto vbox_container2 = std::make_shared<revector::HBoxContainer>();
+            auto vbox_container2 = std::make_shared<vecgui::HBoxContainer>();
             alink_con->add_child(vbox_container2);
 
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
-            hbox_container->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
+            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             vbox_container2->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("tx power"));
             hbox_container->add_child(label);
 
-            tx_pwr_label_ = std::make_shared<revector::Label>();
+            tx_pwr_label_ = std::make_shared<vecgui::Label>();
             tx_pwr_label_->set_custom_minimum_size({64, 0});
             hbox_container->add_child(tx_pwr_label_);
 
-            tx_pwr_slider_ = std::make_shared<revector::Slider>();
-            tx_pwr_slider_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            tx_pwr_slider_ = std::make_shared<vecgui::Slider>();
+            tx_pwr_slider_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             tx_pwr_slider_->set_integer_mode(true);
             tx_pwr_slider_->set_range(1, 40);
             hbox_container->add_child(tx_pwr_slider_);
@@ -308,10 +308,10 @@ void ControlPanel::custom_ready() {
 #endif
 
         {
-            forward_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
+            forward_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);
             forward_con->set_title(FTR("forward"));
             forward_con->set_collapse(true);
-            forward_con->set_color(revector::ColorU(147, 115, 165));
+            forward_con->set_color(vecgui::ColorU(147, 115, 165));
             vbox_blockable->add_child(forward_con);
 
             auto on_collapsed = [](bool collapsed) {
@@ -321,18 +321,18 @@ void ControlPanel::custom_ready() {
             };
             forward_con->connect_signal("collapsed", on_collapsed);
 
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             hbox_container->set_separation(8);
             forward_con->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("target port"));
             hbox_container->add_child(label);
 
-            forward_port_edit = std::make_shared<revector::TextEdit>();
+            forward_port_edit = std::make_shared<vecgui::TextEdit>();
             forward_port_edit->set_custom_minimum_size({0, 32});
             forward_port_edit->set_numbers_only(true);
-            forward_port_edit->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            forward_port_edit->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             forward_port_edit->set_text("");
             hbox_container->add_child(forward_port_edit);
 
@@ -341,9 +341,9 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            play_button_ = std::make_shared<revector::Button>();
+            play_button_ = std::make_shared<vecgui::Button>();
             play_button_->set_custom_minimum_size({0, 48});
-            play_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            play_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             update_adapter_start_button_looking(true);
 
             auto callback1 = [this] {
@@ -420,56 +420,56 @@ void ControlPanel::custom_ready() {
 
     // Local tab
     {
-        auto margin_container = std::make_shared<revector::MarginContainer>();
+        auto margin_container = std::make_shared<vecgui::MarginContainer>();
         margin_container->set_margin_all(8);
         margin_container->name = FTR("local");
         tab_container_->add_child(margin_container);
 
-        auto vbox = std::make_shared<revector::VBoxContainer>();
+        auto vbox = std::make_shared<vecgui::VBoxContainer>();
         vbox->set_separation(8);
         margin_container->add_child(vbox);
 
-        auto con = std::make_shared<revector::Container>();
+        auto con = std::make_shared<vecgui::Container>();
         vbox->add_child(con);
 
-        auto vbox_blockable = std::make_shared<revector::VBoxContainer>();
+        auto vbox_blockable = std::make_shared<vecgui::VBoxContainer>();
         con->add_child(vbox_blockable);
 
-        udp_prop_block_ = std::make_shared<revector::Panel>();
-        revector::StyleBox new_theme;
-        new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
+        udp_prop_block_ = std::make_shared<vecgui::Panel>();
+        vecgui::StyleBox new_theme;
+        new_theme.bg_color = vecgui::ColorU(0, 0, 0, 150);
         new_theme.border_width = 0;
         new_theme.corner_radius = 0;
-        new_theme.border_color = revector::ColorU(0, 0, 0);
+        new_theme.border_color = vecgui::ColorU(0, 0, 0);
         udp_prop_block_->theme_override_bg_ = new_theme;
         udp_prop_block_->set_visibility(false);
         con->add_child(udp_prop_block_);
 
-        auto hbox_container = std::make_shared<revector::HBoxContainer>();
+        auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         vbox_blockable->add_child(hbox_container);
 
-        auto label = std::make_shared<revector::Label>();
+        auto label = std::make_shared<vecgui::Label>();
         label->set_text(FTR("port"));
         hbox_container->add_child(label);
 
-        local_listener_port_edit_ = std::make_shared<revector::TextEdit>();
+        local_listener_port_edit_ = std::make_shared<vecgui::TextEdit>();
         local_listener_port_edit_->set_editable(true);
         local_listener_port_edit_->set_numbers_only(true);
         local_listener_port_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT]);
-        local_listener_port_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        local_listener_port_edit_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         hbox_container->add_child(local_listener_port_edit_);
 
         {
-            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             hbox_container->set_separation(8);
             vbox_blockable->add_child(hbox_container);
 
-            auto label = std::make_shared<revector::Label>();
+            auto label = std::make_shared<vecgui::Label>();
             label->set_text(FTR("codec"));
             hbox_container->add_child(label);
 
-            auto codec_menu_button = std::make_shared<revector::MenuButton>();
-            codec_menu_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            auto codec_menu_button = std::make_shared<vecgui::MenuButton>();
+            codec_menu_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             codec_menu_button->set_text(GuiInterface::Instance().rtp_codec_);
             hbox_container->add_child(codec_menu_button);
 
@@ -496,9 +496,9 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            play_port_button_ = std::make_shared<revector::Button>();
+            play_port_button_ = std::make_shared<vecgui::Button>();
             play_port_button_->set_custom_minimum_size({0, 48});
-            play_port_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            play_port_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
@@ -539,11 +539,11 @@ void ControlPanel::custom_ready() {
     }
 }
 
-void ControlPanel::custom_input(revector::InputEvent &event) {
-    if (event.type == revector::InputEventType::Key) {
+void ControlPanel::custom_input(vecgui::InputEvent &event) {
+    if (event.type == vecgui::InputEventType::Key) {
         auto key_args = event.args.key;
 
-        if (key_args.key == revector::KeyCode::F5) {
+        if (key_args.key == vecgui::KeyCode::F5) {
             if (key_args.pressed) {
                 if (tab_container_->get_current_tab().has_value()) {
                     if (tab_container_->get_current_tab().value() == 0) {

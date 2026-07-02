@@ -280,7 +280,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 #ifdef AVIATEUR_USE_OPENCV
             if (mLowLightEnhancement) {
                 if (!mLowLightEnhancer.has_value()) {
-                    mLowLightEnhancer = LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
+                    mLowLightEnhancer = LowLightEnhancer(vecgui::get_asset_dir("weights/pairlie_180x320.onnx"));
                 }
 
                 cv::Mat originalFrameY =

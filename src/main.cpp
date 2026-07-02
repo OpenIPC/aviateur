@@ -12,29 +12,29 @@ int main() {
     GuiInterface::Instance().init();
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
-    auto app = std::make_shared<revector::App>(revector::Vec2I{1280, 720},
+    auto app = std::make_shared<vecgui::App>(vecgui::Vec2I{1280, 720},
                                                GuiInterface::Instance().dark_mode_,
                                                GuiInterface::Instance().use_vulkan_);
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
-    revector::TranslationServer::get_singleton()->load_translations(revector::get_asset_dir("translations.csv"));
+    vecgui::TranslationServer::get_singleton()->load_translations(vecgui::get_asset_dir("translations.csv"));
 
     // Initialize the default libusb context.
     int rc = libusb_init(nullptr);
 
     {
-        auto hbox_container = std::make_shared<revector::HBoxContainer>();
-        hbox_container->set_anchor_flag(revector::AnchorFlag::FullRect);
+        auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
+        hbox_container->set_anchor_flag(vecgui::AnchorFlag::FullRect);
         hbox_container->set_separation(0);
         app->get_tree_root()->add_child(hbox_container);
 
         auto player_rect = std::make_shared<PlayerRect>();
-        player_rect->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-        player_rect->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
+        player_rect->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        player_rect->container_sizing.flag_v = vecgui::ContainerSizingFlag::Fill;
         hbox_container->add_child(player_rect);
 
         auto control_panel = std::make_shared<ControlPanel>();
-        control_panel->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
+        control_panel->container_sizing.flag_v = vecgui::ContainerSizingFlag::Fill;
         control_panel->set_custom_minimum_size({340, 0});
         hbox_container->add_child(control_panel);
 
@@ -51,17 +51,17 @@ int main() {
         GuiInterface::Instance().wifiStopCallbacks.emplace_back(on_wifi_stopped);
 
         {
-            player_rect->control_panel_button_ = std::make_shared<revector::Button>();
+            player_rect->control_panel_button_ = std::make_shared<vecgui::Button>();
             player_rect->add_child(player_rect->control_panel_button_);
             player_rect->control_panel_button_->set_text(">");
             player_rect->control_panel_button_->set_size({24, 64});
-            player_rect->control_panel_button_->set_anchor_flag(revector::AnchorFlag::CenterRight);
-            player_rect->control_panel_button_->theme_override_normal = revector::StyleBox::from_empty();
-            player_rect->control_panel_button_->theme_override_normal->bg_color = revector::ColorU{30, 30, 30, 100};
-            player_rect->control_panel_button_->theme_override_hovered = revector::StyleBox::from_empty();
-            player_rect->control_panel_button_->theme_override_hovered->bg_color = revector::ColorU{30, 30, 30, 150};
-            player_rect->control_panel_button_->theme_override_pressed = revector::StyleBox::from_empty();
-            player_rect->control_panel_button_->theme_override_pressed->bg_color = revector::ColorU{30, 30, 30, 200};
+            player_rect->control_panel_button_->set_anchor_flag(vecgui::AnchorFlag::CenterRight);
+            player_rect->control_panel_button_->theme_override_normal = vecgui::StyleBox::from_empty();
+            player_rect->control_panel_button_->theme_override_normal->bg_color = vecgui::ColorU{30, 30, 30, 100};
+            player_rect->control_panel_button_->theme_override_hovered = vecgui::StyleBox::from_empty();
+            player_rect->control_panel_button_->theme_override_hovered->bg_color = vecgui::ColorU{30, 30, 30, 150};
+            player_rect->control_panel_button_->theme_override_pressed = vecgui::StyleBox::from_empty();
+            player_rect->control_panel_button_->theme_override_pressed->bg_color = vecgui::ColorU{30, 30, 30, 200};
 
             auto on_control_panel_triggered = [player_rect_weak, control_panel_weak]() {
                 bool visible = false;

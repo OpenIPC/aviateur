@@ -87,8 +87,8 @@ endif ()
 add_subdirectory(3rd/devourer)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/devourer/src" "3rd/devourer/hal")
 
-add_subdirectory(3rd/revector)
-target_include_directories(${PROJECT_NAME} PRIVATE "3rd/revector/src")
+add_subdirectory(3rd/vecgui)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/vecgui/src")
 
 add_subdirectory(3rd/json)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
@@ -104,7 +104,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 if (APPLE)
-    # Do this after we copied assets for both Aviateur & Revector.
+    # Do this after we copied assets for both Aviateur & VecGui.
     file(COPY ${CMAKE_BINARY_DIR}/bin/assets
             DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
     )
@@ -116,7 +116,7 @@ if (WIN32)
             PkgConfig::LIBUSB
             unofficial-sodium::sodium
             WiFiDriver
-            revector
+            vecgui
             SDL3::SDL3-static
     )
 else ()
@@ -124,7 +124,7 @@ else ()
             PkgConfig::LIBAV
             PkgConfig::LIBSODIUM
             WiFiDriver
-            revector
+            vecgui
             SDL3::SDL3-static
             pcap
     )
