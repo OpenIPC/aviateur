@@ -153,8 +153,7 @@ public:
 
         // Set up loggers
         {
-            // vecgui::Logger::set_default_level(vecgui::Logger::Level::Info);
-            vecgui::Logger::set_module_level("revector", vecgui::Logger::Level::Info);
+            vecgui::Logger::set_module_level("vecgui", vecgui::Logger::Level::Info);
             vecgui::Logger::set_module_level(LOGGER_MODULE, vecgui::Logger::Level::Info);
 
             auto logCallback = [](LogLevel level, std::string msg) {
