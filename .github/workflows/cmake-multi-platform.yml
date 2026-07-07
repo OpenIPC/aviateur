@@ -73,7 +73,7 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DAVIATEUR_ENABLE_GSTREAMER=OFF
-          -DREVECTOR_VULKAN=OFF
+          -DVECGUI_VULKAN=OFF
           -S ${{ github.workspace }}
 
       - name: Configure CMake (Linux)
@@ -84,7 +84,7 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DAVIATEUR_ENABLE_GSTREAMER=OFF
-          -DREVECTOR_VULKAN=OFF
+          -DVECGUI_VULKAN=OFF
           -S ${{ github.workspace }}
 
       - name: Build
