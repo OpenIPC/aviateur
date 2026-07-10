@@ -2,21 +2,16 @@ Remove-Item -Path "generated" -Recurse
 
 New-Item -Path "generated" -ItemType Directory
 
-New-Variable -Name "GLSLC" -Visibility Public -Value "$env:VULKAN_SDK/Bin/glslc.exe"
+New-Variable -Name "GENERATOR" -Visibility Public -Value "./pathfinder_shader_generator.exe"
 
 # Compile shaders.
-& $GLSLC yuv.vert -o generated/yuv_vert.spv
-& $GLSLC yuv.frag -o generated/yuv_frag.spv
-
-Copy-Item "yuv.frag" "generated"
-Copy-Item "yuv.vert" "generated"
+& $GENERATOR -i yuv.vert -o generated/yuv_vert.shdbin -t vert
+& $GENERATOR -i yuv.frag -o generated/yuv_frag.shdbin -t frag
 
 Set-Location "generated"
 
 # Generate headers.
-python ../convert_files_to_header.py vert
-python ../convert_files_to_header.py frag
-python ../convert_files_to_header.py spv
+python ../convert_files_to_header.py shdbin
 
 # Remove intermediate files.
 Get-ChildItem -Recurse -File | Where { ($_.Extension -ne ".h") } | Remove-Item

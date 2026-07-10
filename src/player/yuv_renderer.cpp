@@ -9,14 +9,11 @@
 #include "resources/resource.h"
 
 // clang-format off
-// SPV
-#include "../shaders/generated/yuv_frag_spv.h"
-#include "../shaders/generated/yuv_vert_spv.h"
-// GLSL
-#include "../shaders/generated/yuv_frag.h"
-#include "../shaders/generated/yuv_vert.h"
-#include "src/gui_interface.h"
+#include "../shaders/generated/yuv_vert_shdbin.h"
+#include "../shaders/generated/yuv_frag_shdbin.h"
 // clang-format on
+
+#include "src/gui_interface.h"
 
 struct FragUniformBlock {
     Pathfinder::Mat4 xform;
@@ -66,16 +63,6 @@ void YuvRenderer::initGeometry() {
 }
 
 void YuvRenderer::initPipeline() {
-    std::vector<char> vert_source, frag_source;
-
-    if (mDevice->get_backend_type() == Pathfinder::BackendType::Vulkan) {
-        vert_source = std::vector<char>(std::begin(aviateur::yuv_vert_spv), std::end(aviateur::yuv_vert_spv));
-        frag_source = std::vector<char>(std::begin(aviateur::yuv_frag_spv), std::end(aviateur::yuv_frag_spv));
-    } else {
-        vert_source = std::vector<char>(std::begin(aviateur::yuv_vert), std::end(aviateur::yuv_vert));
-        frag_source = std::vector<char>(std::begin(aviateur::yuv_frag), std::end(aviateur::yuv_frag));
-    }
-
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
     constexpr uint32_t stride = 4 * sizeof(float);
@@ -94,10 +81,10 @@ void YuvRenderer::initPipeline() {
 
     {
         std::vector<Pathfinder::DescriptorLayout> layouts = {
-            {0, Pathfinder::ShaderStage::VertexAndFragment, Pathfinder::DescriptorType::UniformBuffer, "bUniform0"},
-            {1, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler, "tex_y"},
-            {2, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler, "tex_u"},
-            {3, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler, "tex_v"},
+            {0, Pathfinder::ShaderStage::VertexAndFragment, Pathfinder::DescriptorType::UniformBuffer},
+            {1, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler},
+            {2, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler},
+            {3, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler},
         };
 
         mDescriptorSetLayout = mDevice->create_descriptor_set_layout(layouts);
@@ -116,14 +103,21 @@ void YuvRenderer::initPipeline() {
 
     mSampler = mDevice->create_sampler(sampler_desc);
 
-    mPipeline = mDevice->create_render_pipeline(
-        mDevice->create_shader_module(vert_source, Pathfinder::ShaderStage::Vertex, "yuv vert"),
-        mDevice->create_shader_module(frag_source, Pathfinder::ShaderStage::Fragment, "yuv frag"),
-        attribute_descriptions,
-        blend_state,
-        mDescriptorSetLayout,
-        Pathfinder::TextureFormat::Rgba8Unorm,
-        "yuv pipeline");
+    auto yuv_vert_shader =
+        Pathfinder::Shader::create_from_shdbin(aviateur::yuv_vert_shdbin, sizeof(aviateur::yuv_vert_shdbin));
+    auto yuv_frag_shader =
+        Pathfinder::Shader::create_from_shdbin(aviateur::yuv_frag_shdbin, sizeof(aviateur::yuv_frag_shdbin));
+
+    auto yuv_vert_shader_module = mDevice->create_shader_module(yuv_vert_shader, "tile vert");
+    auto yuv_frag_shader_module = mDevice->create_shader_module(yuv_frag_shader, "tile frag");
+
+    mPipeline = mDevice->create_render_pipeline(yuv_vert_shader_module,
+                                                yuv_frag_shader_module,
+                                                attribute_descriptions,
+                                                blend_state,
+                                                mDescriptorSetLayout,
+                                                Pathfinder::TextureFormat::Rgba8Unorm,
+                                                "yuv pipeline");
 }
 
 void YuvRenderer::updateTextureInfo(int width, int height, int format) {
