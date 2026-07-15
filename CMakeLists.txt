@@ -12,6 +12,8 @@ project(aviateur
 
 if (APPLE)
     enable_language(OBJC OBJCXX)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "Minimum macOS version")
+    set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Target architectures")
 endif ()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -134,4 +136,46 @@ if (AVIATEUR_ENABLE_OPENCV)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ${OpenCV_LIBS}
     )
+endif ()
+
+# Deployment
+if (APPLE)
+    set(MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/assets/Info.plist.in")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.aviateur.app")
+    set(MACOSX_BUNDLE_BUNDLE_NAME "Aviateur")
+    set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
+    set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
+    set(MACOSX_BUNDLE_ICON_FILE "logo.icns")
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            MACOSX_BUNDLE_INFO_PLIST "${MACOSX_BUNDLE_INFO_PLIST}"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "${MACOSX_BUNDLE_GUI_IDENTIFIER}"
+            MACOSX_BUNDLE_BUNDLE_NAME "${MACOSX_BUNDLE_BUNDLE_NAME}"
+            MACOSX_BUNDLE_BUNDLE_VERSION "${MACOSX_BUNDLE_BUNDLE_VERSION}"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "${MACOSX_BUNDLE_SHORT_VERSION_STRING}"
+            MACOSX_BUNDLE_ICON_FILE "${MACOSX_BUNDLE_ICON_FILE}"
+    )
+
+    install(TARGETS ${PROJECT_NAME}
+            BUNDLE DESTINATION .
+            COMPONENT Runtime
+    )
+
+    install(FILES "${CMAKE_SOURCE_DIR}/assets/logo.icns"
+            DESTINATION "aviateur.app/Contents/Resources"
+            COMPONENT Runtime
+    )
+
+    include(InstallRequiredSystemLibraries)
+    include(CPack)
+
+    set(CPACK_PACKAGE_NAME "Aviateur")
+    set(CPACK_PACKAGE_VENDOR "Aviateur")
+    set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Aviateur - OpenIPC FPV Ground Station")
+    set(CPACK_PACKAGE_FILE_NAME "Aviateur-${PROJECT_VERSION}-macOS")
+    set(CPACK_GENERATOR "DragNDrop")
+    set(CPACK_DMG_VOLUME_NAME "Aviateur")
+    set(CPACK_DMG_FORMAT "UDBZ")
+    set(CPACK_DMG_DS_STORE_SETUP_SCRIPT "${CMAKE_SOURCE_DIR}/assets/dmg-setup.scpt")
 endif ()
