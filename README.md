@@ -1,153 +1,135 @@
 # Aviateur
 
-<p style="text-align: center;">
+<p align="center">
   <a href="https://github.com/OpenIPC/aviateur">
-    <img src="assets/logo.svg" width="100" alt="Aviateur logo">
+    <img src="assets/logo.svg" width="120" alt="Aviateur logo">
   </a>
 </p>
 
-OpenIPC FPV ground station for Linux/Windows/macOS.
+<p align="center">
+  <strong>OpenIPC FPV ground station for Linux, Windows, and macOS.</strong>
+</p>
 
-![](tutorials/interface.jpg)
+<p align="center">
+  <img src="https://img.shields.io/github/license/OpenIPC/aviateur" alt="License">
+  <img src="https://img.shields.io/github/v/release/OpenIPC/aviateur" alt="Release Status">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-blue" alt="Platform Support">
+</p>
 
-> [!NOTE]
-> No Adaptive Link support for Windows.
+---
 
-> [!NOTE]
-> Only RTL8812AU Wi-Fi adapter is supported.
+Aviateur is a high-performance, low-latency FPV ground station specifically designed for
+the [OpenIPC](https://openipc.org/) ecosystem. It allows you to receive and display digital video streams from your
+drone with minimal lag, supporting modern codecs and hardware acceleration.
 
-> [!NOTE]
-> No MAVLink support.
+![Interface](tutorials/interface.jpg)
 
-### How to run on Windows
+## ✨ Features
+
+- **Ultra-Low Latency**: Optimized for real-time FPV flight.
+- **Cross-Platform**: Native support for Linux, Windows, and macOS.
+- **Flight Recording**: Capture your flights in MP4 or GIF formats.
+- **Snapshots**: Save high-quality JPEG screenshots during flight.
+- **Hardware Acceleration**: Utilizes GPU for efficient video decoding and rendering (Vulkan/OpenGL).
+- **Audio Support**: Real-time audio streaming from the drone.
+- **Telemetry & Stats**: Monitor bitrate and link quality in real-time.
+
+## ⚠️ Important Notes
+
+- **Wi-Fi Adapter**: Currently, only **RTL8812AU** Wi-Fi adapters are officially supported for monitor mode.
+- **Adaptive Link**: Not currently supported on Windows.
+- **MAVLink**: Basic MAVLink telemetry support is on the roadmap but not yet fully implemented.
+
+## 🚀 Quick Start
+
+### Windows
 
 1. Download [Zadig](https://zadig.akeo.ie/).
-2. Install the libusb driver for your adapter.
-   Go *Options* → *List All Devices*
-   ![](tutorials/zadig1.jpg)
-   Select your adapter. Install the driver. Remember the USB ID.
-   ![](tutorials/zadig2.jpg)
-3. Run Aviateur.
+2. Select your adapter in Zadig (*Options* → *List All Devices*).
+3. Install the **libusb** driver.
+4. Run `aviateur.exe`.
+   > **Note**: If the application fails to start, install
+   the [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
 
-### How to run on Linux
+### Linux
 
-1. (Optional) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
-   `SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", MODE="0666"` in it.
-   Call `sudo udevadm control --reload-rules`, then reboot (this is definitely required).
-2. Run Aviateur (if you skip step 1 & 2, root privileges are needed to access the adapter).
+1. Set up udev rules (required for non-root access):
+    - Copy the provided `80-my8812au.rules` to `/lib/udev/rules.d/`.
+    - Run `sudo udevadm control --reload-rules`.
+    - **Reboot** your system.
+2. Launch AppImage.
+   > **Note**: If rules are not set, you must run the application with `root` privileges.
 
-### How to run on macOS
+### macOS
 
-1. Build it from source yourself. Currently, I cannot find a way to distribute it on macOS.
-2. **Important**: Run the app from terminal to ensure proper environment variable handling:
+1. Build from source (see [Build Instructions](#-how-to-build)).
+2. Launch executable.
+
+## 🛠 How to Build
+
+### Prerequisites
+
+- CMake 3.18+
+- C++20 compatible compiler
+- Dependencies: FFmpeg, libusb, libsodium, OpenCV, SDL3
+
+#### Windows (using vcpkg)
+
+1. Install [vcpkg](https://github.com/microsoft/vcpkg).
+2. Install dependencies:
+   ```powershell
+   .\vcpkg install libusb ffmpeg libsodium opencv sdl3
+   ```
+3. Set `VCPKG_ROOT` environment variable to your vcpkg path.
+4. Build:
    ```bash
-   open ./build/bin/aviateur.app
-   ```
-
-### Common run issues
-
-* If the application crashes at startup on **Windows**,
-  install [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version)
-  first.
-
-### Latency test
-
-![](tutorials/latency_test.jpg)
-
-### TODOs
-
-- Zero-Copy YUV renderer
-- Ground side OSD
-
-### How to build on Windows
-
-1. Install vcpkg somewhere else.
-   ```powershell
-   git clone https://github.com/microsoft/vcpkg.git
-   cd vcpkg
-   .\bootstrap-vcpkg.bat
-   ```
-
-2. Install dependencies.
-   ```powershell
-   .\vcpkg integrate install
-   .\vcpkg install libusb ffmpeg libsodium opencv
-   ```
-
-3. Add VCPKG_ROOT to environment. (Change the value to your vcpkg path.)
-   ![](tutorials/vcpkg.jpg)
-
-4. Clone third-party library sources.
-   ```powershell
-   git submodule update --init --recursive
-   ```
-
-5. Build the project.
-   ```bash
+   git clone --recursive https://github.com/OpenIPC/aviateur
    mkdir build && cd build
-   cmake ../
-   make
+   cmake ..
+   cmake --build .
    ```
 
-### How to build on Linux
+#### Linux (Ubuntu/Debian)
 
-1. Clone submodules.
-   ```bash
-   git submodule update --init --recursive
-   ```
-
-2. Install dependencies.
-
-    * FFmpeg
-   ```bash
-   sudo apt install libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
-   ```
-    * Vulkan
-   ```bash
-   sudo apt install libvulkan-dev vulkan-tools vulkan-validationlayers spirv-tools
-   ```
-    * Other
-   ```bash
-   sudo apt install cmake libusb-1.0-0-dev libsodium-dev libopencv-dev xorg-dev libpcap-dev
-   ```
-    * (Optional) Packing AppImage
-   ```bash
-   sudo apt install patchelf
-   ```
-
-3. Build the project.
-
-### How to build on macOS
-
-1. Install dependencies:
-
-   Xcode: assumes you already have Xcode installed and have run `xcode-select --install`
-
-   [Homebrew](https://brew.sh/)
-
-   Extra Packages with Homebrew:
-   ```bash
-   brew install pkgconf libusb ffmpeg libsodium opencv libpcap cmake
-   ```
-
-2. Build the project:
-   ```bash
-   git clone https://github.com/OpenIPC/aviateur
-   cd aviateur
-   git submodule update --init --recursive
-   mkdir build && cd build
-   cmake ../
-   make
-   ```
-
-### Common build issues
-
-On Windows
-
-```
-CMake Error at C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.29/Modules/FindPackageHandleStandardArgs.cmake:230 (message): ...
+```bash
+sudo apt install cmake libavformat-dev libavcodec-dev libswresample-dev \
+                 libswscale-dev libavutil-dev libvulkan-dev libusb-1.0-0-dev \
+                 libsodium-dev libopencv-dev xorg-dev libpcap-dev
+git clone --recursive https://github.com/OpenIPC/aviateur
+mkdir build && cd build
+cmake ..
+make
 ```
 
-This is because the pre-installed vcpkg from Visual Studio installer overrides the PKG_ROOT environment variable.
-To fix this, find `set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")` in CMakeLists.txt,
-replace `$ENV{VCPKG_ROOT}` with the vcpkg you cloned previously.
+#### macOS (Homebrew)
+
+```bash
+brew install pkgconf libusb ffmpeg libsodium opencv libpcap cmake sdl3
+git clone --recursive https://github.com/OpenIPC/aviateur
+mkdir build && cd build
+cmake ..
+make
+```
+
+## 🔍 Troubleshooting
+
+- **Windows Build**: If CMake fails to find packages despite `VCPKG_ROOT` being set, the pre-installed vcpkg from Visual
+  Studio might be overriding it. In `CMakeLists.txt`, you may need to explicitly set `CMAKE_TOOLCHAIN_FILE` to your
+  vcpkg path.
+- **WSL2**: If you are trying to run Aviateur inside WSL2, you will need to map the USB adapter using `usbipd`.
+  See [wsl-map-usb.md](wsl-map-usb.md) for details.
+- **Latency**: Ensure you are using a high-quality USB cable and a USB 3.0 port for the RTL8812AU adapter.
+
+## 🚧 Roadmap
+
+- [ ] Zero-Copy YUV renderer.
+- [ ] Integrated Ground-side OSD.
+- [ ] Full MAVLink telemetry support.
+- [ ] Support for additional Wi-Fi chipsets.
+
+## 📄 License
+
+Aviateur is released under the [GPL-3.0 License](LICENSE).
+
+---
+<p align="center">Part of the <a href="https://github.com/OpenIPC">OpenIPC Project</a></p>
