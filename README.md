@@ -121,42 +121,16 @@ OpenIPC FPV ground station for Linux/Windows/macOS.
 
 1. Install dependencies:
 
-   Xcode: This assumes you already have Xcode installed and have run `xcode-select --install`
+   Xcode: assumes you already have Xcode installed and have run `xcode-select --install`
 
    [Homebrew](https://brew.sh/)
 
-   [Vulkan](https://vulkan.lunarg.com/sdk/home)  - Install Location ~/ (default), no need to pick any extra options in
-   installer (default)
-
    Extra Packages with Homebrew:
    ```bash
-   brew install libusb ffmpeg libsodium opencv libpcap cmake
+   brew install pkgconf libusb ffmpeg libsodium opencv libpcap cmake
    ```
 
-2. Add the following content to `YOUR_HOME/.zprofile` (change the sdk version and username to your own
-   version/username).
-
-   `nano ~/.zprofile`, paste the text in, `ctrl-o` to save, `ctrl-x` to exit.
-   ```
-   VULKAN_SDK="/Users/zzz/VulkanSDK/1.4.321.0/macOS"
-   export VULKAN_SDK
-   PATH="$PATH:$VULKAN_SDK/bin"
-   export PATH
-   DYLD_LIBRARY_PATH="$VULKAN_SDK/lib:${DYLD_LIBRARY_PATH:-}"
-   export DYLD_LIBRARY_PATH
-   VK_ADD_LAYER_PATH="$VULKAN_SDK/share/vulkan/explicit_layer.d"
-   export VK_ADD_LAYER_PATH
-   VK_ICD_FILENAMES="$VULKAN_SDK/share/vulkan/icd.d/MoltenVK_icd.json"
-   export VK_ICD_FILENAMES
-   VK_DRIVER_FILES="$VULKAN_SDK/share/vulkan/icd.d/MoltenVK_icd.json"
-   export VK_DRIVER_FILES
-   PKG_CONFIG_PATH="$VULKAN_SDK/lib/pkgconfig:$PKG_CONFIG_PATH"
-   export PKG_CONFIG_PATH
-   ```
-
-3. Log out and in for the above change to take effect.
-
-4. Build the project:
+2. Build the project:
    ```bash
    git clone https://github.com/OpenIPC/aviateur
    cd aviateur
@@ -165,13 +139,6 @@ OpenIPC FPV ground station for Linux/Windows/macOS.
    cmake ../
    make
    ```
-
-5. As noted above, you must run the file through terminal:
-
-   `open ./bin/aviateur.app`
-
-   Or if you want to see the log file while running:
-   `./bin/aviateur.app/Contents/MacOS/aviateur`
 
 ### Common build issues
 

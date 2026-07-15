@@ -160,8 +160,6 @@ void SettingsContainer::custom_ready() {
 
             render_btn_group->add_button(gl_btn);
         }
-#endif
-
         {
             auto vk_btn = std::make_shared<vecgui::RadioButton>();
             vk_btn->set_text("Vulkan");
@@ -175,6 +173,16 @@ void SettingsContainer::custom_ready() {
             vk_btn->connect_signal("toggled", callback);
             render_btn_group->add_button(vk_btn);
         }
+#else
+        {
+            auto metal_btn = std::make_shared<vecgui::RadioButton>();
+            metal_btn->set_text("Metal");
+            metal_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            vbox_container2->add_child(metal_btn);
+            metal_btn->set_toggled_no_signal(true);
+            render_btn_group->add_button(metal_btn);
+        }
+#endif
     }
 
     {

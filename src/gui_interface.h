@@ -180,10 +180,6 @@ public:
         if (bool read_success = ReadConfig(ini_)) {
             set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
             use_vulkan_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] == "vulkan";
-#ifdef __APPLE__
-            // No OpenGL on macOS
-            use_vulkan_ = true;
-#endif
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
@@ -257,7 +253,11 @@ public:
             ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = "H264";
 
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
+#ifdef __APPLE__
+            ini[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = "metal";
+#else
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = "opengl";
+#endif
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = "true";
         }
 
@@ -276,7 +276,11 @@ public:
         Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = std::to_string(Instance().alink_tx_power_);
 
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
+#ifdef __APPLE__
+        Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = "metal";
+#else
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = Instance().use_vulkan_ ? "vulkan" : "opengl";
+#endif
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = Instance().dark_mode_ ? "true" : "false";
 
         Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = Instance().rtp_codec_;
@@ -533,11 +537,7 @@ public:
 
     std::optional<std::string> forward_port_;
 
-#ifdef __APPLE__
-    bool use_vulkan_ = true;
-#else
     bool use_vulkan_ = false;
-#endif
 
     // Signals.
     std::vector<vecgui::AnyCallable<void>> logCallbacks;
