@@ -105,9 +105,8 @@ void SettingsContainer::custom_ready() {
         fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
 
         auto on_fullscreen_toggled = [](bool toggled) {
-            auto render_server = vecgui::RenderServer::get_singleton();
-
-            render_server->window_builder_->set_fullscreen(toggled);
+            auto render_context = vecgui::RenderContext::get_singleton();
+            render_context->get_window_builder()->set_fullscreen(toggled);
         };
         fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
     }

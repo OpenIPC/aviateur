@@ -400,18 +400,11 @@ void PlayerRect::start_playing(const std::string &url) {
 
     playing_ = true;
 
-    auto render_server = vecgui::RenderServer::get_singleton();
+    auto render_context = vecgui::RenderContext::get_singleton();
 
-    bool recreate_player = true;
-    if (player_) {
-        recreate_player = false;
-    }
-
-    if (recreate_player) {
-        {
-            GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player");
-            player_ = std::make_shared<VideoPlayerFfmpeg>(render_server->device_, render_server->queue_);
-        }
+    if (!player_) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player");
+        player_ = std::make_shared<VideoPlayerFfmpeg>(render_context->get_device(), render_context->get_queue());
     }
 
     player_->play(url, force_software_decoding);
