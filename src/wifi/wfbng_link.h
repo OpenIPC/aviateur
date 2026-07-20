@@ -9,11 +9,14 @@
 
     #ifdef _WIN32
         #include <winsock2.h> // To solve winsock.h redefinition errors, include before libusb.h
-        #define INVALID_SOCKET (-1)
     #endif
     #include <libusb.h>
 #else
     #include <libusb-1.0/libusb.h>
+#endif
+
+#ifndef INVALID_SOCKET
+    #define INVALID_SOCKET (-1)
 #endif
 
 #include <mutex>
