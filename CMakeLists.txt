@@ -103,8 +103,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/SDL/include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
 
-file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
-
 if (APPLE)
     # Do this after we copied assets for both Aviateur & VecGui.
     file(COPY ${CMAKE_BINARY_DIR}/bin/assets
