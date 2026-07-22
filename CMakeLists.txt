@@ -47,17 +47,42 @@ if (AVIATEUR_ENABLE_OPENCV)
     find_package(OpenCV REQUIRED)
 endif ()
 
-file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
-
 if (APPLE)
     add_executable(${PROJECT_NAME} MACOSX_BUNDLE
             src/main.cpp
             src/gui_interface.h
     )
+
+    # Copy assets.
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets
+
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/3rd/vecgui/assets
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets
+
+            # Sync to App Bundle
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets
+            ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources/assets
+    )
 else ()
     add_executable(${PROJECT_NAME}
             src/main.cpp
             src/gui_interface.h
+    )
+
+    # Copy assets.
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets
+
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/3rd/vecgui/assets
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets
     )
 endif ()
 
@@ -102,13 +127,6 @@ add_subdirectory(3rd/SDL)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/SDL/include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
-
-if (APPLE)
-    # Do this after we copied assets for both Aviateur & VecGui.
-    file(COPY ${CMAKE_BINARY_DIR}/bin/assets
-            DESTINATION ${CMAKE_BINARY_DIR}/bin/aviateur.app/Contents/Resources
-    )
-endif ()
 
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
