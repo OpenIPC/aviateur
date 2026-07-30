@@ -154,6 +154,11 @@ std::string GifEncoder::close() {
         _codecCtx.reset();
     }
 
+    if (_imgConvertCtx) {
+        sws_freeContext(_imgConvertCtx);
+        _imgConvertCtx = nullptr;
+    }
+
     // Close file.
     avio_close(_formatCtx->pb);
     _opened = false;
