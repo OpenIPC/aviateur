@@ -101,9 +101,10 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         // Handle dynamic resolution change
         decoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) { update_video_info(w, h, fmt); };
 
-        decodeThread = std::thread([this] {
+        decodeThread = std::thread([this, forceSoftwareDecoding] {
             decodeResMtx.lock();
 
+            int retryCount = 0;
             while (!should_stop_playing_) {
                 try {
                     // Getting frame.
@@ -111,6 +112,8 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     if (!frame) {
                         continue;
                     }
+
+                    retryCount = 0;
 
                     // Push frame to the buffer queue.
                     std::lock_guard lck(mtx);
@@ -124,10 +127,25 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
                     GuiInterface::Instance().ShowTip(FTR("invalid input data"));
                 }
-                // Read frame error, mostly due to a lost signal. But continue.
+                // Read frame error, mostly due to a lost signal.
                 catch (const ReadFrameException &e) {
                     GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
-                    GuiInterface::Instance().ShowTip(FTR("signal lost"));
+
+                    // Signal lost. In live streaming, we should try to reconnect.
+                    if (++retryCount > 5) {
+                        GuiInterface::Instance().ShowTip(FTR("signal lost, reconnecting..."));
+
+                        // Re-open input
+                        decoder->CloseInput();
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                        if (decoder->OpenInput(url, forceSoftwareDecoding)) {
+                            decoder->ResetHeaderState();
+                            retryCount = 0;
+                            GuiInterface::Instance().PutLog(LogLevel::Info, "Reconnected successfully");
+                        }
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
                 // Break on other unknown errors.
                 catch (const std::exception &e) {

@@ -86,6 +86,12 @@ public:
         return pAudioCodecCtx->sample_rate * 2 / 25;
     }
 
+    void ResetHeaderState() {
+        hasSps = false;
+        hasPps = false;
+        isWaitingForKeyframe = true;
+    }
+
 private:
     bool OpenVideo();
 
@@ -168,4 +174,15 @@ private:
     AVBufferRef *hwDeviceCtx = nullptr;
     std::atomic<bool> dropCurrentVideoFrame = false;
     std::shared_ptr<AVFrame> hwFrame;
+
+    // NALU State machine for stability
+    bool hasSps = false;
+    bool hasPps = false;
+    bool isWaitingForKeyframe = true;
+
+    /**
+     * @brief Parse NAL units in the packet to detect SPS/PPS/IDR
+     * @return true if the packet should be fed to the decoder, false if it should be dropped.
+     */
+    bool parseNalUnits(const AVPacket *pkt);
 };

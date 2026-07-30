@@ -10,6 +10,18 @@
 #undef min
 #undef max
 
+namespace {
+// Helper to find Annex B start codes (00 00 01 or 00 00 00 01)
+const uint8_t *find_start_code(const uint8_t *p, const uint8_t *end) {
+    while (p + 3 < end) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) return p;
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) return p;
+        p++;
+    }
+    return nullptr;
+}
+} // namespace
+
 constexpr size_t MAX_AUDIO_PACKET = 2 * 1024 * 1024;
 
 bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding) {
@@ -235,6 +247,11 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
         // 3. Handle video packet
         if (packet->stream_index == videoStreamIndex) {
+            // Stability: check for SPS/PPS/IDR
+            if (!parseNalUnits(packet.get())) {
+                continue;
+            }
+
             std::lock_guard lck(_releaseLock);
             if (!sourceIsOpened || !pVideoCodecCtx) return nullptr;
 
@@ -581,4 +598,70 @@ void FfmpegDecoder::ClearAudioBuff() {
         av_fifo_freep2(&audioFifoBuffer);
         audioFifoBuffer = nullptr;
     }
+}
+
+bool FfmpegDecoder::parseNalUnits(const AVPacket *pkt) {
+    if (!pVideoCodecCtx) return true;
+
+    const AVCodecID codecId = pVideoCodecCtx->codec_id;
+    const uint8_t *data = pkt->data;
+    const int size = pkt->size;
+
+    bool containsIdr = false;
+
+    // Fast check for Annex B start codes
+    const uint8_t *p = data;
+    const uint8_t *end = data + size;
+
+    while (p < end) {
+        p = find_start_code(p, end);
+        if (!p) break;
+
+        // Skip start code
+        if (p[2] == 1)
+            p += 3;
+        else
+            p += 4;
+
+        if (p >= end) break;
+
+        if (codecId == AV_CODEC_ID_H264) {
+            int type = p[0] & 0x1F;
+            if (type == 7) { // SPS
+                hasSps = true;
+            } else if (type == 8) { // PPS
+                hasPps = true;
+            } else if (type == 5) { // IDR
+                containsIdr = true;
+            }
+        } else if (codecId == AV_CODEC_ID_HEVC) {
+            int type = (p[0] >> 1) & 0x3F;
+            if (type == 33) { // SPS
+                hasSps = true;
+            } else if (type == 34) { // PPS
+                hasPps = true;
+            } else if (type >= 16 && type <= 21) { // IRAP (IDR/CRA/BLA)
+                containsIdr = true;
+            }
+        }
+    }
+
+    // Keyframe flag from FFmpeg is also a good indicator
+    if (pkt->flags & AV_PKT_FLAG_KEY) {
+        containsIdr = true;
+    }
+
+    // Logic:
+    // 1. If we got IDR and we have SPS/PPS, we can stop waiting.
+    if (containsIdr && hasSps && hasPps) {
+        isWaitingForKeyframe = false;
+    }
+
+    // 2. If we are still waiting for a keyframe, drop everything else.
+    if (isWaitingForKeyframe) {
+        // If it's a keyframe but missing SPS/PPS, we still drop it (or we can't decode it anyway)
+        return false;
+    }
+
+    return true;
 }
