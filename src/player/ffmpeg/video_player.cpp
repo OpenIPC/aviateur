@@ -14,7 +14,7 @@
 VideoPlayerFfmpeg::VideoPlayerFfmpeg(std::shared_ptr<Pathfinder::Device> device,
                                      std::shared_ptr<Pathfinder::Queue> queue)
     : VideoPlayer(device, queue) {
-    if (!SDL_Init(SDL_INIT_AUDIO)) {
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "SDL init audio failed!");
     }
 }
@@ -209,7 +209,7 @@ void VideoPlayerFfmpeg::set_muted(bool muted) {
 VideoPlayerFfmpeg::~VideoPlayerFfmpeg() {
     stop();
 
-    SDL_Quit();
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
 std::string VideoPlayerFfmpeg::capture_jpeg() {
