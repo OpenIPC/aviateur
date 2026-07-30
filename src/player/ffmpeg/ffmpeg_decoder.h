@@ -135,6 +135,7 @@ private:
     double audioBaseTime = 0;
 
     std::mutex _releaseLock;
+    std::mutex _readMtx;
 
     bool hasVideoStream{};
 

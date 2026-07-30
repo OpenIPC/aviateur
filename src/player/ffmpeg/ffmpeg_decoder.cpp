@@ -121,7 +121,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 }
 
 bool FfmpegDecoder::CloseInput() {
-    std::lock_guard lck(_releaseLock);
+    std::lock_guard lck1(_releaseLock);
+    std::lock_guard lck2(_readMtx);
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "{}", __FUNCTION__);
 
@@ -151,8 +152,6 @@ void freeSwrCtx(SwrContext *s) {
 }
 
 std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
-    std::lock_guard lck(_releaseLock);
-
     if (videoStreamIndex == -1 && audioStreamIndex == -1) {
         return nullptr;
     }
@@ -162,48 +161,58 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
     }
 
     while (true) {
-        if (!pFormatCtx) {
-            throw std::runtime_error("AVFormatContext is null");
-        }
-
         // 1. First, try to receive a frame from the decoder (drain)
-        if (pVideoCodecCtx) {
-            std::shared_ptr<AVFrame> pFrameVideo = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
-            AVFrame *frameToReceive = hwDecoderEnabled ? hwFrame.get() : pFrameVideo.get();
-            if (hwDecoderEnabled && !hwFrame) {
-                hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
-                frameToReceive = hwFrame.get();
-            }
+        {
+            std::lock_guard lck(_releaseLock);
+            if (!pFormatCtx || !sourceIsOpened) return nullptr;
 
-            int ret = avcodec_receive_frame(pVideoCodecCtx, frameToReceive);
-            if (ret == 0) {
-                // Check if resolution has changed or was initially unknown
-                if (pFrameVideo->width != width || pFrameVideo->height != height) {
-                    width = pFrameVideo->width;
-                    height = pFrameVideo->height;
-                    GuiInterface::Instance().PutLog(LogLevel::Info, "Video resolution updated: {}x{}", width, height);
-                    if (videoConfigChangedCallback) {
-                        videoConfigChangedCallback(width, height, GetVideoFrameFormat());
+            if (pVideoCodecCtx) {
+                std::shared_ptr<AVFrame> pFrameVideo = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+                AVFrame *frameToReceive = hwDecoderEnabled ? hwFrame.get() : pFrameVideo.get();
+                if (hwDecoderEnabled && !hwFrame) {
+                    hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+                    frameToReceive = hwFrame.get();
+                }
+
+                int ret = avcodec_receive_frame(pVideoCodecCtx, frameToReceive);
+                if (ret == 0) {
+                    // Check if resolution has changed or was initially unknown
+                    if (pFrameVideo->width != width || pFrameVideo->height != height) {
+                        width = pFrameVideo->width;
+                        height = pFrameVideo->height;
+                        GuiInterface::Instance().PutLog(LogLevel::Info,
+                                                        "Video resolution updated: {}x{}",
+                                                        width,
+                                                        height);
+                        if (videoConfigChangedCallback) {
+                            videoConfigChangedCallback(width, height, GetVideoFrameFormat());
+                        }
                     }
-                }
 
-                if (hwDecoderEnabled) {
-                    if (dropCurrentVideoFrame) continue;
-                    if (av_hwframe_transfer_data(pFrameVideo.get(), hwFrame.get(), 0) < 0) continue;
-                    av_frame_copy_props(pFrameVideo.get(), hwFrame.get());
+                    if (hwDecoderEnabled) {
+                        if (dropCurrentVideoFrame) continue;
+                        if (av_hwframe_transfer_data(pFrameVideo.get(), hwFrame.get(), 0) < 0) continue;
+                        av_frame_copy_props(pFrameVideo.get(), hwFrame.get());
+                    }
+                    if (gotVideoFrameCallback) gotVideoFrameCallback(pFrameVideo);
+                    return pFrameVideo;
+                } else if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+                    char errStr[AV_ERROR_MAX_STRING_SIZE];
+                    av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
+                    throw std::runtime_error("avcodec_receive_frame failed: " + std::string(errStr));
                 }
-                if (gotVideoFrameCallback) gotVideoFrameCallback(pFrameVideo);
-                return pFrameVideo;
-            } else if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-                char errStr[AV_ERROR_MAX_STRING_SIZE];
-                av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                throw std::runtime_error("avcodec_receive_frame failed: " + std::string(errStr));
             }
         }
 
         // 2. If no frame available, read a new packet
         std::shared_ptr<AVPacket> packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
-        int ret = av_read_frame(pFormatCtx, packet.get());
+        int ret = -1;
+        {
+            std::lock_guard lck_io(_readMtx);
+            if (!pFormatCtx || !sourceIsOpened) return nullptr;
+            ret = av_read_frame(pFormatCtx, packet.get());
+        }
+
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
@@ -211,18 +220,23 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
         }
 
         // Calculate bitrate
-        bytesSecond += packet->size;
-        auto now = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCountBitrateTime).count();
-        if (duration >= 1000) {
-            bitrate = bytesSecond * 8 * 1000 / duration;
-            bytesSecond = 0;
-            emitBitrateUpdate(bitrate);
-            lastCountBitrateTime = now;
+        {
+            bytesSecond += packet->size;
+            auto now = std::chrono::steady_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCountBitrateTime).count();
+            if (duration >= 1000) {
+                bitrate = bytesSecond * 8 * 1000 / duration;
+                bytesSecond = 0;
+                emitBitrateUpdate(bitrate);
+                lastCountBitrateTime = now;
+            }
         }
 
         // 3. Handle video packet
         if (packet->stream_index == videoStreamIndex) {
+            std::lock_guard lck(_releaseLock);
+            if (!sourceIsOpened || !pVideoCodecCtx) return nullptr;
+
             if (gotPktCallback) gotPktCallback(packet);
             ret = avcodec_send_packet(pVideoCodecCtx, packet.get());
             if (ret < 0) {
@@ -236,6 +250,9 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
         // 4. Handle audio packet
         if (packet->stream_index == audioStreamIndex) {
+            std::lock_guard lck(_releaseLock);
+            if (!sourceIsOpened || !pAudioCodecCtx) return nullptr;
+
             if (gotPktCallback) gotPktCallback(packet);
             if (packet->dts != AV_NOPTS_VALUE) {
                 constexpr int audioFrameSize = MAX_AUDIO_PACKET;
