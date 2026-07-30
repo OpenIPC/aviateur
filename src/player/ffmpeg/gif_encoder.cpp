@@ -110,14 +110,7 @@ bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
         }
     }
 
-    // Packet size.
-    int size = _codecCtx->width * _codecCtx->height;
-
-    // Allocate a packet.
-
-    std::shared_ptr<AVPacket> pkt =
-        std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
-    av_new_packet(pkt.get(), size);
+    AVFrame *frameToSend = (_codecCtx->pix_fmt != frame->format) ? _tmpFrame.get() : frame.get();
 
     // 记录帧编码时间
     _lastEncodeTime =
@@ -125,16 +118,27 @@ bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
             .count();
 
     // 发送帧到编码上下文
-    int ret = avcodec_send_frame(_codecCtx.get(), _tmpFrame.get());
+    int ret = avcodec_send_frame(_codecCtx.get(), frameToSend);
     if (ret < 0) {
         return false;
     }
 
-    // 获取已经编码完成的帧
-    avcodec_receive_packet(_codecCtx.get(), pkt.get());
+    // 获取已经编码完成的帧 (可能有多帧输出)
+    std::shared_ptr<AVPacket> pkt =
+        std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p) { av_packet_free(&p); });
 
-    // 写文件
-    av_write_frame(_formatCtx.get(), pkt.get());
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(_codecCtx.get(), pkt.get());
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            break;
+        } else if (ret < 0) {
+            return false;
+        }
+
+        // 写文件
+        av_write_frame(_formatCtx.get(), pkt.get());
+        av_packet_unref(pkt.get());
+    }
 
     return true;
 }
@@ -144,6 +148,21 @@ std::string GifEncoder::close() {
 
     if (!_opened) {
         return "";
+    }
+
+    if (_codecCtx) {
+        // Flush encoder
+        avcodec_send_frame(_codecCtx.get(), nullptr);
+        std::shared_ptr<AVPacket> pkt =
+            std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p) { av_packet_free(&p); });
+        while (true) {
+            int ret = avcodec_receive_packet(_codecCtx.get(), pkt.get());
+            if (ret < 0) {
+                break;
+            }
+            av_write_frame(_formatCtx.get(), pkt.get());
+            av_packet_unref(pkt.get());
+        }
     }
 
     if (_formatCtx) {
