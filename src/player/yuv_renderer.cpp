@@ -242,7 +242,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             encoder->write_texture(mTexV, {}, texVData);
         }
 
-        mQueue->submit_and_wait(encoder);
+        mQueue->submit(encoder, mFence);
 
         // Do this after submitting.
         mPrevFrameData = newFrameData;
