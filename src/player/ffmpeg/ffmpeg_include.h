@@ -1,11 +1,9 @@
-﻿/*
- *  Include ffmpeg files
- */
+﻿#pragma once
 
-#pragma once
-
-#ifndef __STDC_CONSTANT_MACROS
-    #define __STDC_CONSTANT_MACROS
+#ifdef __cplusplus
+    #ifndef __STDC_CONSTANT_MACROS
+        #define __STDC_CONSTANT_MACROS
+    #endif
 #endif
 
 extern "C" {

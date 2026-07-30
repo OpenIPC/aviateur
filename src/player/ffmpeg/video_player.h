@@ -16,7 +16,8 @@ struct SDL_AudioStream;
 
 class VideoPlayerFfmpeg final : public VideoPlayer {
 public:
-    VideoPlayerFfmpeg(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
+    VideoPlayerFfmpeg(const std::shared_ptr<Pathfinder::Device> &device,
+                      const std::shared_ptr<Pathfinder::Queue> &queue);
 
     ~VideoPlayerFfmpeg() override;
 

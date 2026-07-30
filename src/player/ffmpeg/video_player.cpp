@@ -11,8 +11,8 @@
 
 #define DEFAULT_GIF_FRAMERATE 10
 
-VideoPlayerFfmpeg::VideoPlayerFfmpeg(std::shared_ptr<Pathfinder::Device> device,
-                                     std::shared_ptr<Pathfinder::Queue> queue)
+VideoPlayerFfmpeg::VideoPlayerFfmpeg(const std::shared_ptr<Pathfinder::Device> &device,
+                                     const std::shared_ptr<Pathfinder::Queue> &queue)
     : VideoPlayer(device, queue) {
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "SDL init audio failed!");
@@ -99,9 +99,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
 
         // Handle dynamic resolution change
-        decoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) {
-            update_video_info(w, h, fmt);
-        };
+        decoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) { update_video_info(w, h, fmt); };
 
         decodeThread = std::thread([this] {
             decodeResMtx.lock();
@@ -369,7 +367,7 @@ void SDLCALL audio_callback(void *userdata, SDL_AudioStream *stream, int additio
         if (data) {
             auto *player = static_cast<VideoPlayerFfmpeg *>(userdata);
 
-            int ret = player->getDecoder()->ReadAudioBuff(data, additional_amount);
+            const bool ret = player->getDecoder()->ReadAudioBuff(data, additional_amount);
 
             if (ret) {
                 SDL_PutAudioStreamData(stream, data, additional_amount);
