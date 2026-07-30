@@ -2,6 +2,7 @@
 
 #include <common/any_callable.h>
 
+#include <atomic>
 #include <memory>
 #include <queue>
 #include <thread>
@@ -85,7 +86,7 @@ protected:
     // Play file URL
     std::string url;
 
-    bool should_stop_playing_ = true;
+    std::atomic<bool> should_stop_playing_ = true;
 
     bool isMuted = false;
 
@@ -107,5 +108,5 @@ protected:
     int video_height_{};
     int video_format_{};
 
-    bool video_info_changed_ = false;
+    std::atomic<bool> video_info_changed_ = false;
 };

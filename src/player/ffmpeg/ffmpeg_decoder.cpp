@@ -97,6 +97,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     hasAudioStream = OpenAudio();
 
     sourceIsOpened = true;
+    lastCountBitrateTime = std::chrono::steady_clock::now();
 
     // Convert time base
     if (videoStreamIndex != -1) {
@@ -211,11 +212,10 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
         // Calculate bitrate
         bytesSecond += packet->size;
-        uint64_t now =
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-                .count();
-        if (now - lastCountBitrateTime >= 1000) {
-            bitrate = bytesSecond * 8 * 1000 / (now - lastCountBitrateTime);
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCountBitrateTime).count();
+        if (duration >= 1000) {
+            bitrate = bytesSecond * 8 * 1000 / duration;
             bytesSecond = 0;
             emitBitrateUpdate(bitrate);
             lastCountBitrateTime = now;

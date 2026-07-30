@@ -126,7 +126,7 @@ private:
 
     int audioStreamIndex = -1;
 
-    volatile bool sourceIsOpened = false;
+    std::atomic<bool> sourceIsOpened = false;
 
     float videoFramerate = 0;
 
@@ -146,7 +146,7 @@ private:
 
     std::atomic<uint64_t> bytesSecond = 0;
     uint64_t bitrate = 0;
-    uint64_t lastCountBitrateTime = 0;
+    std::chrono::steady_clock::time_point lastCountBitrateTime;
     std::function<void(uint64_t bitrate)> bitrateUpdateCallback;
 
     // Audio buffer
@@ -160,6 +160,6 @@ private:
     bool forceSwDecoder = false;
     AVPixelFormat hwPixFmt;
     AVBufferRef *hwDeviceCtx = nullptr;
-    volatile bool dropCurrentVideoFrame = false;
+    std::atomic<bool> dropCurrentVideoFrame = false;
     std::shared_ptr<AVFrame> hwFrame;
 };

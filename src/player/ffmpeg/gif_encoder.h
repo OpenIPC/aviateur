@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -45,5 +46,5 @@ protected:
 
     int _frameRate = 0;
 
-    volatile bool _opened = false;
+    std::atomic<bool> _opened = false;
 };
