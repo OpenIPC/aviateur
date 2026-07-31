@@ -715,6 +715,9 @@ bool FfmpegDecoder::parseNalUnits(const AVPacket *pkt) {
     // Logic:
     // 1. If we got IDR and we have SPS/PPS, we can stop waiting.
     if (containsIdr && hasSps && hasPps) {
+        if (isWaitingForKeyframe) {
+            GuiInterface::Instance().PutLog(LogLevel::Info, "SPS + PPS + Keyframe received. Starting decoder.");
+        }
         isWaitingForKeyframe = false;
     }
 
