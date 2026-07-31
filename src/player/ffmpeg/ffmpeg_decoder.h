@@ -190,6 +190,8 @@ private:
     bool hasPps = false;
     bool isWaitingForKeyframe = true;
 
+    std::atomic<bool> abortRequest = false;
+
     /**
      * @brief Parse NAL units in the packet to detect SPS/PPS/IDR
      * @return true if the packet should be fed to the decoder, false if it should be dropped.

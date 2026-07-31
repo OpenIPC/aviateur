@@ -51,9 +51,11 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     forceSwDecoder = forceSoftwareDecoding;
 
+    abortRequest = false;
+
     AVDictionary *options = nullptr;
 
-    av_dict_set(&options, "buffer_size", "425984", 0);
+    av_dict_set(&options, "buffer_size", "2097152", 0);
     av_dict_set(&options, "rtsp_transport", "udp", 0);
     av_dict_set(&options, "protocol_whitelist", "file,udp,tcp,rtp,rtmp,rtsp,http", 0);
 
@@ -98,16 +100,19 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         pFormatCtx = avformat_alloc_context();
     }
 
-    // Set interrupt callback before opening input to protect the connection phase
+    // Set interrupt callback before opening input to protect the connection phase and active playback
     pFormatCtx->interrupt_callback.callback = [](void *opaque) -> int {
-        auto *start_time_ptr = reinterpret_cast<std::chrono::time_point<std::chrono::steady_clock> *>(opaque);
+        auto *decoder = reinterpret_cast<FfmpegDecoder *>(opaque);
+        if (decoder->abortRequest) return 1;
+
         const auto now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::seconds>(now - *start_time_ptr).count() > DEFAULT_TIMEOUT_SECONDS) {
+        if (std::chrono::duration_cast<std::chrono::seconds>(now - decoder->startTime).count() >
+            DEFAULT_TIMEOUT_SECONDS) {
             return 1;
         }
         return 0;
     };
-    pFormatCtx->interrupt_callback.opaque = &startTime;
+    pFormatCtx->interrupt_callback.opaque = this;
 
     if (inputFile.starts_with("v=0")) {
         ret = avformat_open_input(&pFormatCtx, nullptr, format, &options);
@@ -134,10 +139,6 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         CloseInput();
         return false;
     }
-
-    // Clear interrupt callback after successful initialization to avoid calling with local startTime pointer
-    pFormatCtx->interrupt_callback.callback = nullptr;
-    pFormatCtx->interrupt_callback.opaque = nullptr;
 
     hasVideoStream = OpenVideo();
     hasAudioStream = OpenAudio();
@@ -167,6 +168,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 }
 
 bool FfmpegDecoder::CloseInput() {
+    abortRequest = true;
+
     std::lock_guard lck1(_releaseLock);
     std::lock_guard lck2(_readMtx);
 
@@ -269,19 +272,23 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
         }
 
         // 2. If no frame available, read a new packet
-        std::shared_ptr<AVPacket> packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
+        auto packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
         int ret = -1;
         {
             std::lock_guard lck_io(_readMtx);
-            if (!pFormatCtx || !sourceIsOpened) return nullptr;
+            if (!pFormatCtx || !sourceIsOpened || abortRequest) return nullptr;
             ret = av_read_frame(pFormatCtx, packet.get());
         }
 
         if (ret < 0) {
+            if (abortRequest) return nullptr;
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
             throw ReadFrameException("av_read_frame failed: " + std::string(errStr));
         }
+
+        // Heartbeat: update startTime after every successful packet read to prevent timeout
+        startTime = std::chrono::steady_clock::now();
 
         // Calculate bitrate
         {
