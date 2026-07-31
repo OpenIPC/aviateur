@@ -17,7 +17,7 @@ int main() {
 
     const auto theme =
         GuiInterface::Instance().dark_mode_ ? vecgui::Theme::default_dark() : vecgui::Theme::default_light();
-    theme->load_font("zcool_qingke_huangyou.ttf");
+    theme->load_font("zcool_canger_yuyang.ttf");
     vecgui::DefaultResource::get_singleton()->set_default_theme(theme);
 
     vecgui::TranslationServer::get_singleton()->load_translations(vecgui::get_asset_dir("translations.csv"));

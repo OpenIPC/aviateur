@@ -105,7 +105,7 @@ void SettingsContainer::custom_ready() {
         auto callback = [](const bool toggled) {
             GuiInterface::Instance().dark_mode_ = toggled;
             const auto theme = toggled ? vecgui::Theme::default_dark() : vecgui::Theme::default_light();
-            theme->load_font("zcool_qingke_huangyou.ttf");
+            theme->load_font("zcool_canger_yuyang.ttf");
             vecgui::DefaultResource::get_singleton()->set_default_theme(theme);
         };
         dark_mode_btn->connect_signal("toggled", callback);
