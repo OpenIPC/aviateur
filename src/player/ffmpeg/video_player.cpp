@@ -60,6 +60,7 @@ std::shared_ptr<AVFrame> VideoPlayerFfmpeg::getFrame() {
 
 void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecoding) {
     should_stop_playing_ = false;
+    has_emitted_ready_ = false;
 
     if (analysisThread.joinable()) {
         analysisThread.join();
@@ -82,16 +83,19 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
 
         std::string decoder_name = decoder->hwDecoderName.has_value() ? decoder->hwDecoderName.value() : "Software";
 
-        GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(),
-                                                  decoder->GetHeight(),
-                                                  decoder->GetFramerate(),
-                                                  decoder_name);
+        if (decoder->GetWidth() > 0 && decoder->GetHeight() > 0) {
+            GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(),
+                                                      decoder->GetHeight(),
+                                                      decoder->GetFramerate(),
+                                                      decoder_name);
+            has_emitted_ready_ = true;
+        }
 
         if (!isMuted && decoder->HasAudio()) {
             enableAudio();
         }
 
-        if (decoder->HasVideo()) {
+        if (decoder->HasVideo() && decoder->GetWidth() > 0) {
             update_video_info(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
         }
 
@@ -99,7 +103,15 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
 
         // Handle dynamic resolution change
-        decoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) { update_video_info(w, h, fmt); };
+        decoder->videoConfigChangedCallback = [this, decoder_name](int w, int h, AVPixelFormat fmt) {
+            if (w > 0 && h > 0) {
+                if (!has_emitted_ready_) {
+                    GuiInterface::Instance().EmitDecoderReady(w, h, decoder->GetFramerate(), decoder_name);
+                    has_emitted_ready_ = true;
+                }
+                update_video_info(w, h, fmt);
+            }
+        };
 
         decodeThread = std::thread([this, forceSoftwareDecoding] {
             decodeResMtx.lock();

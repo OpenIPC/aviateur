@@ -231,10 +231,16 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
                 int ret = avcodec_receive_frame(pVideoCodecCtx, frameToReceive);
                 if (ret == 0) {
+                    // Check if resolution is valid
+                    if (frameToReceive->width <= 0 || frameToReceive->height <= 0) {
+                        av_frame_unref(frameToReceive);
+                        continue;
+                    }
+
                     // Check if resolution has changed or was initially unknown
-                    if (pFrameVideo->width != width || pFrameVideo->height != height) {
-                        width = pFrameVideo->width;
-                        height = pFrameVideo->height;
+                    if (frameToReceive->width != width || frameToReceive->height != height) {
+                        width = frameToReceive->width;
+                        height = frameToReceive->height;
                         GuiInterface::Instance().PutLog(LogLevel::Info,
                                                         "Video resolution updated: {}x{}",
                                                         width,

@@ -69,4 +69,6 @@ protected:
     std::shared_ptr<GifEncoder> gifEncoder_;
 
     bool hasAudio() const;
+
+    std::atomic<bool> has_emitted_ready_ = false;
 };
