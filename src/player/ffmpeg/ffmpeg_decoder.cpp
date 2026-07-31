@@ -43,6 +43,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "{}", __FUNCTION__);
 
+    ResetHeaderState();
+
     CloseInput();
 
     forceSwDecoder = forceSoftwareDecoding;
@@ -65,6 +67,11 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     // Reduce latency
     av_dict_set(&options, "fflags", "nobuffer", 0);
     av_dict_set(&options, "flags", "low_delay", 0);
+
+    // RTP specific low-latency and robustness
+    av_dict_set(&options, "reorder_queue_size", "0", 0);
+    av_dict_set(&options, "overrun_nonfatal", "1", 0);
+    av_dict_set(&options, "max_delay", "0", 0);
 
     // Speed up stream analysis - balanced for HEVC
     av_dict_set(&options, "probesize", "512000", 0);

@@ -153,7 +153,6 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                         std::this_thread::sleep_for(std::chrono::seconds(1));
 
                         if (decoder->OpenInput(url, forceSoftwareDecoding)) {
-                            decoder->ResetHeaderState();
                             retryCount = 0;
                             GuiInterface::Instance().PutLog(LogLevel::Info, "Reconnected successfully");
                         }
