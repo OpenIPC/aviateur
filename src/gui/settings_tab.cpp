@@ -67,31 +67,17 @@ void SettingsContainer::custom_ready() {
         if (GuiInterface::Instance().locale_ == "zh") {
             lang_menu_button->set_text("中文");
         }
-        if (GuiInterface::Instance().locale_ == "ru") {
-            lang_menu_button->set_text("Русский");
-        }
-        if (GuiInterface::Instance().locale_ == "ja") {
-            lang_menu_button->set_text("日本語");
-        }
 
         auto menu = lang_menu_button->get_popup_menu().lock();
 
         menu->create_item("English");
         menu->create_item("中文");
-        menu->create_item("Русский");
-        menu->create_item("日本語");
 
         auto callback = [](const uint32_t item_index) {
-            GuiInterface::Instance().set_locale("en");
-
             if (item_index == 1) {
                 GuiInterface::Instance().set_locale("zh");
-            }
-            if (item_index == 2) {
-                GuiInterface::Instance().set_locale("ru");
-            }
-            if (item_index == 3) {
-                GuiInterface::Instance().set_locale("ja");
+            } else {
+                GuiInterface::Instance().set_locale("en");
             }
 
             GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
@@ -119,6 +105,7 @@ void SettingsContainer::custom_ready() {
         auto callback = [](const bool toggled) {
             GuiInterface::Instance().dark_mode_ = toggled;
             const auto theme = toggled ? vecgui::Theme::default_dark() : vecgui::Theme::default_light();
+            theme->load_font("zcool_qingke_huangyou.ttf");
             vecgui::DefaultResource::get_singleton()->set_default_theme(theme);
         };
         dark_mode_btn->connect_signal("toggled", callback);
