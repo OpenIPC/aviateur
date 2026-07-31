@@ -51,15 +51,6 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     forceSwDecoder = forceSoftwareDecoding;
 
-    // Log available hardware decoder types.
-    if (!forceSoftwareDecoding) {
-        AVHWDeviceType decoderType = AV_HWDEVICE_TYPE_NONE;
-        while ((decoderType = av_hwdevice_iterate_types(decoderType)) != AV_HWDEVICE_TYPE_NONE) {
-            auto decoderName = std::string(av_hwdevice_get_type_name(decoderType));
-            GuiInterface::Instance().PutLog(LogLevel::Info, "Found hardware decoder: " + decoderName);
-        }
-    }
-
     AVDictionary *options = nullptr;
 
     av_dict_set(&options, "buffer_size", "425984", 0);
@@ -388,6 +379,13 @@ bool FfmpegDecoder::OpenVideo() {
             hwDecoderName = {};
 
             if (!forceSwDecoder) {
+                // Log available hardware decoder types.
+                AVHWDeviceType decoderType = AV_HWDEVICE_TYPE_NONE;
+                while ((decoderType = av_hwdevice_iterate_types(decoderType)) != AV_HWDEVICE_TYPE_NONE) {
+                    auto decoderName = std::string(av_hwdevice_get_type_name(decoderType));
+                    GuiInterface::Instance().PutLog(LogLevel::Info, "Found hardware decoder: " + decoderName);
+                }
+
                 for (int configIndex = 0;; configIndex++) {
                     const AVCodecHWConfig *config = avcodec_get_hw_config(codec, configIndex);
                     if (!config) {
