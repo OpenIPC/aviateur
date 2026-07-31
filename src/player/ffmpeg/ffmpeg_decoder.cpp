@@ -35,6 +35,8 @@ int read_sdp(void *opaque, uint8_t *buf, int buf_size) {
 } // namespace
 
 constexpr size_t MAX_AUDIO_PACKET = 2 * 1024 * 1024;
+constexpr int DEFAULT_TIMEOUT_SECONDS = 10;
+constexpr int AUDIO_FIFO_BUFFER_COUNT = 10; // Store up to 10 decoded audio frames
 
 bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding) {
 #ifndef NDEBUG
@@ -77,6 +79,9 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&options, "probesize", "512000", 0);
     av_dict_set(&options, "analyzeduration", "500000", 0);
 
+    // Timeout control
+    startTime = std::chrono::steady_clock::now();
+
     const AVInputFormat *format = nullptr;
     int ret = 0;
 
@@ -89,13 +94,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
         constexpr int avio_ctx_buffer_size = 4096;
         auto *avio_ctx_buffer = static_cast<unsigned char *>(av_malloc(avio_ctx_buffer_size));
-        pAvioCtx = avio_alloc_context(avio_ctx_buffer,
-                                      avio_ctx_buffer_size,
-                                      0,
-                                      &sdpReadState,
-                                      &read_sdp,
-                                      nullptr,
-                                      nullptr);
+        pAvioCtx =
+            avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size, 0, &sdpReadState, &read_sdp, nullptr, nullptr);
 
         pFormatCtx = avformat_alloc_context();
         pFormatCtx->pb = pAvioCtx;
@@ -103,49 +103,48 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
         // Force SDP format
         format = av_find_input_format("sdp");
-
-        ret = avformat_open_input(&pFormatCtx, nullptr, format, &options);
     } else { // SDP file on disk.
+        pFormatCtx = avformat_alloc_context();
+    }
+
+    // Set interrupt callback before opening input to protect the connection phase
+    pFormatCtx->interrupt_callback.callback = [](void *opaque) -> int {
+        auto *start_time_ptr = reinterpret_cast<std::chrono::time_point<std::chrono::steady_clock> *>(opaque);
+        const auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::seconds>(now - *start_time_ptr).count() > DEFAULT_TIMEOUT_SECONDS) {
+            return 1;
+        }
+        return 0;
+    };
+    pFormatCtx->interrupt_callback.opaque = &startTime;
+
+    if (inputFile.starts_with("v=0")) {
+        ret = avformat_open_input(&pFormatCtx, nullptr, format, &options);
+    } else {
         ret = avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options);
     }
     av_dict_free(&options); // Free remaining options
 
     if (ret != 0) {
-        GuiInterface::Instance().PutLog(LogLevel::Error,
-                                        "avformat_open_input failed: " + std::to_string(ret),
-                                        __FUNCTION__);
+        std::string err_msg = (ret == AVERROR_EXIT)
+                                  ? "ffmpeg open input timeout (" + std::to_string(DEFAULT_TIMEOUT_SECONDS) + "s)"
+                                  : "avformat_open_input failed: " + std::to_string(ret);
+        GuiInterface::Instance().PutLog(LogLevel::Error, err_msg, __FUNCTION__);
         CloseInput();
         return false;
     }
-
-    // Timeout
-    static constexpr int timeout = 10;
-    startTime = std::chrono::steady_clock::now();
-
-    pFormatCtx->interrupt_callback.callback = [](void *timestamp) -> int {
-        const auto now = std::chrono::steady_clock::now();
-        const std::chrono::duration<double> duration =
-            now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
-        return duration.count() > timeout;
-    };
-    pFormatCtx->interrupt_callback.opaque = &startTime;
 
     ret = avformat_find_stream_info(pFormatCtx, nullptr);
     if (ret < 0) {
-        GuiInterface::Instance().PutLog(LogLevel::Error,
-                                        "avformat_find_stream_info failed: " + std::to_string(ret),
-                                        __FUNCTION__);
+        std::string err_msg = (ret == AVERROR_EXIT)
+                                  ? "ffmpeg find stream info timeout (" + std::to_string(DEFAULT_TIMEOUT_SECONDS) + "s)"
+                                  : "avformat_find_stream_info failed: " + std::to_string(ret);
+        GuiInterface::Instance().PutLog(LogLevel::Error, err_msg, __FUNCTION__);
         CloseInput();
         return false;
     }
 
-    // Timeout
-    if (const std::chrono::duration<double> duration = std::chrono::steady_clock::now() - startTime;
-        duration.count() > timeout) {
-        GuiInterface::Instance().PutLog(LogLevel::Error, "timeout", __FUNCTION__);
-        CloseInput();
-        return false;
-    }
+    // Clear interrupt callback after successful initialization to avoid calling with local startTime pointer
     pFormatCtx->interrupt_callback.callback = nullptr;
     pFormatCtx->interrupt_callback.opaque = nullptr;
 
@@ -160,7 +159,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         videoFramerate = static_cast<float>(av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate));
         videoBaseTime = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base);
 
-        GuiInterface::Instance().PutLog(LogLevel::Info, "Video framerate: {}", videoFramerate);
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Video frame rate: {}", videoFramerate);
     }
 
     if (audioStreamIndex != -1) {
@@ -169,7 +168,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     // Create audio buffer (fixed capacity; old data is dropped when full)
     if (hasAudioStream) {
-        size_t count = GetAudioFrameSamples() * GetAudioChannelCount() * 10;
+        size_t count = GetAudioFrameSamples() * GetAudioChannelCount() * AUDIO_FIFO_BUFFER_COUNT;
         audioFifoBuffer = av_fifo_alloc2(count, sizeof(uint8_t), 0);
     }
 
@@ -337,7 +336,8 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             if (audioDecodeBuffer.size() < MAX_AUDIO_PACKET) {
                 audioDecodeBuffer.resize(MAX_AUDIO_PACKET);
             }
-            if (const size_t nDecodedSize = DecodeAudio(packet.get(), audioDecodeBuffer.data(), audioDecodeBuffer.size());
+            if (const size_t nDecodedSize =
+                    DecodeAudio(packet.get(), audioDecodeBuffer.data(), audioDecodeBuffer.size());
                 nDecodedSize > 0) {
                 writeAudioBuff(audioDecodeBuffer.data(), nDecodedSize);
             }
@@ -589,11 +589,8 @@ size_t FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, s
                     decodedSize += static_cast<size_t>(samples) * nbChannels * bytesPerSample;
                 } else {
                     // Copy S16 audio data directly
-                    const int bufSize = av_samples_get_buffer_size(nullptr,
-                                                                   nbChannels,
-                                                                   audioFrame->nb_samples,
-                                                                   AV_SAMPLE_FMT_S16,
-                                                                   1);
+                    const int bufSize =
+                        av_samples_get_buffer_size(nullptr, nbChannels, audioFrame->nb_samples, AV_SAMPLE_FMT_S16, 1);
                     if (bufSize < 0 || static_cast<size_t>(bufSize) > remainingSpace) {
                         GuiInterface::Instance().PutLog(LogLevel::Warn, "audio S16 copy overflow");
                         shouldBreakLoop = true;
