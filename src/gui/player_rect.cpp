@@ -353,6 +353,20 @@ void PlayerRect::custom_update(double dt) {
 
     if (player_) {
         player_->update(dt);
+
+        // Dynamic resolution adaptation: Resize render image if video dimensions changed
+        if (playing_ && player_->video_width() > 0 && player_->video_height() > 0) {
+            auto current_size = render_image_->get_size();
+            if (current_size.x != player_->video_width() || current_size.y != player_->video_height()) {
+                GuiInterface::Instance().PutLog(LogLevel::Info,
+                                                "Resizing render image to {}x{}",
+                                                player_->video_width(),
+                                                player_->video_height());
+                render_image_ =
+                    std::make_shared<vecgui::RenderImage>(Pathfinder::Vec2I{player_->video_width(), player_->video_height()});
+                texture = render_image_;
+            }
+        }
     }
 
     render_fps_label_->set_text(FTR("render fps") + ": " +

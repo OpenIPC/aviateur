@@ -105,7 +105,8 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         // Handle dynamic resolution change
         decoder->videoConfigChangedCallback = [this, decoder_name](int w, int h, AVPixelFormat fmt) {
             if (w > 0 && h > 0) {
-                if (!has_emitted_ready_) {
+                // If resolution changed, re-emit ready signal to update UI labels
+                if (!has_emitted_ready_ || w != video_width() || h != video_height()) {
                     GuiInterface::Instance().EmitDecoderReady(w, h, decoder->GetFramerate(), decoder_name);
                     has_emitted_ready_ = true;
                 }
