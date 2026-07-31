@@ -333,7 +333,13 @@ void PlayerRect::custom_ready() {
     };
     GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
 
-    auto onTipUpdate = [this](std::string msg) { show_red_tip(msg); };
+    auto onTipUpdate = [this](std::string msg, bool bad_news) {
+        if (bad_news) {
+            show_red_tip(msg);
+        } else {
+            show_green_tip(msg);
+        }
+    };
     GuiInterface::Instance().tipCallbacks.emplace_back(onTipUpdate);
 
     auto onUrlStreamShouldStop = [this] { stop_playing(); };
@@ -362,8 +368,8 @@ void PlayerRect::custom_update(double dt) {
                                                 "Resizing render image to {}x{}",
                                                 player_->video_width(),
                                                 player_->video_height());
-                render_image_ =
-                    std::make_shared<vecgui::RenderImage>(Pathfinder::Vec2I{player_->video_width(), player_->video_height()});
+                render_image_ = std::make_shared<vecgui::RenderImage>(
+                    Pathfinder::Vec2I{player_->video_width(), player_->video_height()});
                 texture = render_image_;
             }
         }

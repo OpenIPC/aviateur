@@ -93,10 +93,7 @@ protected:
     std::mutex mtx;
 
     std::thread decodeThread;
-    std::mutex decodeResMtx; // Resource mutex
-
     std::thread analysisThread;
-    std::mutex analysisResMtx; // Resource mutex
 
     void update_video_info(int width, int height, int format);
 

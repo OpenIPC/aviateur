@@ -356,7 +356,7 @@ void ControlPanel::custom_ready() {
                     bool all_started = true;
 
                     if (dongle_names[1].has_value() && dongle_names[1] == dongle_names[0]) {
-                        GuiInterface::Instance().ShowTip("Same device for dual adapter mode");
+                        GuiInterface::Instance().ShowTip("Same device for dual adapter mode", true);
                         all_started = false;
                     } else {
                         for (const auto &dongle_name : dongle_names) {
@@ -378,7 +378,7 @@ void ControlPanel::custom_ready() {
                                 std::optional<std::string> forward_port;
                                 if (!forward_con->get_collapse()) {
                                     if (forward_port_edit->get_text().empty()) {
-                                        GuiInterface::Instance().ShowTip("Invalid port for RTP forwarding");
+                                        GuiInterface::Instance().ShowTip("Invalid port for RTP forwarding", true);
                                         all_started = false;
                                         break;
                                     }
@@ -392,13 +392,13 @@ void ControlPanel::custom_ready() {
                                                           forward_port);
 
                                 if (!res) {
-                                    GuiInterface::Instance().ShowTip("Device failed to start");
+                                    GuiInterface::Instance().ShowTip("Device failed to start", true);
                                 }
 
                                 all_started &= res;
                             } else {
                                 all_started = false;
-                                GuiInterface::Instance().ShowTip("Null device");
+                                GuiInterface::Instance().ShowTip("Null device", true);
                             }
                         }
                     }

@@ -35,7 +35,7 @@ int read_sdp(void *opaque, uint8_t *buf, int buf_size) {
 } // namespace
 
 constexpr size_t MAX_AUDIO_PACKET = 2 * 1024 * 1024;
-constexpr int DEFAULT_TIMEOUT_SECONDS = 10;
+constexpr int DEFAULT_TIMEOUT_MS = 1500;
 constexpr int AUDIO_FIFO_BUFFER_COUNT = 10; // Store up to 10 decoded audio frames
 
 bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding) {
@@ -106,8 +106,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         if (decoder->abortRequest) return 1;
 
         const auto now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::seconds>(now - decoder->startTime).count() >
-            DEFAULT_TIMEOUT_SECONDS) {
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - decoder->startTime).count() >
+            DEFAULT_TIMEOUT_MS) {
             return 1;
         }
         return 0;
@@ -123,7 +123,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     if (ret != 0) {
         std::string err_msg = (ret == AVERROR_EXIT)
-                                  ? "ffmpeg open input timeout (" + std::to_string(DEFAULT_TIMEOUT_SECONDS) + "s)"
+                                  ? "ffmpeg open input timeout (" + std::to_string(DEFAULT_TIMEOUT_MS) + "ms)"
                                   : "avformat_open_input failed: " + std::to_string(ret);
         GuiInterface::Instance().PutLog(LogLevel::Error, err_msg, __FUNCTION__);
         CloseInput();
@@ -133,7 +133,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     ret = avformat_find_stream_info(pFormatCtx, nullptr);
     if (ret < 0) {
         std::string err_msg = (ret == AVERROR_EXIT)
-                                  ? "ffmpeg find stream info timeout (" + std::to_string(DEFAULT_TIMEOUT_SECONDS) + "s)"
+                                  ? "ffmpeg find stream info timeout (" + std::to_string(DEFAULT_TIMEOUT_MS) + "ms)"
                                   : "avformat_find_stream_info failed: " + std::to_string(ret);
         GuiInterface::Instance().PutLog(LogLevel::Error, err_msg, __FUNCTION__);
         CloseInput();
@@ -142,6 +142,12 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     hasVideoStream = OpenVideo();
     hasAudioStream = OpenAudio();
+
+    if (!hasVideoStream) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "No video stream found", __FUNCTION__);
+        CloseInput();
+        return false;
+    }
 
     sourceIsOpened = true;
     lastCountBitrateTime = std::chrono::steady_clock::now();

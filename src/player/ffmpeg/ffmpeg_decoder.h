@@ -95,6 +95,8 @@ public:
         hasSps = false;
         hasPps = false;
         isWaitingForKeyframe = true;
+        width = 0;
+        height = 0;
     }
 
 private:

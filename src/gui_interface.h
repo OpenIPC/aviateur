@@ -545,10 +545,10 @@ public:
         }
     }
 
-    void ShowTip(std::string msg) {
+    void ShowTip(std::string msg, bool bad_news) {
         for (auto &callback : tipCallbacks) {
             try {
-                callback.operator()<std::string>(std::move(msg));
+                callback.operator()<std::string, bool>(std::move(msg), std::move(bad_news));
             } catch (std::bad_any_cast &) {
             }
         }

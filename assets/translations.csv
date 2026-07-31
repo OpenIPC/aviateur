@@ -1,55 +1,57 @@
-tag,en,zh,ru,ja
-lang,Language,语言,Язык,言語
-fullscreen,Fullscreen,全屏,Полноэкранный режим,全画面表示
-bitrate,Bitrate,码率,Битрейт,ビットレート
-render fps,Render FPS,渲染帧率,FPS рендеринга,レンダリングFPS
-decoder,Decoder,解码器,Декодер,デコーダ
-capture frame,Capture frame,截图,Захват кадра,スクリーンショット
-player control,Player control,播放控制,Управление плеером,再生コントロール
-record mp4,Record MP4,录制 MP4,Запись MP4,MP4録画
-recording,Recording,正在录制,Идет запись...,録画中
-stop recording,Stop Recording,停止录制,Остановить запись,録画停止
-channel,Channel,频道,Канал,チャンネル
-channel width,Channel width,频宽,Ширина канала,チャンネル幅
-key,Key,密钥,Ключ,キー
-settings,Settings,设置,Настройки,設定
-video stab,Video stabilization,视频增稳,Стабилизация видео,動画手ぶれ補正
-force sw decoding,Force software decoding,强制软件解码,Принудительное программное декодирование,強制ソフトウェアデコード
-start,Start,开始,Старт,開始
-stop,Stop,停止,Стоп,停止
-open,Open,打开,Открыть,開く
-close,Close,关闭,Закрыть,閉じる
-port,Port,端口,Порт,ポート
-local,Local,本机,Локальный,ローカル
-on,On,开,Вкл.,ON
-off,Off,关,Выкл.,OFF
-invalid usb msg,Invalid USB device!,无效的 USB 设备！,Неверное USB-устройство!,無効なUSBデバイス！
-wi-fi stopped msg,Wi-Fi stopped!,无线已停止！,Wi-Fi остановлен!,Wi-Fiが停止しました！
-device,Device,设备,Устройство,デバイス
-capture fail,Failed to capture frame!,截图失败！,Ошибка захвата кадра!,フレームキャプチャに失敗しました！
-frame saved,Frame saved to: ,截图保存至：,Кадр сохранен в:,フレームを保存しました：
-record fail,Recording failed!,录制失败！,Ошибка записи!,録画に失敗しました！
-save record fail,Failed to save the record file!,保存录制文件失败！,Ошибка сохранения файла!,録画ファイルの保存に失敗しました！
-video saved,Video saved to: ,视频保存至：,Видео сохранено в:,動画を保存しました：
-video stab warning,Video stabilization is experimental!,视频增稳是实验性功能！,Стабилизация видео экспериментальная!,動画手ぶれ補正は実験的な機能です！
-capture folder,Capture folder,录制文件夹,Папка снимков,キャプチャフォルダ
-config folder,Config folder,配置文件夹,Папка конфигурации,設定フォルダ
-crash dump folder,Crash dump folder,崩溃数据文件夹,Папка дампов памяти,クラッシュダンプフォルダ
-invalid input data,Invalid input data!,无效的输入数据！,Неверные входные данные!,無効な入力データ！
-signal lost,Signal lost!,信号丢失！,Сигнал потерян!,信号が失われました！
-low light enhancement,Low light enhancement,低光增强,Улучшение при слабом освещении,低照度強調
-alink,Adaptive link,自适应链路,Адаптивная ссылка,アダプティブリンク
-tx power,TX power,发射功率,Мощность передачи,送信出力
-use gstreamer,Use GStreamer,使用GStreamer,Использовать GStreamer,GStreamerを使用
-use vulkan,Use Vulkan,使用Vulkan,Использовать Vulkan,Vulkanを使用
-codec,Codec,编码,Кодек,コーデック
-dark mode,Dark mode,黑暗模式,Темная тема,ダークモード
-default,Default,默认,По умолчанию,デフォルト
-packet loss,Packet loss,丢包,Потеря пакетов,パケット損失
-restart app to take effect,Restart app to take effect,重启应用生效,Перезапустите приложение для применения изменений,有効にするにはアプリを再起動してください
-codec backend,Codec backend,编解码后端,Бэкенд кодека,コーデックバックエンド
-render backend,Render backend,渲染后端,Бэкенд рендеринга,レンダリングバックエンド
-dual adapter,Dual Adapter,双网卡,Двойной адаптер,デュアルアダプター
-forward,Forward,转发,Пересылка,転送
-target port,Target port,目标端口,Целевой порт,ターゲットポート
-exit,Exit,退出,Выход,終了
+tag,en,zh
+lang,Language,语言
+fullscreen,Fullscreen,全屏
+bitrate,Bitrate,码率
+render fps,Render FPS,渲染帧率
+decoder,Decoder,解码器
+capture frame,Capture frame,截图
+player control,Player control,播放控制
+record mp4,Record MP4,录制 MP4
+recording,Recording,正在录制
+stop recording,Stop Recording,停止录制
+channel,Channel,频道
+channel width,Channel width,频宽
+key,Key,密钥
+settings,Settings,设置
+video stab,Video stabilization,视频增稳
+force sw decoding,Force software decoding,强制软件解码
+start,Start,开始
+stop,Stop,停止
+open,Open,打开
+close,Close,关闭
+port,Port,端口
+local,Local,本机
+on,On,开
+off,Off,关
+invalid usb msg,Invalid USB device!,无效的 USB 设备！
+wi-fi stopped msg,Wi-Fi stopped!,无线已停止！
+device,Device,设备
+capture fail,Failed to capture frame!,截图失败！
+frame saved,Frame saved to: ,截图保存至：
+record fail,Recording failed!,录制失败！
+save record fail,Failed to save the record file!,保存录制文件失败！
+video saved,Video saved to: ,视频保存至：
+video stab warning,Video stabilization is experimental!,视频增稳是实验性功能！
+capture folder,Capture folder,录制文件夹
+config folder,Config folder,配置文件夹
+crash dump folder,Crash dump folder,崩溃数据文件夹
+invalid input data,Invalid input data!,无效的输入数据！
+signal lost,Signal lost!,信号丢失！
+low light enhancement,Low light enhancement,低光增强
+alink,Adaptive link,自适应链路
+tx power,TX power,发射功率
+use gstreamer,Use GStreamer,使用GStreamer
+use vulkan,Use Vulkan,使用Vulkan
+codec,Codec,编码
+dark mode,Dark mode,黑暗模式
+default,Default,默认
+packet loss,Packet loss,丢包
+restart app to take effect,Restart app to take effect,重启应用生效
+codec backend,Codec backend,编解码后端
+render backend,Render backend,渲染后端
+dual adapter,Dual Adapter,双网卡
+forward,Forward,转发
+target port,Target port,目标端口
+exit,Exit,退出
+no signal,No signal,无信号
+signal restored,Signal restored,信号恢复

@@ -80,7 +80,7 @@ void SettingsContainer::custom_ready() {
                 GuiInterface::Instance().set_locale("en");
             }
 
-            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
+            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"), false);
         };
         lang_menu_button->connect_signal("item_selected", callback);
     }
@@ -154,7 +154,7 @@ void SettingsContainer::custom_ready() {
             vk_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
             auto callback = [](bool toggled) {
                 GuiInterface::Instance().use_vulkan_ = toggled;
-                GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
+                GuiInterface::Instance().ShowTip(FTR("restart app to take effect"), false);
             };
             vk_btn->connect_signal("toggled", callback);
             render_btn_group->add_button(vk_btn);

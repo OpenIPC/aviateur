@@ -238,7 +238,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                                         deviceId.product_id,
                                         deviceId.bus_num,
                                         deviceId.port_num);
-        GuiInterface::Instance().ShowTip(FTR("invalid usb msg"));
+        GuiInterface::Instance().ShowTip(FTR("invalid usb msg"), true);
 
         return false;
     }
