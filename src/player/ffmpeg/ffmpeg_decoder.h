@@ -19,6 +19,11 @@ public:
     SendPacketException(const std::string &msg) : runtime_error(msg.c_str()) {}
 };
 
+struct SdpReadState {
+    const uint8_t *ptr;
+    size_t sizeLeft;
+};
+
 class FfmpegDecoder {
     friend class VideoPlayerFfmpeg;
 
@@ -174,6 +179,11 @@ private:
     AVBufferRef *hwDeviceCtx = nullptr;
     std::atomic<bool> dropCurrentVideoFrame = false;
     std::shared_ptr<AVFrame> hwFrame;
+
+    // Custom I/O for in-memory SDP
+    AVIOContext *pAvioCtx = nullptr;
+    std::vector<uint8_t> sdpBuffer;
+    SdpReadState sdpReadState{};
 
     // NALU State machine for stability
     bool hasSps = false;

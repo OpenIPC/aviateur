@@ -20,6 +20,18 @@ const uint8_t *find_start_code(const uint8_t *p, const uint8_t *end) {
     }
     return nullptr;
 }
+
+// Callback for AVIOContext to read from memory
+int read_sdp(void *opaque, uint8_t *buf, int buf_size) {
+    auto *state = static_cast<SdpReadState *>(opaque);
+    if (state->sizeLeft == 0) return AVERROR_EOF;
+
+    int read_len = std::min(buf_size, static_cast<int>(state->sizeLeft));
+    memcpy(buf, state->ptr, read_len);
+    state->ptr += read_len;
+    state->sizeLeft -= read_len;
+    return read_len;
+}
 } // namespace
 
 constexpr size_t MAX_AUDIO_PACKET = 2 * 1024 * 1024;
@@ -58,7 +70,37 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&options, "probesize", "512000", 0);
     av_dict_set(&options, "analyzeduration", "500000", 0);
 
-    int ret = avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options);
+    const AVInputFormat *format = nullptr;
+    int ret = 0;
+
+    // SDP string in memory.
+    if (inputFile.starts_with("v=0")) {
+        // Handle in-memory SDP
+        sdpBuffer.assign(inputFile.begin(), inputFile.end());
+        sdpReadState.ptr = sdpBuffer.data();
+        sdpReadState.sizeLeft = sdpBuffer.size();
+
+        constexpr int avio_ctx_buffer_size = 4096;
+        auto *avio_ctx_buffer = static_cast<unsigned char *>(av_malloc(avio_ctx_buffer_size));
+        pAvioCtx = avio_alloc_context(avio_ctx_buffer,
+                                      avio_ctx_buffer_size,
+                                      0,
+                                      &sdpReadState,
+                                      &read_sdp,
+                                      nullptr,
+                                      nullptr);
+
+        pFormatCtx = avformat_alloc_context();
+        pFormatCtx->pb = pAvioCtx;
+        pFormatCtx->flags |= AVFMT_FLAG_CUSTOM_IO;
+
+        // Force SDP format
+        format = av_find_input_format("sdp");
+
+        ret = avformat_open_input(&pFormatCtx, nullptr, format, &options);
+    } else { // SDP file on disk.
+        ret = avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options);
+    }
     av_dict_free(&options); // Free remaining options
 
     if (ret != 0) {
@@ -141,6 +183,12 @@ bool FfmpegDecoder::CloseInput() {
     if (pFormatCtx) {
         avformat_close_input(&pFormatCtx);
         pFormatCtx = nullptr;
+    }
+
+    if (pAvioCtx) {
+        av_freep(&pAvioCtx->buffer);
+        avio_context_free(&pAvioCtx);
+        pAvioCtx = nullptr;
     }
 
     return true;

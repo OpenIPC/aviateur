@@ -374,32 +374,20 @@ public:
         }
     }
 
-    static void BuildSdp(const std::string &filePath, const std::string &codec, int payloadType, int port) {
-        auto absolutePath = std::filesystem::absolute(filePath);
-        std::string dirPath = absolutePath.parent_path().string();
-
-        try {
-            if (!std::filesystem::exists(dirPath)) {
-                std::filesystem::create_directories(dirPath);
-            }
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << std::endl;
-        }
-
-        std::ofstream sdpFos(filePath);
-        sdpFos << "v=0\n";
-        sdpFos << "o=- 0 0 IN IP4 127.0.0.1\n";
-        sdpFos << "s=No Name\n";
-        sdpFos << "c=IN IP4 127.0.0.1\n";
-        sdpFos << "t=0 0\n";
-        sdpFos << "m=video " << port << " RTP/AVP " << payloadType << "\n";
-        sdpFos << "a=rtpmap:" << payloadType << " " << codec << "/90000\n";
-        sdpFos.flush();
-        sdpFos.close();
+    static std::string BuildSdp(const std::string &codec, int payloadType, int port) {
+        std::stringstream sdp;
+        sdp << "v=0\n";
+        sdp << "o=- 0 0 IN IP4 127.0.0.1\n";
+        sdp << "s=No Name\n";
+        sdp << "c=IN IP4 127.0.0.1\n";
+        sdp << "t=0 0\n";
+        sdp << "m=video " << port << " RTP/AVP " << payloadType << "\n";
+        sdp << "a=rtpmap:" << payloadType << " " << codec << "/90000\n";
 
         Instance().PutLog(LogLevel::Info,
-                          "Built SDP: Codec: " + codec + ", Payload type: " + std::to_string(payloadType) +
+                          "Generated SDP: Codec: " + codec + ", Payload type: " + std::to_string(payloadType) +
                               ", Port: " + std::to_string(port));
+        return sdp.str();
     }
 
     template <typename... Args>
@@ -413,13 +401,9 @@ public:
             return;
         }
 
-        const auto dir = GetAppDataDir();
+        std::string sdpContent = BuildSdp(codec, pt, port);
 
-        std::string sdpFile = dir + "sdp/port-" + std::to_string(port) + ".sdp";
-
-        BuildSdp(sdpFile, codec, pt, port);
-
-        EmitRtpStream(sdpFile);
+        EmitRtpStream(sdpContent);
     }
 
     void UpdateCount() {
