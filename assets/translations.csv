@@ -55,3 +55,4 @@ target port,Target port,目标端口
 exit,Exit,退出
 no signal,No signal,无信号
 signal restored,Signal restored,信号恢复
+invalid device,Invalid device,无效设备

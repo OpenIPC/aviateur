@@ -343,6 +343,8 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             GuiInterface::Instance().PutLog(LogLevel::Info, "RTL device loop exited");
         } catch (const std::runtime_error &e) {
             GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
+
+            GuiInterface::Instance().ShowTip(FTR("invalid device"), true);
         } catch (...) {
         }
 

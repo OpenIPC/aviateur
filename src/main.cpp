@@ -47,7 +47,6 @@ int main() {
         auto on_wifi_stopped = [control_panel_weak, player_rect_weak] {
             if (!control_panel_weak.expired() && !player_rect_weak.expired()) {
                 player_rect_weak.lock()->stop_playing();
-                player_rect_weak.lock()->show_red_tip(FTR("wi-fi stopped msg"));
                 control_panel_weak.lock()->update_adapter_start_button_looking(true);
             }
         };
