@@ -229,9 +229,18 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
             if (pVideoCodecCtx) {
                 std::shared_ptr<AVFrame> pFrameVideo = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
-                AVFrame *frameToReceive = hwDecoderEnabled ? hwFrame.get() : pFrameVideo.get();
-                if (hwDecoderEnabled && !hwFrame) {
-                    hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+                AVFrame *frameToReceive = pFrameVideo.get();
+
+#ifdef __APPLE__
+                const bool zeroCopyThisFrame = hwDecoderEnabled && mZeroCopyEnabled;
+#else
+                const bool zeroCopyThisFrame = false;
+#endif
+
+                if (hwDecoderEnabled && !zeroCopyThisFrame) {
+                    if (!hwFrame) {
+                        hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+                    }
                     frameToReceive = hwFrame.get();
                 }
 
@@ -256,7 +265,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                         }
                     }
 
-                    if (hwDecoderEnabled) {
+                    if (hwDecoderEnabled && !zeroCopyThisFrame) {
                         if (dropCurrentVideoFrame) {
                             dropCurrentVideoFrame = false;
                             continue;
@@ -266,6 +275,13 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                             continue;
                         }
                         av_frame_copy_props(pFrameVideo.get(), hwFrame.get());
+                    } else if (hwDecoderEnabled && zeroCopyThisFrame) {
+                        if (dropCurrentVideoFrame) {
+                            dropCurrentVideoFrame = false;
+                            continue;
+                        }
+                        // Zero-copy path: pFrameVideo already contains the hardware-decoded frame
+                        // No transfer needed - the CVPixelBuffer is directly accessible via data[3]
                     }
                     if (gotVideoFrameCallback) gotVideoFrameCallback(pFrameVideo);
                     return pFrameVideo;

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <atomic>
 #include <functional>
@@ -99,6 +99,11 @@ public:
         height = 0;
     }
 
+#ifdef __APPLE__
+    void SetZeroCopyEnabled(bool enabled) { mZeroCopyEnabled = enabled; }
+    bool IsZeroCopyEnabled() const { return mZeroCopyEnabled; }
+#endif
+
 private:
     bool OpenVideo();
 
@@ -181,6 +186,9 @@ private:
     AVBufferRef *hwDeviceCtx = nullptr;
     std::atomic<bool> dropCurrentVideoFrame = false;
     std::shared_ptr<AVFrame> hwFrame;
+#ifdef __APPLE__
+    bool mZeroCopyEnabled = false;
+#endif
 
     // Custom I/O for in-memory SDP
     AVIOContext *pAvioCtx = nullptr;

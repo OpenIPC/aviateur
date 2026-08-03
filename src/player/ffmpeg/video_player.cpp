@@ -1,4 +1,4 @@
-﻿#include "video_player.h"
+#include "video_player.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
@@ -8,6 +8,8 @@
 
 #include "../../gui_interface.h"
 #include "jpeg_encoder.h"
+
+#include <libavutil/frame.h>
 
 #define DEFAULT_GIF_FRAMERATE 10
 
@@ -30,9 +32,51 @@ void VideoPlayerFfmpeg::update(float dt) {
     }
 
     std::shared_ptr<AVFrame> frame = getFrame();
-    if (frame && frame->linesize[0]) {
-        yuvRenderer_->updateTextureData(frame);
+    if (!frame) {
+        return;
     }
+
+#ifdef __APPLE__
+    // Check if this is a hardware frame (VideoToolbox decoded, CVPixelBuffer in data[3])
+    if (frame->data[3] && yuvRenderer_->isZeroCopyAvailable()) {
+        yuvRenderer_->updateTextureFromHwFrame(frame);
+        // If zero-copy failed (e.g., unsupported format), fall back to CPU transfer
+        if (!yuvRenderer_->isTextureAllocated()) {
+            static bool loggedOnce = false;
+            if (!loggedOnce) {
+                GuiInterface::Instance().PutLog(LogLevel::Warn, "Zero-copy failed, using CPU fallback");
+                loggedOnce = true;
+            }
+            auto cpuFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f) { av_frame_free(&f); });
+            if (av_hwframe_transfer_data(cpuFrame.get(), frame.get(), 0) == 0) {
+                av_frame_copy_props(cpuFrame.get(), frame.get());
+                if (cpuFrame->linesize[0]) {
+                    yuvRenderer_->updateTextureData(cpuFrame);
+                }
+            }
+        }
+    } else {
+        // Log once when using CPU path
+        static bool loggedCpuPath = false;
+        if (!loggedCpuPath && frame->linesize[0]) {
+            if (!yuvRenderer_->isZeroCopyAvailable()) {
+                GuiInterface::Instance().PutLog(LogLevel::Info, "Using CPU texture upload path (zero-copy not available)");
+            } else if (!frame->data[3]) {
+                GuiInterface::Instance().PutLog(LogLevel::Info, "Using CPU texture upload path (no CVPixelBuffer in frame)");
+            }
+            loggedCpuPath = true;
+        }
+        if (frame->linesize[0]) {
+            yuvRenderer_->updateTextureData(frame);
+        }
+    }
+#else
+    {
+        if (frame->linesize[0]) {
+            yuvRenderer_->updateTextureData(frame);
+        }
+    }
+#endif
 }
 
 void VideoPlayerFfmpeg::render(std::shared_ptr<Pathfinder::Texture> target) {
@@ -66,6 +110,15 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
     url = playUrl;
 
     decoder = std::make_shared<FfmpegDecoder>();
+
+#ifdef __APPLE__
+    // Enable zero-copy path on decoder if the renderer supports it
+    // (Metal backend on macOS with VideoToolbox hardware decoding)
+    if (yuvRenderer_->isZeroCopyAvailable()) {
+        decoder->SetZeroCopyEnabled(true);
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Zero-copy decoder path enabled", __FUNCTION__);
+    }
+#endif
 
     analysisThread = std::thread([this, forceSoftwareDecoding, localDecoder = decoder] {
         bool ok = localDecoder->OpenInput(url, forceSoftwareDecoding);
@@ -271,7 +324,21 @@ std::string VideoPlayerFfmpeg::capture_jpeg() {
     std::ofstream outfile(filePath.str());
     outfile.close();
 
-    auto ok = JpegEncoder::encodeJpeg(filePath.str(), lastFrame_);
+    // If the frame is a hardware frame (zero-copy path), convert to CPU for encoding
+    std::shared_ptr<AVFrame> frameForEncode = lastFrame_;
+#ifdef __APPLE__
+    if (lastFrame_->data[3]) {
+        auto cpuFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f) { av_frame_free(&f); });
+        if (av_hwframe_transfer_data(cpuFrame.get(), lastFrame_.get(), 0) < 0) {
+            GuiInterface::Instance().PutLog(LogLevel::Warn, "av_hwframe_transfer_data failed for JPEG capture");
+            return "";
+        }
+        av_frame_copy_props(cpuFrame.get(), lastFrame_.get());
+        frameForEncode = cpuFrame;
+    }
+#endif
+
+    auto ok = JpegEncoder::encodeJpeg(filePath.str(), frameForEncode);
 
     return ok ? std::string(filePath.str()) : "";
 }
@@ -378,7 +445,20 @@ bool VideoPlayerFfmpeg::start_gif_recording() {
             return;
         }
 
-        gifEncoder_->encodeFrame(frame);
+        // If the frame is a hardware frame (zero-copy), convert to CPU for GIF encoding
+        std::shared_ptr<AVFrame> frameForEncode = frame;
+#ifdef __APPLE__
+        if (frame->data[3]) {
+            auto cpuFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f) { av_frame_free(&f); });
+            if (av_hwframe_transfer_data(cpuFrame.get(), frame.get(), 0) < 0) {
+                return;
+            }
+            av_frame_copy_props(cpuFrame.get(), frame.get());
+            frameForEncode = cpuFrame;
+        }
+#endif
+
+        gifEncoder_->encodeFrame(frameForEncode);
     };
 
     return true;

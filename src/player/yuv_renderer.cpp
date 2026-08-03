@@ -1,8 +1,15 @@
-﻿#include "yuv_renderer.h"
+#include "yuv_renderer.h"
 
 #include <libavutil/pixfmt.h>
 #include <pathfinder/common/color.h>
 #include <pathfinder/common/math/mat4.h>
+
+#ifdef __APPLE__
+#include <CoreVideo/CVMetalTextureCache.h>
+#include <CoreVideo/CVMetalTexture.h>
+#include <Metal/Metal.h>
+#include <pathfinder/gpu/mtl/device.h>
+#endif
 
 #include <utility>
 
@@ -28,6 +35,16 @@ YuvRenderer::YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared
     mQueue = std::move(queue);
 }
 
+YuvRenderer::~YuvRenderer() {
+#ifdef __APPLE__
+    releaseCvTextures();
+    if (mCvMetalCache) {
+        CFRelease(mCvMetalCache);
+        mCvMetalCache = nullptr;
+    }
+#endif
+}
+
 void YuvRenderer::init() {
     mRenderPass = mDevice->create_render_pass(Pathfinder::TextureFormat::Rgba8Unorm,
                                               Pathfinder::AttachmentLoadOp::Clear,
@@ -39,18 +56,20 @@ void YuvRenderer::init() {
 
     initPipeline();
     initGeometry();
+
+#ifdef __APPLE__
+    initZeroCopy();
+#endif
 }
 
 void YuvRenderer::initGeometry() {
-    // Set up vertex data (and buffer(s)) and configure vertex attributes.
     constexpr float vertices[] = {
-        // Positions, UVs.
-        -1.0, -1.0, 0.0, 0.0, // 0
-        1.0,  -1.0, 1.0, 0.0, // 1
-        1.0,  1.0,  1.0, 1.0, // 2
-        -1.0, -1.0, 0.0, 0.0, // 3
-        1.0,  1.0,  1.0, 1.0, // 4
-        -1.0, 1.0,  0.0, 1.0  // 5
+        -1.0, -1.0, 0.0, 0.0,
+        1.0,  -1.0, 1.0, 0.0,
+        1.0,  1.0,  1.0, 1.0,
+        -1.0, -1.0, 0.0, 0.0,
+        1.0,  1.0, 1.0, 1.0,
+        -1.0, 1.0,  0.0, 1.0
     };
 
     mVertexBuffer = mDevice->create_buffer(
@@ -68,7 +87,6 @@ void YuvRenderer::initPipeline() {
     constexpr uint32_t stride = 4 * sizeof(float);
 
     attribute_descriptions.push_back({0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex});
-
     attribute_descriptions.push_back(
         {0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex});
 
@@ -86,7 +104,6 @@ void YuvRenderer::initPipeline() {
             {2, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler},
             {3, Pathfinder::ShaderStage::Fragment, Pathfinder::DescriptorType::Sampler},
         };
-
         mDescriptorSetLayout = mDevice->create_descriptor_set_layout(layouts);
     }
 
@@ -120,6 +137,119 @@ void YuvRenderer::initPipeline() {
                                                 "yuv pipeline");
 }
 
+#ifdef __APPLE__
+void YuvRenderer::initZeroCopy() {
+    if (mDevice->get_backend_type() != Pathfinder::BackendType::Metal) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Zero-copy not available: non-Metal backend", __FUNCTION__);
+        return;
+    }
+
+    auto *deviceMtl = static_cast<Pathfinder::DeviceMtl *>(mDevice.get());
+    id<MTLDevice> mtlDevice = deviceMtl->get_handle();
+
+    CVReturn err = CVMetalTextureCacheCreate(kCFAllocatorDefault, nullptr, mtlDevice, nullptr, &mCvMetalCache);
+    if (err != kCVReturnSuccess) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to create CVMetalTextureCache: {}", (int)err);
+        mCvMetalCache = nullptr;
+        return;
+    }
+
+    mZeroCopyAvailable = true;
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Zero-copy path initialized successfully", __FUNCTION__);
+}
+
+void YuvRenderer::releaseCvTextures() {
+    if (mCvTexY) {
+        CFRelease(mCvTexY);
+        mCvTexY = nullptr;
+    }
+    if (mCvTexUV) {
+        CFRelease(mCvTexUV);
+        mCvTexUV = nullptr;
+    }
+}
+
+void YuvRenderer::updateTextureFromHwFrame(const std::shared_ptr<AVFrame>& hwFrame) {
+    if (!mZeroCopyAvailable || !mCvMetalCache) {
+        return;
+    }
+
+    CVPixelBufferRef pb = (CVPixelBufferRef)hwFrame->data[3];
+    if (!pb) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "No CVPixelBuffer in hardware frame, skipping zero-copy");
+        return;
+    }
+
+    OSType pixelFormat = CVPixelBufferGetPixelFormatType(pb);
+    if (pixelFormat != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange &&
+        pixelFormat != kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn,
+                                       "Zero-copy unsupported CVPixelBuffer format: {}",
+                                       (int)pixelFormat);
+        return;
+    }
+
+    CVPixelBufferRetain(pb);
+
+    int width = CVPixelBufferGetWidth(pb);
+    int height = CVPixelBufferGetHeight(pb);
+
+    releaseCvTextures();
+
+    CVReturn err;
+
+    err = CVMetalTextureCacheCreateTextureFromImage(
+        kCFAllocatorDefault, mCvMetalCache, pb, nullptr,
+        MTLPixelFormatR8Unorm, width, height, 0, &mCvTexY);
+    if (err != kCVReturnSuccess) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "CVMetalTextureCacheCreateTextureFromImage (Y) failed: {}", (int)err);
+        CVPixelBufferRelease(pb);
+        return;
+    }
+
+    err = CVMetalTextureCacheCreateTextureFromImage(
+        kCFAllocatorDefault, mCvMetalCache, pb, nullptr,
+        MTLPixelFormatRG8Unorm, width / 2, height / 2, 1, &mCvTexUV);
+    if (err != kCVReturnSuccess) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "CVMetalTextureCacheCreateTextureFromImage (UV) failed: {}", (int)err);
+        releaseCvTextures();
+        CVPixelBufferRelease(pb);
+        return;
+    }
+
+    CVPixelBufferRelease(pb);
+
+    auto *deviceMtl = static_cast<Pathfinder::DeviceMtl *>(mDevice.get());
+
+    id<MTLTexture> mtlY = CVMetalTextureGetTexture(mCvTexY);
+    id<MTLTexture> mtlUV = CVMetalTextureGetTexture(mCvTexUV);
+
+    if (!mtlY || !mtlUV) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "CVMetalTextureGetTexture failed");
+        releaseCvTextures();
+        return;
+    }
+
+    mTexY = deviceMtl->wrap_texture(mtlY);
+    mTexU = deviceMtl->wrap_texture(mtlUV);
+
+    if (!mTexV) {
+        mTexV = mDevice->create_texture({{2, 2}, Pathfinder::TextureFormat::R8}, "dummy v texture");
+    }
+
+    mPixFmt = AV_PIX_FMT_NV12;
+    mPixFmtChanged = true;
+    mTextureAllocated = true;
+    mNeedClear = false;
+
+    static bool zeroCopyLogged = false;
+    if (!zeroCopyLogged) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Zero-copy path active: {}x{}", width, height);
+        zeroCopyLogged = true;
+    }
+}
+#endif
+
 void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     if (width == 0 || height == 0) {
         return;
@@ -128,32 +258,31 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mPixFmt = format;
     mPixFmtChanged = true;
 
+#ifdef __APPLE__
+    if (mZeroCopyAvailable && format == AV_PIX_FMT_NV12) {
+        mTextureAllocated = false;
+        return;
+    }
+#endif
+
     mTexY = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "y texture");
 
     if (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUVJ420P) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "YUV pixel format is YUV420P/YUVJ420P", __FUNCTION__);
-
         mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::R8}, "u texture");
-
         mTexV = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::R8}, "v texture");
     } else if (format == AV_PIX_FMT_NV12) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "YUV pixel format is NV12", __FUNCTION__);
-
         mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::Rg8}, "u texture");
-
-        // V is not used for NV12.
         if (mTexV == nullptr) {
             mTexV = mDevice->create_texture({{2, 2}, Pathfinder::TextureFormat::R8}, "dummy v texture");
         }
     } else if (format == AV_PIX_FMT_YUV444P) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "YUV pixel format is YUV444P", __FUNCTION__);
-
         mTexU = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "u texture");
-
         mTexV = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "v texture");
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Error, "YUV pixel format is unsupported!", __FUNCTION__);
-
         abort();
     }
 
@@ -177,7 +306,6 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
         if (mPreviousFrameY.has_value()) {
             auto stabXform = mStabilizer.stabilize(mPreviousFrameY.value(), frameY);
-
             mXform = Pathfinder::Mat3(1);
             mXform.v[0] = stabXform.at<double>(0, 0);
             mXform.v[3] = stabXform.at<double>(0, 1);
@@ -185,7 +313,6 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
             mXform.v[4] = stabXform.at<double>(1, 1);
             mXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
             mXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
-
             mXform = mXform.scale(
                 Pathfinder::Vec2F(1.0f + static_cast<float>(HORIZONTAL_BORDER_CROP) / mTexY->get_size().x));
         }
@@ -244,7 +371,6 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
         mQueue->submit(encoder, mFence);
 
-        // Do this after submitting.
         mPrevFrameData = newFrameData;
     } else
 #endif
@@ -261,7 +387,6 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
         mXform = Pathfinder::Mat3(1);
 
-// Keep the cv frame alive until we call `submit_and_wait`
 #ifdef AVIATEUR_USE_OPENCV
         cv::Mat enhancedFrameY;
 #endif
@@ -276,12 +401,9 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
                 if (!mLowLightEnhancer.has_value()) {
                     mLowLightEnhancer = LowLightEnhancer(vecgui::get_asset_dir("weights/pairlie_180x320.onnx"));
                 }
-
                 cv::Mat originalFrameY =
                     cv::Mat(height, width, CV_8UC1, (void*)newFrameData->data[0], newFrameData->linesize[0]);
-
                 enhancedFrameY = mLowLightEnhancer->detect(originalFrameY);
-
                 texYData = enhancedFrameY.data;
             } else
 #endif
@@ -339,20 +461,14 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
 
     auto encoder = mDevice->create_command_encoder("render yuv");
 
-    // Update uniform buffers.
     FragUniformBlock uniform;
     if (mXformChanged || mPixFmtChanged) {
         uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
-
-        // We don't need to preserve the data until the upload commands are implemented because
-        // these uniform buffers are host-visible/coherent.
         encoder->write_buffer(mUniformBuffer, 0, sizeof(FragUniformBlock), &uniform);
-
         mXformChanged = false;
         mPixFmtChanged = false;
     }
 
-    // Update descriptor set.
     mDescriptorSet->add_or_update({
         Pathfinder::Descriptor::sampled(1, mTexY, mSampler),
         Pathfinder::Descriptor::sampled(2, mTexU, mSampler),
@@ -360,17 +476,11 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) 
     });
 
     encoder->begin_render_pass(mRenderPass, outputTex, Pathfinder::ColorF::black());
-
     encoder->set_viewport({{0, 0}, outputTex->get_size()});
-
     encoder->bind_render_pipeline(mPipeline);
-
     encoder->bind_vertex_buffers({{mVertexBuffer, 0}});
-
     encoder->bind_descriptor_set(mDescriptorSet);
-
     encoder->draw(0, 6);
-
     encoder->end_render_pass();
 
     mQueue->submit(encoder, mFence);

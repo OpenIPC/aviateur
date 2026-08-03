@@ -1,1 +1,7 @@
 gst-launch-1.0 -v filesrc location=test.mp4 ! decodebin3 ! timeoverlay ! encodebin2 profile='video/x-h265|element-properties,tune=4,speed-preset=1,bitrate=8000' ! rtph265pay config-interval=1 aggregate-mode=zero-latency ! application/x-rtp,encoding-name=H265,clock-rate=90000,media=video,payload=96 ! udpsink host=127.0.0.1 port=5600
+
+ffmpeg -re -stream_loop -1 -i input.mp4 \
+  -an \
+  -vcodec h264 \
+  -payload_type 96 \
+  -f rtp "rtp://127.0.0.1:5600?pkt_size=1200" > video.sdp
