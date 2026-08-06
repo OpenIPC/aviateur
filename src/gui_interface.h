@@ -45,7 +45,7 @@
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 7;
+constexpr auto CONFIG_VERSION_NUM = 8;
 
 const vecgui::ColorU GREEN = vecgui::ColorU(78, 135, 82);
 const vecgui::ColorU RED = vecgui::ColorU(201, 79, 79);

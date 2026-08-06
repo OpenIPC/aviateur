@@ -3,10 +3,10 @@
 #include "resources/default_resource.h"
 #include "resources/theme.h"
 
-const std::string AVIATEUR_VERSION_NUM = "v0.2.4";
+constexpr std::string AVIATEUR_VERSION_NUM = "v0.3.0";
 const std::string AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
-void open_explorer(const std::string& dir) {
+static void open_explorer(const std::string& dir) {
     // Check if the directory exists
     if (!std::filesystem::exists(dir)) {
         // If it doesn't exist, create it
@@ -28,7 +28,7 @@ void open_explorer(const std::string& dir) {
 #endif
 }
 
-void open_url(const std::string& url) {
+static void open_url(const std::string& url) {
 #ifdef _WIN32
     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #elif defined(__APPLE__)
