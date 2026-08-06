@@ -83,7 +83,9 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 3. Set `VCPKG_ROOT` environment variable to your vcpkg path.
 4. Build:
    ```bash
-   git clone --recursive https://github.com/OpenIPC/aviateur
+   git clone https://github.com/OpenIPC/aviateur
+   git submodule update --init --recursive -- 3rd/json 3rd/mINI 3rd/SDL 3rd/vecgui
+   git submodule update --init -- 3rd/devourer
    mkdir build && cd build
    cmake ..
    cmake --build .
@@ -95,7 +97,9 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 sudo apt install cmake libavformat-dev libavcodec-dev libswresample-dev \
                  libswscale-dev libavutil-dev libvulkan-dev libusb-1.0-0-dev \
                  libsodium-dev libopencv-dev xorg-dev libpcap-dev
-git clone --recursive https://github.com/OpenIPC/aviateur
+git clone https://github.com/OpenIPC/aviateur
+git submodule update --init --recursive -- 3rd/json 3rd/mINI 3rd/SDL 3rd/vecgui
+git submodule update --init -- 3rd/devourer
 mkdir build && cd build
 cmake ..
 make
@@ -105,7 +109,9 @@ make
 
 ```bash
 brew install pkgconf libusb ffmpeg libsodium opencv libpcap cmake sdl3
-git clone --recursive https://github.com/OpenIPC/aviateur
+git clone https://github.com/OpenIPC/aviateur
+git submodule update --init --recursive -- 3rd/json 3rd/mINI 3rd/SDL 3rd/vecgui
+git submodule update --init -- 3rd/devourer
 mkdir build && cd build
 cmake ..
 make
