@@ -1,4 +1,4 @@
-﻿#include "wfbng_link.h"
+#include "wfbng_link.h"
 
 #include <iomanip>
 #include <mutex>
@@ -6,7 +6,9 @@
 #include <sstream>
 
 #include "../gui_interface.h"
+#include "UsbOpen.h"
 #include "WiFiDriver.h"
+#include "RxPacket.h"
 #include "cross/endian.h"
 #include "logger.h"
 #include "rtp.h"
@@ -24,6 +26,8 @@
 #endif
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
+
+using u8 = uint8_t;
 
 constexpr u8 WFB_TX_PORT = 160;
 constexpr u8 WFB_RX_PORT = 32;
@@ -243,13 +247,14 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
-    // Check if the kernel driver attached
-    if (libusb_kernel_driver_active(devHandle, 0)) {
-        // Detach driver
-        rc = libusb_detach_kernel_driver(devHandle, 0);
-    }
+    // Find the Wi-Fi interface (handles composite devices like RTL8822BU)
+    int iface = devourer::find_wifi_interface(devHandle);
 
-    rc = libusb_claim_interface(devHandle, 0);
+    // Prepare the USB device: lock, detach kernel driver, set config, claim
+    // (do_reset=false: libusb_reset_device can cause RTL8812AU to re-enumerate
+    //  with a stale handle on Windows/WinUSB, breaking URB completion)
+    std::shared_ptr<devourer::UsbDeviceLock> usb_lock;
+    rc = devourer::claim_interface_then_reset(devHandle, iface, logger, false, usb_lock);
     if (rc < 0) {
         libusb_close(devHandle);
         devHandle = nullptr;
@@ -257,7 +262,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         libusb_exit(ctx);
         ctx = nullptr;
 
-        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to claim interface");
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to claim interface: {}", rc);
 
         return false;
     }
@@ -273,7 +278,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 return;
             }
 
-            rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
+            rtlDevice = wifi_driver.CreateRtlDevice(devHandle, ctx, usb_lock);
 
             if (exit_requested) {
                 return;
@@ -348,7 +353,16 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         } catch (...) {
         }
 
-        auto rc1 = libusb_release_interface(devHandle, 0);
+        // Clean shutdown: halt TRX DMA and power down the chip while USB is
+        // still open, then destroy the device object so its destructor
+        // (quiesce_tx, thread joins, hal_deinit) runs BEFORE libusb_close.
+        // Destroying after close is UB (destructor does USB register writes).
+        if (rtlDevice) {
+            rtlDevice->Stop();
+            rtlDevice.reset();
+        }
+
+        auto rc1 = libusb_release_interface(devHandle, iface);
         if (rc1 < 0) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
@@ -541,7 +555,7 @@ void WfbngLink::start_link_quality_thread() {
 
     init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
 
-    rtlDevice->SetTxPower(alink_tx_power);
+    rtlDevice->SetTxPower(static_cast<uint8_t>(alink_tx_power));
 }
 
 void WfbngLink::stop_adaptive_link() {
@@ -699,7 +713,7 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();
 
-    if (rtlDevice->should_stop) {
+    if (exit_requested) {
         return;
     }
     if (packet_size < 12) {
@@ -745,7 +759,7 @@ void WfbngLink::stop() {
     exit_requested = true;
 
     if (rtlDevice) {
-        rtlDevice->should_stop = true;
+        rtlDevice->StopRxLoop();
     }
 #ifdef __linux__
     if (tun_) {
@@ -800,7 +814,7 @@ void WfbngLink::set_alink_tx_power(const int tx_power) {
     if (alink_enabled && link_quality_thread) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power (live): {}", tx_power);
 
-        rtlDevice->SetTxPower(alink_tx_power);
+        rtlDevice->SetTxPower(static_cast<uint8_t>(alink_tx_power));
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }

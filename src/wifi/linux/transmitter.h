@@ -10,12 +10,13 @@ extern "C" {
 #include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 #include "../wfb-ng/wifibroadcast.hpp"
-#include "Rtl8812aDevice.h"
+#include "IRtlDevice.h"
 
 /// A custom deleter for FEC pointer usage in unique_ptr
 struct FecDeleter {
@@ -68,6 +69,11 @@ public:
      * @param idx The interface index, or -1 for "mirror" mode.
      */
     virtual void selectOutput(int idx) = 0;
+
+    /**
+     * @brief Signals the transmitter to stop. Default no-op.
+     */
+    virtual void stop() {}
 
     /**
      * @brief Dumps statistics (injected vs. dropped packets, latencies, etc.) for derived transmitters.
@@ -263,11 +269,13 @@ public:
                    uint8_t *radiotapHeader,
                    size_t radiotapHeaderLen,
                    uint8_t frameType,
-                   Rtl8812aDevice *device);
+                   IRtlDevice *device);
 
     ~UsbTransmitter() override = default;
 
     void selectOutput(int idx) override;
+
+    void stop() override { stopped_ = true; }
 
     void dumpStats(FILE *fp,
                    uint64_t ts,
@@ -286,5 +294,6 @@ private:
     uint8_t *radiotapHeader_;
     size_t radiotapHeaderLen_;
     uint8_t frameType_;
-    Rtl8812aDevice *rtlDevice_;
+    IRtlDevice *rtlDevice_;
+    std::atomic<bool> stopped_{false};
 };

@@ -23,6 +23,9 @@ TxFrame::~TxFrame() = default;
 
 void TxFrame::stop() {
     shouldStop_ = true;
+    if (transmitter_) {
+        transmitter_->stop();
+    }
 }
 
 uint32_t TxFrame::extractRxqOverflow(struct msghdr *msg) {
@@ -353,7 +356,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
     }
 }
 
-void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
+void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
     // Decide if using VHT
     if (arg->bandwidth >= 80) {
         arg->vht_mode = true;
@@ -514,8 +517,11 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
                                                            rtlDevice);
         }
 
+        transmitter_ = transmitter;
+
         // Start polling loop
         dataSource(transmitter, rxFds, arg->fec_timeout, arg->mirror, arg->log_interval);
+        transmitter_.reset();
     } catch (const std::runtime_error &ex) {
         std::fprintf(stderr, "Error in TxFrame::run: %s\n", ex.what());
     }

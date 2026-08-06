@@ -24,7 +24,9 @@
 #include <thread>
 #include <vector>
 
-#include "Rtl8812aDevice.h"
+#include "IRtlDevice.h"
+#include "RxPacket.h"
+#include "WiFiDriver.h"
 #include "fec_controller.h"
 
 #ifdef __linux__
@@ -85,7 +87,7 @@ protected:
     libusb_device_handle *devHandle{};
 
     std::shared_ptr<std::thread> usbThread;
-    std::unique_ptr<Rtl8812aDevice> rtlDevice;
+    std::unique_ptr<IRtlDevice> rtlDevice;
 
     // In case a link is stopped before initializing an RTL device.
     std::atomic<bool> exit_requested{false};

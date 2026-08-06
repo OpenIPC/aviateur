@@ -133,7 +133,7 @@ if (WIN32)
             ${FFMPEG_LIBRARIES}
             PkgConfig::LIBUSB
             unofficial-sodium::sodium
-            WiFiDriver
+            devourer
             vecgui
             SDL3::SDL3-static
     )
@@ -141,7 +141,7 @@ else ()
     target_link_libraries(${PROJECT_NAME} PRIVATE
             PkgConfig::LIBAV
             PkgConfig::LIBSODIUM
-            WiFiDriver
+            devourer
             vecgui
             SDL3::SDL3-static
             pcap

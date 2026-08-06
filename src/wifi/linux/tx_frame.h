@@ -5,7 +5,7 @@
 
 #include "transmitter.h"
 
-class Rtl8812aDevice;
+class IRtlDevice;
 
 /**
  * @struct TxArgs
@@ -92,10 +92,10 @@ public:
 
     /**
      * @brief Configures and runs the transmitter with the given arguments.
-     * @param rtlDevice The Rtl8812aDevice pointer (if using USB).
+     * @param rtlDevice The IRtlDevice pointer (if using USB).
      * @param arg TxArgs structure with user parameters.
      */
-    void run(Rtl8812aDevice *rtlDevice, TxArgs *arg);
+    void run(IRtlDevice *rtlDevice, TxArgs *arg);
 
     /**
      * @brief Signals that the main loop should stop.
@@ -106,6 +106,8 @@ private:
     bool shouldStop_ = false;
 
     bool tun_enabled_ = false;
+
+    std::shared_ptr<Transmitter> transmitter_;
 
     /**
      * @brief Create a UDP socket for receiving data
