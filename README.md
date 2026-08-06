@@ -36,7 +36,6 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 
 ## ⚠️ Important Notes
 
-- **Wi-Fi Adapter**: Currently, only **RTL8812AU** Wi-Fi adapters are officially supported for monitor mode.
 - **Adaptive Link**: Not currently supported on Windows.
 - **MAVLink**: Basic MAVLink telemetry support is on the roadmap but not yet fully implemented.
 
@@ -54,7 +53,8 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 ### Linux
 
 1. Set up udev rules (required for non-root access):
-    - Copy the provided `80-my8812au.rules` to `/lib/udev/rules.d/`.
+    - Copy the provided `80-my8812au.rules` to `/lib/udev/rules.d/`. (You can change the vendor & product IDs to those of
+      your own adapter.)
     - Run `sudo udevadm control --reload-rules`.
     - **Reboot** your system.
 2. Launch AppImage.
@@ -118,7 +118,6 @@ make
   vcpkg path.
 - **WSL2**: If you are trying to run Aviateur inside WSL2, you will need to map the USB adapter using `usbipd`.
   See [wsl-map-usb.md](wsl-map-usb.md) for details.
-- **Latency**: Ensure you are using a high-quality USB cable and a USB 3.0 port for the RTL8812AU adapter.
 
 ## 🚧 Roadmap
 
