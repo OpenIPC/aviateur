@@ -115,7 +115,6 @@ add_subdirectory(3rd/devourer)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/devourer/src" "3rd/devourer/hal")
 
 add_subdirectory(3rd/vecgui)
-target_include_directories(${PROJECT_NAME} PRIVATE "3rd/vecgui/src")
 
 add_subdirectory(3rd/json)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
