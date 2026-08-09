@@ -1,6 +1,6 @@
 #include "tip_label.h"
 
-void TipLabel::custom_ready() {
+void TipLabel::on_ready() {
     set_font_size(32);
 
     auto style_box = vecgui::StyleBox();
@@ -21,7 +21,7 @@ void TipLabel::custom_ready() {
     fade_timer->connect_signal("timeout", callback2);
 }
 
-void TipLabel::custom_update(double dt) {
+void TipLabel::on_update(double dt) {
     if (!fade_timer->is_stopped()) {
         alpha = fade_timer->get_remaining_time() / fade_time;
     }

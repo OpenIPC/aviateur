@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app.h"
+#include <vecgui/app.h>
 
 class TipLabel : public vecgui::Label {
 public:
@@ -10,9 +10,9 @@ public:
     std::shared_ptr<vecgui::Timer> display_timer;
     std::shared_ptr<vecgui::Timer> fade_timer;
 
-    void custom_ready() override;
+    void on_ready() override;
 
-    void custom_update(double dt) override;
+    void on_update(double dt) override;
 
     void show_tip(const std::string& tip);
 };

@@ -1,9 +1,9 @@
 #include "settings_tab.h"
 
-#include "resources/default_resource.h"
-#include "resources/theme.h"
+#include <vecgui/resources/default_resource.h>
+#include <vecgui/resources/theme.h>
 
-constexpr std::string AVIATEUR_VERSION_NUM = "v0.3.0";
+constexpr std::string AVIATEUR_VERSION_NUM = "v0.3.1";
 const std::string AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 static void open_explorer(const std::string& dir) {
@@ -40,7 +40,7 @@ static void open_url(const std::string& url) {
 #endif
 }
 
-void SettingsContainer::custom_ready() {
+void SettingsContainer::on_ready() {
     set_margin_all(8);
 
     auto vbox_container = std::make_shared<vecgui::VBoxContainer>();
@@ -245,7 +245,7 @@ void SettingsContainer::custom_ready() {
     }
 }
 
-void SettingsContainer::custom_input(vecgui::InputEvent& event) {
+void SettingsContainer::on_input(vecgui::InputEvent& event) {
     if (event.type == vecgui::InputEventType::Key) {
         auto key_args = event.args.key;
 

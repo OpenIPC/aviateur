@@ -6,7 +6,7 @@
 constexpr uint32_t HUD_LABEL_FONT_SIZE = 20;
 
 class SignalBar : public vecgui::ProgressBar {
-    void custom_ready() override {
+    void on_ready() override {
         theme_fg = {};
         theme_bg = {};
         theme_progress->border_width = 0;
@@ -16,7 +16,7 @@ class SignalBar : public vecgui::ProgressBar {
         set_label_visibility(false);
     }
 
-    void custom_update(double dt) override {
+    void on_update(double dt) override {
         if (value < 0.25 * max_value) {
             theme_progress->bg_color = RED;
         }
@@ -39,7 +39,7 @@ void PlayerRect::show_green_tip(std::string tip) {
     tip_label_->show_tip(tip);
 }
 
-void PlayerRect::custom_input(vecgui::InputEvent &event) {
+void PlayerRect::on_input(vecgui::InputEvent &event) {
     if (event.type == vecgui::InputEventType::Key) {
         auto key_args = event.args.key;
 
@@ -57,7 +57,7 @@ void PlayerRect::custom_input(vecgui::InputEvent &event) {
     }
 }
 
-void PlayerRect::custom_ready() {
+void PlayerRect::on_ready() {
     auto onRtpStream = [this](std::string sdp_file) {
         play_mutex_.lock();
         play_url_ = sdp_file;
@@ -346,7 +346,7 @@ void PlayerRect::custom_ready() {
     GuiInterface::Instance().urlStreamShouldStopCallbacks.emplace_back(onUrlStreamShouldStop);
 }
 
-void PlayerRect::custom_update(double dt) {
+void PlayerRect::on_update(double dt) {
     if (!playing_) {
         play_mutex_.lock();
         const auto has_url = !play_url_.empty();
@@ -398,7 +398,7 @@ void PlayerRect::custom_update(double dt) {
     }
 }
 
-void PlayerRect::custom_draw() {
+void PlayerRect::on_draw() {
     if (!playing_) {
         return;
     }

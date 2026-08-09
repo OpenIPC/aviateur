@@ -1,7 +1,8 @@
 #pragma once
 
+#include <vecgui/app.h>
+
 #include "../player/video_player.h"
-#include "app.h"
 #include "tip_label.h"
 
 class SignalBar;
@@ -64,13 +65,13 @@ public:
 
     void show_green_tip(std::string tip);
 
-    void custom_input(vecgui::InputEvent &event) override;
+    void on_input(vecgui::InputEvent &event) override;
 
-    void custom_ready() override;
+    void on_ready() override;
 
-    void custom_update(double dt) override;
+    void on_update(double dt) override;
 
-    void custom_draw() override;
+    void on_draw() override;
 
     void start_playing(const std::string &url);
 

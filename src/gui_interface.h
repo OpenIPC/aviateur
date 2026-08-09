@@ -1,8 +1,9 @@
 #pragma once
 
-#include <common/any_callable.h>
 #include <mini/ini.h>
-#include <servers/translation_server.h>
+#include <vecgui/app.h>
+#include <vecgui/common/any_callable.h>
+#include <vecgui/servers/translation_server.h>
 
 #include <filesystem>
 #include <fstream>
@@ -14,7 +15,6 @@
     #include <unistd.h>
 #endif
 
-#include "app.h"
 #include "wifi/wfbng_link.h"
 
 #define CONFIG_FILE "config.ini"

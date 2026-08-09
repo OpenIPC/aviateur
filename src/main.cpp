@@ -1,8 +1,7 @@
-﻿#include <glad/gl.h>
-#include <nodes/scene_tree.h>
-#include <resources/default_resource.h>
+﻿#include <vecgui/nodes/scene_tree.h>
+#include <vecgui/resources/default_resource.h>
 
-#include "app.h"
+#include <vecgui/app.h>
 #include "gui/control_panel.h"
 #include "gui/player_rect.h"
 #include "gui_interface.h"

@@ -1,6 +1,6 @@
 #include "control_panel.h"
 
-#include <resources/default_resource.h>
+#include <vecgui/resources/default_resource.h>
 
 #include "settings_tab.h"
 
@@ -61,7 +61,7 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
     }
 }
 
-void ControlPanel::custom_ready() {
+void ControlPanel::on_ready() {
     auto &ini = GuiInterface::Instance().ini_;
     dongle_names.resize(2);
     dongle_names[0] = ini[CONFIG_WIFI][WIFI_DEVICE];
@@ -539,7 +539,7 @@ void ControlPanel::custom_ready() {
     }
 }
 
-void ControlPanel::custom_input(vecgui::InputEvent &event) {
+void ControlPanel::on_input(vecgui::InputEvent &event) {
     if (event.type == vecgui::InputEventType::Key) {
         auto key_args = event.args.key;
 

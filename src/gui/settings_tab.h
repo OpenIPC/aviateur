@@ -1,13 +1,13 @@
 #pragma once
 
 #include "../gui_interface.h"
-#include "app.h"
+#include <vecgui/app.h>
 
 class SettingsContainer : public vecgui::MarginContainer {
 public:
-    void custom_ready() override;
+    void on_ready() override;
 
-    void custom_input(vecgui::InputEvent& event) override;
+    void on_input(vecgui::InputEvent& event) override;
 
 protected:
     std::shared_ptr<vecgui::ToggleButtonGroup> render_btn_group;

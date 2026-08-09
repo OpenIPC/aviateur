@@ -5,15 +5,15 @@
 #include <pathfinder/common/math/mat4.h>
 
 #ifdef __APPLE__
-#include <CoreVideo/CVMetalTextureCache.h>
-#include <CoreVideo/CVMetalTexture.h>
-#include <Metal/Metal.h>
-#include <pathfinder/gpu/mtl/device.h>
+    #include <CoreVideo/CVMetalTexture.h>
+    #include <CoreVideo/CVMetalTextureCache.h>
+    #include <Metal/Metal.h>
+    #include <pathfinder/gpu/mtl/device.h>
 #endif
 
-#include <utility>
+#include <vecgui/resources/resource.h>
 
-#include "resources/resource.h"
+#include <utility>
 
 // clang-format off
 #include "../shaders/generated/yuv_vert_shdbin.h"
@@ -63,14 +63,8 @@ void YuvRenderer::init() {
 }
 
 void YuvRenderer::initGeometry() {
-    constexpr float vertices[] = {
-        -1.0, -1.0, 0.0, 0.0,
-        1.0,  -1.0, 1.0, 0.0,
-        1.0,  1.0,  1.0, 1.0,
-        -1.0, -1.0, 0.0, 0.0,
-        1.0,  1.0, 1.0, 1.0,
-        -1.0, 1.0,  0.0, 1.0
-    };
+    constexpr float vertices[] = {-1.0, -1.0, 0.0, 0.0, 1.0, -1.0, 1.0, 0.0, 1.0,  1.0, 1.0, 1.0,
+                                  -1.0, -1.0, 0.0, 0.0, 1.0, 1.0,  1.0, 1.0, -1.0, 1.0, 0.0, 1.0};
 
     mVertexBuffer = mDevice->create_buffer(
         {Pathfinder::BufferType::Vertex, sizeof(vertices), Pathfinder::MemoryProperty::DeviceLocal},
@@ -144,7 +138,7 @@ void YuvRenderer::initZeroCopy() {
         return;
     }
 
-    auto *deviceMtl = static_cast<Pathfinder::DeviceMtl *>(mDevice.get());
+    auto* deviceMtl = static_cast<Pathfinder::DeviceMtl*>(mDevice.get());
     id<MTLDevice> mtlDevice = deviceMtl->get_handle();
 
     CVReturn err = CVMetalTextureCacheCreate(kCFAllocatorDefault, nullptr, mtlDevice, nullptr, &mCvMetalCache);
@@ -184,8 +178,8 @@ void YuvRenderer::updateTextureFromHwFrame(const std::shared_ptr<AVFrame>& hwFra
     if (pixelFormat != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange &&
         pixelFormat != kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) {
         GuiInterface::Instance().PutLog(LogLevel::Warn,
-                                       "Zero-copy unsupported CVPixelBuffer format: {}",
-                                       (int)pixelFormat);
+                                        "Zero-copy unsupported CVPixelBuffer format: {}",
+                                        (int)pixelFormat);
         return;
     }
 
@@ -198,20 +192,36 @@ void YuvRenderer::updateTextureFromHwFrame(const std::shared_ptr<AVFrame>& hwFra
 
     CVReturn err;
 
-    err = CVMetalTextureCacheCreateTextureFromImage(
-        kCFAllocatorDefault, mCvMetalCache, pb, nullptr,
-        MTLPixelFormatR8Unorm, width, height, 0, &mCvTexY);
+    err = CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                    mCvMetalCache,
+                                                    pb,
+                                                    nullptr,
+                                                    MTLPixelFormatR8Unorm,
+                                                    width,
+                                                    height,
+                                                    0,
+                                                    &mCvTexY);
     if (err != kCVReturnSuccess) {
-        GuiInterface::Instance().PutLog(LogLevel::Error, "CVMetalTextureCacheCreateTextureFromImage (Y) failed: {}", (int)err);
+        GuiInterface::Instance().PutLog(LogLevel::Error,
+                                        "CVMetalTextureCacheCreateTextureFromImage (Y) failed: {}",
+                                        (int)err);
         CVPixelBufferRelease(pb);
         return;
     }
 
-    err = CVMetalTextureCacheCreateTextureFromImage(
-        kCFAllocatorDefault, mCvMetalCache, pb, nullptr,
-        MTLPixelFormatRG8Unorm, width / 2, height / 2, 1, &mCvTexUV);
+    err = CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                    mCvMetalCache,
+                                                    pb,
+                                                    nullptr,
+                                                    MTLPixelFormatRG8Unorm,
+                                                    width / 2,
+                                                    height / 2,
+                                                    1,
+                                                    &mCvTexUV);
     if (err != kCVReturnSuccess) {
-        GuiInterface::Instance().PutLog(LogLevel::Error, "CVMetalTextureCacheCreateTextureFromImage (UV) failed: {}", (int)err);
+        GuiInterface::Instance().PutLog(LogLevel::Error,
+                                        "CVMetalTextureCacheCreateTextureFromImage (UV) failed: {}",
+                                        (int)err);
         releaseCvTextures();
         CVPixelBufferRelease(pb);
         return;
@@ -219,7 +229,7 @@ void YuvRenderer::updateTextureFromHwFrame(const std::shared_ptr<AVFrame>& hwFra
 
     CVPixelBufferRelease(pb);
 
-    auto *deviceMtl = static_cast<Pathfinder::DeviceMtl *>(mDevice.get());
+    auto* deviceMtl = static_cast<Pathfinder::DeviceMtl*>(mDevice.get());
 
     id<MTLTexture> mtlY = CVMetalTextureGetTexture(mCvTexY);
     id<MTLTexture> mtlUV = CVMetalTextureGetTexture(mCvTexUV);
