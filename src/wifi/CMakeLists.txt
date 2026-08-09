@@ -1,21 +1,29 @@
-file(GLOB WIFI_SRC_LIST
+# Common sources for all platforms
+file(GLOB WIFI_COMMON_SRC_LIST
         *.cpp
+        wfb-ng/rx.cpp
+        wfb-ng/wifibroadcast.cpp
+        wfb-ng/zfex.c
 )
 
-target_sources(${PROJECT_NAME} PRIVATE ${WIFI_SRC_LIST})
+target_sources(${PROJECT_NAME} PRIVATE ${WIFI_COMMON_SRC_LIST})
 
 if (WIN32)
-    file(GLOB_RECURSE PLATFORM_SRC_LIST
-            cross/*.cpp
-            wfb-ng/zfex.c
-    )
-else ()
-    file(GLOB_RECURSE PLATFORM_SRC_LIST
-            wfb-ng/*.cpp
-            wfb-ng/*.c
-            linux/*.cpp
-            cross/endian.h
-    )
-endif ()
+    # Windows specific
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /FI"net_compat.h")
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -include "${CMAKE_CURRENT_SOURCE_DIR}/net_compat.h")
+    endif()
 
-target_sources(${PROJECT_NAME} PRIVATE ${PLATFORM_SRC_LIST})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 mswsock)
+
+    # We still need endian.h for some files
+    target_include_directories(${PROJECT_NAME} PRIVATE cross compat)
+else ()
+    # Linux/macOS specific
+    file(GLOB_RECURSE PLATFORM_SRC_LIST
+            linux/*.cpp
+    )
+    target_sources(${PROJECT_NAME} PRIVATE ${PLATFORM_SRC_LIST})
+endif ()

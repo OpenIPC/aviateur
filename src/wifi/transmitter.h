@@ -1,13 +1,11 @@
 #pragma once
 
+#include "net_compat.h"
+
 // -- External C Libraries --
 extern "C" {
-#include "../wfb-ng/zfex.h"
+#include "wfb-ng/zfex.h"
 }
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
 
 #include <algorithm>
 #include <atomic>
@@ -15,8 +13,8 @@ extern "C" {
 #include <unordered_map>
 #include <vector>
 
-#include "../wfb-ng/wifibroadcast.hpp"
-#include "IRtlDevice.h"
+#include "wfb-ng/wifibroadcast.hpp"
+#include "linux/IRtlDevice.h"
 
 /// A custom deleter for FEC pointer usage in unique_ptr
 struct FecDeleter {

@@ -1,19 +1,20 @@
 #include "tx_frame.h"
-
-#include <sys/poll.h>
+#include "net_compat.h"
 
 #ifdef __linux__
     #include <linux/ip.h>
     #include <linux/random.h>
     #include <linux/udp.h>
     #include <sys/ioctl.h>
+    #include <fcntl.h>
 #else
-    #include "../cross/ip.h"
-    #include "../cross/udp.h"
+    #include "cross/ip.h"
+    #include "cross/udp.h"
 #endif
 
 #include <cinttypes>
 #include <cstring>
+#include <stdexcept>
 
 TxFrame::TxFrame(const bool tun_enabled) {
     tun_enabled_ = tun_enabled;
@@ -51,26 +52,26 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
 
     // Allow resuing address
     int optval = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval));
 
     // Set receive timeout to 500ms
     struct timeval tv{};
     tv.tv_sec = 0;
     tv.tv_usec = 500000; // 500ms
-    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0) {
         close(fd);
         throw std::runtime_error(string_format("Unable to set socket timeout: %s", std::strerror(errno)));
     }
 
     if (buf_size) {
-        if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buf_size, sizeof(buf_size)) < 0) {
+        if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *)&buf_size, sizeof(buf_size)) < 0) {
             close(fd);
             throw std::runtime_error(string_format("Unable to set requested buffer size: %s", std::strerror(errno)));
         }
 
         int actual_buf_size = 0;
         socklen_t optlen = sizeof(actual_buf_size);
-        getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &actual_buf_size, &optlen);
+        getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&actual_buf_size, &optlen);
         if (actual_buf_size < buf_size * 2) {
             // Linux doubles the value we set
             fprintf(stderr, "Warning: requested rx buffer size %d but got %d\n", buf_size, actual_buf_size / 2);
@@ -82,7 +83,7 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
     saddr.sin_port = htons(static_cast<uint16_t>(port));
 
-    if (bind(fd, reinterpret_cast<struct sockaddr *>(&saddr), sizeof(saddr)) < 0) {
+    if (::bind(fd, reinterpret_cast<struct sockaddr *>(&saddr), sizeof(saddr)) < 0) {
         close(fd);
         throw std::runtime_error(string_format("Unable to bind to port %d: %s", port, std::strerror(errno)));
     }
@@ -120,7 +121,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
         struct timeval tv;
         tv.tv_sec = 0;
         tv.tv_usec = 500000; // 500ms
-        if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0) {
             throw std::runtime_error(string_format("Unable to set socket timeout: %s", std::strerror(errno)));
         }
     }
@@ -149,7 +150,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
     while (true) {
         if (shouldStop_) {
-            printf("TxFrame: stopping main loop");
+            printf("TxFrame: stopping main loop\n");
             break;
         }
 
@@ -178,18 +179,6 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
         curTs = get_time_ms();
         if (curTs >= logSendTs) {
             transmitter->dumpStats(stdout, curTs, countPInjected, countPDropped, countBInjected);
-
-            // std::fprintf(stdout,
-            //              "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
-            //              curTs,
-            //              countPFecTimeouts,
-            //              countPIncoming,
-            //              countBIncoming,
-            //              countPInjected,
-            //              countBInjected,
-            //              countPDropped,
-            //              countPTruncated);
-            // std::fflush(stdout);
 
             if (countPDropped) {
                 std::fprintf(stderr, "%u packets dropped\n", countPDropped);
@@ -237,13 +226,13 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                 while (true) {
                     if (shouldStop_) {
-                        printf("TxFrame: stopping polling loop");
+                        printf("TxFrame: stopping polling loop\n");
                         break;
                     }
 
                     uint8_t buf[MAX_PAYLOAD_SIZE + 1] = {};
 
-                    uint8_t cmsgbuf[CMSG_SPACE(sizeof(uint32_t))] = {};
+                    uint8_t cmsgbuf[1024] = {}; // Sufficiently large for control messages
 
                     iovec iov = {};
                     iov.iov_base = buf;
@@ -258,8 +247,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     ssize_t rsize = recvmsg(pfd.fd, &msg, 0);
                     if (rsize < 0) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN && errno != ETIMEDOUT) {
-                            continue;
-                            throw std::runtime_error(string_format("Error receiving packet: %s", std::strerror(errno)));
+                            // break; // just stop polling this fd
                         }
                         break;
                     }
@@ -288,8 +276,6 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
-                    // fixme: should move before size check
-
                     // Craft IP packets manually.
                     if (!tun_enabled_) {
                         int iphdr_len = sizeof(struct iphdr);
@@ -301,7 +287,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         // Packet
                         auto packet = std::vector<unsigned char>(packet_size, 0);
 
-                        uint16_t net_packet_size = htons(packet_size - 2);
+                        uint16_t net_packet_size = htobe16(packet_size - 2);
                         memcpy(packet.data(), &net_packet_size, 2);
 
                         static int packet_id = 0;
@@ -313,8 +299,8 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         ip->ihl = 5;
                         ip->version = 4;
                         ip->tos = 0;
-                        ip->tot_len = htons(packet_size - 2);
-                        ip->id = htons(packet_id++);
+                        ip->tot_len = htobe16(packet_size - 2);
+                        ip->id = htobe16(packet_id++);
                         ip->frag_off = 0;
                         ip->ttl = 64;
                         ip->protocol = IPPROTO_UDP;
@@ -322,9 +308,9 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                         // UDP header
                         auto *udp = (struct udphdr *)(ip + 1);
-                        udp->source = htons(54321); // Doesn't matter
-                        udp->dest = htons(9999);
-                        udp->len = htons(udphdr_len + rsize);
+                        udp->source = htobe16(54321); // Doesn't matter
+                        udp->dest = htobe16(9999);
+                        udp->len = htobe16(udphdr_len + rsize);
                         udp->check = 0;
 
                         ip->check = inet_csum((unsigned short *)ip, iphdr_len);

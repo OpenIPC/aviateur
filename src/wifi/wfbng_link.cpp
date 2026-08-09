@@ -4,9 +4,10 @@
 #include <mutex>
 #include <set>
 #include <sstream>
+#include <optional>
 
 #include "../gui_interface.h"
-#include "UsbOpen.h"
+#include "linux/UsbOpen.h"
 #include "WiFiDriver.h"
 #include "RxPacket.h"
 #include "cross/endian.h"
@@ -15,14 +16,12 @@
 #include "rx_frame.h"
 #include "signal_quality.h"
 
-#ifdef _WIN32
-    #include "cross/wfbng_processor.h"
+#include "wfb-ng/rx.hpp"
+#include "tx_frame.h"
 
-    #pragma comment(lib, "ws2_32.lib")
-#else
+#ifdef __linux__
     #include "linux/tun.h"
     #include "linux/tx_frame.h"
-    #include "wfb-ng/rx.hpp"
 #endif
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
@@ -37,7 +36,6 @@ inline bool isH264(const uint8_t *data) {
     return h264NalType == 24 || h264NalType == 28;
 }
 
-#ifndef _WIN32
 class AggregatorX : public AggregatorUDPv4 {
 public:
     AggregatorX(const std::string &client_addr,
@@ -49,7 +47,7 @@ public:
         : AggregatorUDPv4(client_addr, client_port, keypair, epoch, channel_id, snd_buf_size) {}
 
 protected:
-    void send_to_socket(const uint8_t *payload, const uint16_t packet_size) override {
+    void send_to_socket(const uint8_t *payload, uint16_t packet_size) override {
         GuiInterface::Instance().rtpPktCount_++;
         GuiInterface::Instance().UpdateCount();
 
@@ -58,10 +56,10 @@ protected:
         }
 
         auto *header = (RtpHeader *)payload;
-        const uint16_t seq_num = htons(header->seq);
+        const uint16_t seq_num = be16toh(header->seq);
 
-        GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP sequence number: {}", seq_num);
-        GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP timestamp: {}", htonl(header->stamp));
+        // GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP sequence number: {}", seq_num);
+        // GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP timestamp: {}", be32toh(header->stamp));
 
         if (!prev_seq_num.has_value()) {
             // Check H264 or H265
@@ -72,7 +70,7 @@ protected:
             }
 
             GuiInterface::Instance().NotifyRtpStream(header->pt,
-                                                     ntohl(header->ssrc),
+                                                     be32toh(header->ssrc),
                                                      GuiInterface::Instance().playerPort,
                                                      GuiInterface::Instance().playerCodec);
         }
@@ -83,7 +81,7 @@ protected:
         prev_seq_num = seq_num;
 
         // Send payload via socket.
-        sendto(sockfd, payload, packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
+        sendto(sockfd, (const char *)payload, packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
     }
 
 private:
@@ -92,7 +90,6 @@ private:
 
     std::optional<uint16_t> prev_seq_num;
 };
-#endif
 
 std::vector<DeviceId> WfbngLink::get_device_list() {
     std::vector<DeviceId> list;
@@ -136,19 +133,6 @@ std::vector<DeviceId> WfbngLink::get_device_list() {
             }
         }
     }
-
-    // std::sort(list.begin(), list.end(), [](std::string &a, std::string &b) {
-    //     static std::vector<std::string> specialStrings = {"0b05:17d2", "0bda:8812", "0bda:881a"};
-    //     auto itA = std::find(specialStrings.begin(), specialStrings.end(), a);
-    //     auto itB = std::find(specialStrings.begin(), specialStrings.end(), b);
-    //     if (itA != specialStrings.end() && itB == specialStrings.end()) {
-    //         return true;
-    //     }
-    //     if (itB != specialStrings.end() && itA == specialStrings.end()) {
-    //         return false;
-    //     }
-    //     return a < b;
-    // });
 
     // Free the list of devices
     libusb_free_device_list(devs, 1);
@@ -267,9 +251,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
-#ifndef _WIN32
     tx_frame = std::make_shared<TxFrame>(tun_enabled);
-#endif
 
     usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
@@ -283,25 +265,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             if (exit_requested) {
                 return;
             }
-
-#ifndef _WIN32
-            // if (!usb_event_thread) {
-            //     auto usb_event_thread_func = [this] {
-            //         while (true) {
-            //             if (devHandle == nullptr) {
-            //                 break;
-            //             }
-            //             struct timeval timeout = {0, 500000}; // 500 ms timeout
-            //             int r = libusb_handle_events_timeout(ctx, &timeout);
-            //             if (r < 0) {
-            //                 // this->log->error("Error handling events: {}", r);
-            //             }
-            //         }
-            //     };
-            //
-            //     init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func);
-            //     });
-            // }
 
             std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
             args->udp_port = 8001;
@@ -317,8 +280,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             args->n = 5;
             args->radio_port = WFB_TX_PORT;
 
-            // printf("Radio link ID %d, radio port %d\n", args->link_id, args->radio_port);
-
             if (!usb_tx_thread) {
                 init_thread(usb_tx_thread, [&]() {
                     return std::make_unique<std::thread>([this, args] {
@@ -332,7 +293,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 stop_adaptive_link();
                 start_link_quality_thread();
             }
-#endif
 
             rtlDevice->Init(
                 [this](const Packet &p) {
@@ -367,13 +327,10 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
 
-#ifndef _WIN32
         stop_adaptive_link();
         tx_frame->stop();
         destroy_thread(usb_tx_thread);
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread stopped");
-// destroy_thread(usb_event_thread);
-#endif
 
         libusb_close(devHandle);
         libusb_exit(ctx);
@@ -386,7 +343,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
     });
-    // usbThread->detach();
 
 #ifdef __linux__
     if (tun_enabled) {
@@ -399,7 +355,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     return true;
 }
 
-#ifndef _WIN32
 void WfbngLink::init_thread(std::unique_ptr<std::thread> &thread,
                             const std::function<std::unique_ptr<std::thread>()> &init_func) {
     std::unique_lock lock(thread_mutex);
@@ -442,7 +397,7 @@ void WfbngLink::start_link_quality_thread() {
         }
 
         int opt = 1;
-        setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(opt));
 
         struct sockaddr_in server_addr = {};
         server_addr.sin_family = AF_INET;
@@ -469,25 +424,6 @@ void WfbngLink::start_link_quality_thread() {
             {
                 uint32_t len;
                 char message[100];
-
-                /**
-                     1741491090:1602:1602:1:0:-70:24:num_ants:pnlt:fec_change:code
-
-                     <gs_time>:<link_score>:<link_score>:<fec>:<lost>:<rssi_dB>:<snr_dB>:<num_ants>:<noise_penalty>:<fec_change>:<idr_request_code>
-
-                    gs_time: gs clock
-                    link_score: 1000 - 2000 sent twice (already including any penalty)
-                    link_score: 1000 - 2000 sent twice (already including any penalty)
-                    fec: instantaneus fec_rec (only used by old fec_rec_pntly now disabled by default)
-                    lost: instantaneus lost (not used)
-                    rssi_dB: best antenna rssi (for osd)
-                    snr_dB: best antenna snr_dB (for osd)
-                    num_ants: number of gs antennas (for osd)
-                    noise_penalty: penalty deducted from score due to noise (for osd)
-                    fec_change: int from 0 to 5 : how much to alter fec based on noise
-                    optional idr_request_code: 4 char unique code to request 1 keyframe (no need to send special extra
-                   packets)
-                 */
 
                 // Change FEC level.
                 if (quality.lost_last_second > 2)
@@ -527,20 +463,16 @@ void WfbngLink::start_link_quality_thread() {
                          fec_lvl,
                          quality.idr_code.c_str());
 
-                len = strlen(message + sizeof(len));
+                len = (uint32_t)strlen(message + sizeof(len));
 
                 // Put message length in the message header
-                uint32_t net_len = htonl(len);
+                uint32_t net_len = htobe32(len);
                 memcpy(message, &net_len, sizeof(len));
-
-                // printf("TX message: %s", message + sizeof(len));
 
                 const size_t buf_size = len + sizeof(len);
 
-                // printf("Alink thread sends a packet, size %lu\n", buf_size);
-
                 const ssize_t sent =
-                    sendto(sock_fd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+                    sendto(sock_fd, message, (int)buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
                 if (sent < 0) {
                     printf("Failed to send message");
                     break;
@@ -572,7 +504,6 @@ void WfbngLink::stop_adaptive_link() {
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "Alink thread stopped");
 }
-#endif
 
 void WfbngLink::handle_80211_frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
@@ -608,11 +539,10 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
     std::string client_addr = "127.0.0.1";
 
-#ifndef _WIN32
     if (!video_aggregator) {
         video_aggregator = std::make_unique<AggregatorX>(client_addr,
                                                          GuiInterface::Instance().playerPort,
-                                                         keyPath.c_str(),
+                                                         keyPath,
                                                          epoch,
                                                          video_channel_id_f,
                                                          0);
@@ -621,15 +551,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         udp_aggregator =
             std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
     }
-#else
-    if (!video_aggregator) {
-        video_aggregator = std::make_unique<Aggregator>(
-            keyPath.c_str(),
-            epoch,
-            video_channel_id_f,
-            [this](uint8_t *payload, uint16_t packet_size) { handle_rtp(payload, packet_size); });
-    }
-#endif
 
     static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
@@ -644,7 +565,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         signal_quality_calculator->add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
         signal_quality_calculator->add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
-#ifndef _WIN32
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -662,13 +582,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
         // This is necessary.
         video_aggregator->clear_stats();
-#else
-        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                         0,
-                                         antenna,
-                                         rssi);
-#endif
 
         const auto quality = signal_quality_calculator->calculate_signal_quality();
         link_score_[0] = quality.link_score[0];
@@ -683,7 +596,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     else if (frame.MatchesChannelID(udp_channel_id_be8)) {
         // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
 
-#ifdef __linux__
         if (tun_enabled) {
             udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                            packet.Data.size() - sizeof(ieee80211_header) - 4,
@@ -696,7 +608,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                            0,
                                            NULL);
         }
-#endif
     }
 }
 
@@ -707,52 +618,6 @@ std::array<int, ANTENNA_COUNT> WfbngLink::get_link_score() const {
 int WfbngLink::get_packet_loss() const {
     return packets_lost_;
 }
-
-#if defined(_WIN32)
-void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
-    GuiInterface::Instance().rtpPktCount_++;
-    GuiInterface::Instance().UpdateCount();
-
-    if (exit_requested) {
-        return;
-    }
-    if (packet_size < 12) {
-        return;
-    }
-
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(GuiInterface::Instance().playerPort);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    auto *header = (RtpHeader *)payload;
-
-    if (!first_rtp_packet_received) {
-        first_rtp_packet_received = true;
-        // Check H264 or H265
-        if (isH264(header->getPayloadData())) {
-            GuiInterface::Instance().playerCodec = "H264";
-        } else {
-            GuiInterface::Instance().playerCodec = "H265";
-        }
-        GuiInterface::Instance().NotifyRtpStream(header->pt,
-                                                 ntohl(header->ssrc),
-                                                 GuiInterface::Instance().playerPort,
-                                                 GuiInterface::Instance().playerCodec);
-    }
-
-    // Send payload via socket.
-    auto ret = sendto(socketFd,
-                      reinterpret_cast<const char *>(payload),
-                      packet_size,
-                      0,
-                      (sockaddr *)&serverAddr,
-                      sizeof(serverAddr));
-    if (ret == -1) {
-        fprintf(stderr, "sendto failed: %s\n", strerror(errno));
-    }
-}
-#endif
 
 void WfbngLink::stop() {
     // Signal the thread immediately.
@@ -783,7 +648,6 @@ int WfbngLink::get_alink_tx_power() const {
 }
 
 void WfbngLink::enable_alink(const bool enable) {
-#ifndef _WIN32
     if (alink_enabled == enable) {
         return;
     }
@@ -799,11 +663,9 @@ void WfbngLink::enable_alink(const bool enable) {
         }
         start_link_quality_thread();
     }
-#endif
 }
 
 void WfbngLink::set_alink_tx_power(const int tx_power) {
-#ifndef _WIN32
     if (tx_power <= 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
         return;
@@ -818,20 +680,15 @@ void WfbngLink::set_alink_tx_power(const int tx_power) {
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
-#endif
 }
 
 WfbngLink::WfbngLink() {
-#if defined(_WIN32) || defined(__APPLE__)
-    #if defined(_WIN32)
+#ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
-    #endif
-
-    socketFd = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
 
     signal_quality_calculator = std::make_unique<SignalQualityCalculator>();
@@ -839,15 +696,8 @@ WfbngLink::WfbngLink() {
 
 WfbngLink::~WfbngLink() {
 #ifdef _WIN32
-    closesocket(socketFd);
     WSACleanup();
 #endif
-
-#ifdef __APPLE__
-    close(socketFd);
-#endif
-
-    socketFd = INVALID_SOCKET;
 
     stop();
 }

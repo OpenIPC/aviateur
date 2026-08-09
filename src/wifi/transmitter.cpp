@@ -1,10 +1,8 @@
-
 #include "transmitter.h"
 
 #include <cinttypes>
 #include <cstring>
-
-#include "../cross/endian.h"
+#include <stdexcept>
 
 //-------------------------------------------------------------
 // Transmitter
@@ -57,8 +55,6 @@ bool Transmitter::sendPacket(const uint8_t *buf, const size_t size, const uint8_
         return false;
     }
 
-    // printf("Transmitter sends a packet, size %lu\n", size);
-
     // Ensure size is within user payload limit
     if (size > MAX_PAYLOAD_SIZE) {
         throw std::runtime_error("sendPacket: packet size exceeds MAX_PAYLOAD_SIZE");
@@ -67,7 +63,7 @@ bool Transmitter::sendPacket(const uint8_t *buf, const size_t size, const uint8_
     // Write header
     auto *packetHdr = reinterpret_cast<wpacket_hdr_t *>(block_[fragmentIndex_].get());
     packetHdr->flags = flags;
-    packetHdr->packet_size = htons(static_cast<uint16_t>(size));
+    packetHdr->packet_size = htobe16(static_cast<uint16_t>(size));
 
     size_t wpacketHdrSize = sizeof(wpacket_hdr_t);
 
@@ -161,7 +157,7 @@ void Transmitter::makeSessionKey() {
 
     wsession_data_t sessionData = {};
     sessionData.epoch = htobe64(epoch_);
-    sessionData.channel_id = htonl(channelId_);
+    sessionData.channel_id = htobe32(channelId_);
     sessionData.fec_type = WFB_FEC_VDM_RS;
     sessionData.k = static_cast<uint8_t>(fecK_);
     sessionData.n = static_cast<uint8_t>(fecN_);
@@ -254,7 +250,7 @@ void RawSocketTransmitter::injectPacket(const uint8_t *buf, size_t size) {
 
     // Patch the Frame Control field, channel ID, and seq number
     ieeeHdr[0] = frameType_;
-    const uint32_t channelIdBE = htonl(channelId_);
+    const uint32_t channelIdBE = htobe32(channelId_);
     std::memcpy(ieeeHdr + SRC_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
     std::memcpy(ieeeHdr + DST_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
 
@@ -313,16 +309,6 @@ void RawSocketTransmitter::dumpStats(FILE *fp,
         const auto &stats = kv.second;
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
-
-        // fprintf(fp,
-        //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-        //         ts,
-        //         kv.first,
-        //         stats.countPacketsInjected,
-        //         stats.countPacketsDropped,
-        //         stats.latencyMin,
-        //         avgLatency,
-        //         stats.latencyMax);
 
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
@@ -422,16 +408,6 @@ void UsbTransmitter::dumpStats(FILE *fp,
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
 
-        // fprintf(fp,
-        //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-        //         ts,
-        //         kv.first,
-        //         stats.countPacketsInjected,
-        //         stats.countPacketsDropped,
-        //         stats.latencyMin,
-        //         avgLatency,
-        //         stats.latencyMax);
-
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
         injectedBytes += stats.countBytesInjected;
@@ -453,7 +429,7 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
 
     // Patch frame type
     ieeeHdr[0] = frameType_;
-    const uint32_t channelIdBE = htonl(channelId_);
+    const uint32_t channelIdBE = htobe32(channelId_);
     std::memcpy(ieeeHdr + SRC_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
     std::memcpy(ieeeHdr + DST_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
 

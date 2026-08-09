@@ -1,12 +1,18 @@
 #pragma once
 
 #include <array>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+#include <atomic>
+#include <memory>
+#include <functional>
 
+#include "net_compat.h"
 #include "signal_quality.h"
 
 #if defined(_WIN32) || defined(__APPLE__)
-    #include "cross/wfbng_processor.h"
-
     #ifdef _WIN32
         #include <winsock2.h> // To solve winsock.h redefinition errors, include before libusb.h
     #endif
@@ -19,22 +25,14 @@
     #define INVALID_SOCKET (-1)
 #endif
 
-#include <mutex>
-#include <string>
-#include <thread>
-#include <vector>
-
-#include "IRtlDevice.h"
+#include "linux/IRtlDevice.h"
 #include "RxPacket.h"
 #include "WiFiDriver.h"
 #include "fec_controller.h"
+#include "tx_frame.h"
 
 #ifdef __linux__
     #include "linux/tun.h"
-#endif
-
-#ifndef _WIN32
-    #include "linux/tx_frame.h"
 #endif
 
 struct DeviceId {
@@ -61,11 +59,6 @@ public:
     bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &kPath);
 
     void stop();
-
-#ifdef _WIN32
-    /// Send a RTP payload via socket.
-    void handle_rtp(uint8_t *payload, uint16_t packet_size);
-#endif
 
     bool get_alink_enabled() const;
 
@@ -104,18 +97,13 @@ protected:
 
     std::mutex agg_mutex;
 
-#ifndef _WIN32
     std::unique_ptr<AggregatorX> video_aggregator;
     std::unique_ptr<AggregatorX> udp_aggregator;
-#else
-    std::unique_ptr<Aggregator> video_aggregator;
-#endif
 
     std::shared_ptr<SignalQualityCalculator> signal_quality_calculator;
     std::array<int, ANTENNA_COUNT> link_score_ = {}; // Percentage
     int packets_lost_ = 0;                           // Number over the last second
 
-#ifndef _WIN32
     // --------------- Adaptive link
     std::unique_ptr<std::thread> usb_event_thread;
     std::unique_ptr<std::thread> usb_tx_thread;
@@ -133,7 +121,7 @@ protected:
                      const std::function<std::unique_ptr<std::thread>()> &init_func);
 
     void destroy_thread(std::unique_ptr<std::thread> &thread);
-#endif
+
     bool alink_enabled = false;
     int alink_tx_power = 30;
     // --------------- Adaptive link
