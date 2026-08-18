@@ -3,8 +3,8 @@
 #include <vecgui/resources/default_resource.h>
 #include <vecgui/resources/theme.h>
 
-constexpr std::string AVIATEUR_VERSION_NUM = "v0.3.1";
-const std::string AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
+constexpr const char* AVIATEUR_VERSION_NUM = "v0.3.1";
+constexpr const char* AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 static void open_explorer(const std::string& dir) {
     // Check if the directory exists
@@ -47,13 +47,15 @@ void SettingsContainer::on_ready() {
     vbox_container->set_separation(8);
     add_child(vbox_container);
 
+    auto context = get_context();
+
     {
         auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->set_separation(8);
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<vecgui::Label>();
-        label->set_text(FTR("lang"));
+        label->set_text(context->translation_server->get_translation("lang"));
         hbox_container->add_child(label);
 
         auto lang_menu_button = std::make_shared<vecgui::MenuButton>();
@@ -73,14 +75,15 @@ void SettingsContainer::on_ready() {
         menu->create_item("English");
         menu->create_item("中文");
 
-        auto callback = [](const uint32_t item_index) {
+        auto callback = [context](const uint32_t item_index) {
             if (item_index == 1) {
                 GuiInterface::Instance().set_locale("zh");
             } else {
                 GuiInterface::Instance().set_locale("en");
             }
 
-            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"), false);
+            GuiInterface::Instance().ShowTip(context->translation_server->get_translation("restart app to take effect"),
+                                             false);
         };
         lang_menu_button->connect_signal("item_selected", callback);
     }
@@ -88,25 +91,23 @@ void SettingsContainer::on_ready() {
     {
         fullscreen_button_ = std::make_shared<vecgui::CheckButton>();
         vbox_container->add_child(fullscreen_button_);
-        fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
+        fullscreen_button_->set_text(context->translation_server->get_translation("fullscreen") + " (F11)");
 
-        auto on_fullscreen_toggled = [](bool toggled) {
-            auto render_context = vecgui::RenderContext::get_singleton();
-            render_context->get_window_builder()->set_fullscreen(toggled);
+        auto on_fullscreen_toggled = [context](bool toggled) {
+            context->render_context->get_window_builder()->set_fullscreen(toggled);
         };
         fullscreen_button_->connect_signal("toggled", on_fullscreen_toggled);
     }
 
     {
         auto dark_mode_btn = std::make_shared<vecgui::CheckButton>();
-        dark_mode_btn->set_text(FTR("dark mode"));
+        dark_mode_btn->set_text(context->translation_server->get_translation("dark mode"));
         vbox_container->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
-        auto callback = [](const bool toggled) {
+        auto callback = [context](const bool toggled) {
             GuiInterface::Instance().dark_mode_ = toggled;
             const auto theme = toggled ? vecgui::Theme::default_dark() : vecgui::Theme::default_light();
-            theme->load_font("zcool_canger_yuyang.ttf");
-            vecgui::DefaultResource::get_singleton()->set_default_theme(theme);
+            context->default_resource->set_default_theme(theme);
         };
         dark_mode_btn->connect_signal("toggled", callback);
     }
@@ -124,7 +125,7 @@ void SettingsContainer::on_ready() {
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<vecgui::Label>();
-        label->set_text(FTR("render backend"));
+        label->set_text(context->translation_server->get_translation("render backend"));
         label->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkCenter;
         hbox_container->add_child(label);
 
@@ -152,9 +153,11 @@ void SettingsContainer::on_ready() {
             vk_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             vbox_container2->add_child(vk_btn);
             vk_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
-            auto callback = [](bool toggled) {
+            auto callback = [context](bool toggled) {
                 GuiInterface::Instance().use_vulkan_ = toggled;
-                GuiInterface::Instance().ShowTip(FTR("restart app to take effect"), false);
+                GuiInterface::Instance().ShowTip(
+                    context->translation_server->get_translation("restart app to take effect"),
+                    false);
             };
             vk_btn->connect_signal("toggled", callback);
             render_btn_group->add_button(vk_btn);
@@ -176,7 +179,7 @@ void SettingsContainer::on_ready() {
 
         open_capture_folder_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_capture_folder_button);
-        open_capture_folder_button->set_text(FTR("capture folder"));
+        open_capture_folder_button->set_text(context->translation_server->get_translation("capture folder"));
 
         auto callback = [] { open_explorer(GuiInterface::GetCaptureDir()); };
         open_capture_folder_button->connect_signal("triggered", callback);
@@ -187,7 +190,7 @@ void SettingsContainer::on_ready() {
 
         open_appdata_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_appdata_button);
-        open_appdata_button->set_text(FTR("config folder"));
+        open_appdata_button->set_text(context->translation_server->get_translation("config folder"));
 
         auto callback = [] { open_explorer(GuiInterface::GetAppDataDir()); };
         open_appdata_button->connect_signal("triggered", callback);
@@ -199,7 +202,7 @@ void SettingsContainer::on_ready() {
 
         open_crash_dumps_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_crash_dumps_button);
-        open_crash_dumps_button->set_text(FTR("crash dump folder"));
+        open_crash_dumps_button->set_text(context->translation_server->get_translation("crash dump folder"));
 
         auto callback = [] {
             auto dir = GuiInterface::GetAppDataDir();
@@ -217,7 +220,7 @@ void SettingsContainer::on_ready() {
         button->container_sizing.flag_h = vecgui::ContainerSizingFlag::ShrinkCenter;
         button->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
         vbox_container->add_child(button);
-        auto icon = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("icon-github.svg"));
+        auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("icon-github.svg"));
         button->set_icon_normal(icon);
         button->set_flat(true);
         button->set_text("");
@@ -238,7 +241,7 @@ void SettingsContainer::on_ready() {
 
         exit_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         vbox_container->add_child(exit_button);
-        exit_button->set_text(FTR("exit"));
+        exit_button->set_text(context->translation_server->get_translation("exit"));
 
         auto callback = [this] { get_tree()->quit(); };
         exit_button->connect_signal("triggered", callback);

@@ -2,14 +2,13 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
+#include <libavutil/frame.h>
 
 #include <future>
 #include <sstream>
 
 #include "../../gui_interface.h"
 #include "jpeg_encoder.h"
-
-#include <libavutil/frame.h>
 
 #define DEFAULT_GIF_FRAMERATE 10
 
@@ -60,9 +59,11 @@ void VideoPlayerFfmpeg::update(float dt) {
         static bool loggedCpuPath = false;
         if (!loggedCpuPath && frame->linesize[0]) {
             if (!yuvRenderer_->isZeroCopyAvailable()) {
-                GuiInterface::Instance().PutLog(LogLevel::Info, "Using CPU texture upload path (zero-copy not available)");
+                GuiInterface::Instance().PutLog(LogLevel::Info,
+                                                "Using CPU texture upload path (zero-copy not available)");
             } else if (!frame->data[3]) {
-                GuiInterface::Instance().PutLog(LogLevel::Info, "Using CPU texture upload path (no CVPixelBuffer in frame)");
+                GuiInterface::Instance().PutLog(LogLevel::Info,
+                                                "Using CPU texture upload path (no CVPixelBuffer in frame)");
             }
             loggedCpuPath = true;
         }
@@ -124,19 +125,22 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         bool ok = localDecoder->OpenInput(url, forceSoftwareDecoding);
         if (!ok) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Loading URL failed: {}", url);
-            GuiInterface::Instance().ShowTip(FTR("failed to connect"), true);
+            GuiInterface::Instance().ShowTip("failed to connect", true);
             GuiInterface::Instance().EmitUrlStreamShouldStop();
             return;
         }
 
-        current_decoder_name = localDecoder->hwDecoderName.has_value() ? localDecoder->hwDecoderName.value() : "Software";
+        current_decoder_name =
+            localDecoder->hwDecoderName.has_value() ? localDecoder->hwDecoderName.value() : "Software";
 
         if (!isMuted && localDecoder->HasAudio()) {
             enableAudio();
         }
 
         // Bitrate callback.
-        localDecoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
+        localDecoder->bitrateUpdateCallback = [](uint64_t bitrate) {
+            GuiInterface::Instance().EmitBitrateUpdate(bitrate);
+        };
 
         // Handle dynamic resolution change
         localDecoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) {
@@ -170,7 +174,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     // Success path: notify recovery only if we previously lost signal AND we have stable frames
                     if (consecutiveFrameCount >= 5) {
                         if (isSignalLostNotified) {
-                            GuiInterface::Instance().ShowTip(FTR("signal restored"), false);
+                            GuiInterface::Instance().ShowTip("signal restored", false);
                             isSignalLostNotified = false;
                         }
                         readRetryCount = 0;
@@ -201,7 +205,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     GuiInterface::Instance().PutLog(LogLevel::Error, "Send packet failed: {}", e.what());
 
                     if (++sendPacketErrorCount > 10) {
-                        GuiInterface::Instance().ShowTip(FTR("codec error, reconnecting..."), true);
+                        GuiInterface::Instance().ShowTip("codec error, reconnecting...", true);
                         isSignalLostNotified = true;
 
                         localDecoder->CloseInput();
@@ -221,7 +225,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     readRetryCount++;
 
                     if (!isSignalLostNotified) {
-                        GuiInterface::Instance().ShowTip(FTR("no signal"), true);
+                        GuiInterface::Instance().ShowTip("no signal", true);
                         isSignalLostNotified = true;
                     }
 
@@ -231,7 +235,8 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                         std::this_thread::sleep_for(std::chrono::seconds(1));
 
                         if (localDecoder->OpenInput(url, forceSoftwareDecoding)) {
-                            GuiInterface::Instance().PutLog(LogLevel::Info, "Input reopened successfully, waiting for data...");
+                            GuiInterface::Instance().PutLog(LogLevel::Info,
+                                                            "Input reopened successfully, waiting for data...");
                         }
                     }
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));

@@ -484,9 +484,8 @@ public:
 #endif
     }
 
-    void set_locale(std::string locale) {
+    void set_locale(const std::string &locale) {
         locale_ = locale;
-        vecgui::TranslationServer::get_singleton()->set_locale(locale_);
     }
 
     mINI::INIStructure ini_;

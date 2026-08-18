@@ -6,9 +6,9 @@
 #include <sstream>
 
 #include "../gui_interface.h"
+#include "RxPacket.h"
 #include "UsbOpen.h"
 #include "WiFiDriver.h"
-#include "RxPacket.h"
 #include "cross/endian.h"
 #include "logger.h"
 #include "rtp.h"
@@ -242,7 +242,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                                         deviceId.product_id,
                                         deviceId.bus_num,
                                         deviceId.port_num);
-        GuiInterface::Instance().ShowTip(FTR("invalid usb msg"), true);
+        GuiInterface::Instance().ShowTip("invalid usb msg", true);
 
         return false;
     }
@@ -349,7 +349,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         } catch (const std::runtime_error &e) {
             GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
 
-            GuiInterface::Instance().ShowTip(FTR("invalid device"), true);
+            GuiInterface::Instance().ShowTip("invalid device", true);
         } catch (...) {
         }
 

@@ -65,8 +65,10 @@ void PlayerRect::on_ready() {
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
+    auto context = get_context();
+
     collapse_panel_ = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Default);
-    collapse_panel_->set_title(FTR("player control"));
+    collapse_panel_->set_title(context->translation_server->get_translation("player control"));
     collapse_panel_->set_collapse(true);
     collapse_panel_->set_color(vecgui::ColorU(106, 171, 114));
     collapse_panel_->set_visibility(false);
@@ -76,10 +78,10 @@ void PlayerRect::on_ready() {
     auto vbox = std::make_shared<vecgui::VBoxContainer>();
     collapse_panel_->add_child(vbox);
 
-    logo_ = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("openipc-logo-white.svg"));
+    logo_ = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("openipc-logo-white.svg"));
     texture = logo_;
 
-    render_image_ = std::make_shared<vecgui::RenderImage>(Pathfinder::Vec2I{1920, 1080});
+    render_image_ = std::make_shared<vecgui::RenderImage>(context, vecgui::Vec2I{1920, 1080});
 
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
@@ -149,7 +151,8 @@ void PlayerRect::on_ready() {
             video_info_label_->set_text(ss.str());
             video_info_label_->set_visibility(true);
 
-            decoder_label_->set_text(FTR("decoder") + ": " + decoder_name);
+            decoder_label_->set_text(get_context()->translation_server->get_translation("decoder") + ": " +
+                                     decoder_name);
             decoder_label_->set_font_size(HUD_LABEL_FONT_SIZE);
             decoder_label_->set_visibility(true);
         };
@@ -230,52 +233,52 @@ void PlayerRect::on_ready() {
 
     auto capture_button = std::make_shared<vecgui::Button>();
     vbox->add_child(capture_button);
-    capture_button->set_text(FTR("capture frame"));
-    auto icon = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("CaptureImage.svg"), true);
+    capture_button->set_text(context->translation_server->get_translation("capture frame"));
+    auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("CaptureImage.svg"), true);
     capture_button->set_icon_normal(icon);
-    auto capture_callback = [this] {
+    auto capture_callback = [this, context] {
         auto output_file = player_->capture_jpeg();
         if (output_file.empty()) {
-            show_red_tip(FTR("capture fail"));
+            show_red_tip(context->translation_server->get_translation("capture fail"));
         } else {
-            show_green_tip(FTR("frame saved") + output_file);
+            show_green_tip(context->translation_server->get_translation("frame saved") + output_file);
         }
     };
     capture_button->connect_signal("triggered", capture_callback);
 
     record_button_ = std::make_shared<vecgui::Button>();
     vbox->add_child(record_button_);
-    auto icon2 = std::make_shared<vecgui::VectorImage>(vecgui::get_asset_dir("RecordVideo.svg"), true);
+    auto icon2 = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("RecordVideo.svg"), true);
     record_button_->set_icon_normal(icon2);
-    record_button_->set_text(FTR("record mp4") + " (F10)");
+    record_button_->set_text(context->translation_server->get_translation("record mp4") + " (F10)");
 
     auto record_button_raw = record_button_.get();
-    auto record_callback = [record_button_raw, this] {
+    auto record_callback = [record_button_raw, this, context] {
         if (!is_recording) {
             is_recording = player_->start_mp4_recording();
 
             if (is_recording) {
-                record_button_raw->set_text(FTR("stop recording") + " (F10)");
+                record_button_raw->set_text(context->translation_server->get_translation("stop recording") + " (F10)");
 
                 record_start_time = std::chrono::steady_clock::now();
 
-                record_status_label_->set_text(FTR("recording") + ": 00:00");
+                record_status_label_->set_text(context->translation_server->get_translation("recording") + ": 00:00");
             } else {
                 record_status_label_->set_text("");
-                show_red_tip(FTR("record fail"));
+                show_red_tip(context->translation_server->get_translation("record fail"));
             }
         } else {
             is_recording = false;
 
             auto output_file = player_->stop_mp4_recording();
 
-            record_button_raw->set_text(FTR("record mp4") + " (F10)");
+            record_button_raw->set_text(context->translation_server->get_translation("record mp4") + " (F10)");
             record_status_label_->set_text("");
 
             if (output_file.empty()) {
-                show_red_tip(FTR("save record fail"));
+                show_red_tip(context->translation_server->get_translation("save record fail"));
             } else {
-                show_green_tip(FTR("video saved") + output_file);
+                show_green_tip(context->translation_server->get_translation("video saved") + output_file);
             }
         }
     };
@@ -283,7 +286,7 @@ void PlayerRect::on_ready() {
 
     {
         auto button = std::make_shared<vecgui::CheckButton>();
-        button->set_text(FTR("force sw decoding"));
+        button->set_text(context->translation_server->get_translation("force sw decoding"));
         vbox->add_child(button);
 
         auto callback = [this](bool toggled) {
@@ -320,7 +323,8 @@ void PlayerRect::on_ready() {
     // }
 
     auto onBitrateUpdate = [this](uint64_t bitrate) {
-        std::string text = FTR("bitrate") + ": ";
+        auto context = this->get_context();
+        std::string text = context->translation_server->get_translation("bitrate") + ": ";
         if (bitrate > 1024 * 1024) {
             text += std::format("{:.1f}", bitrate / 1024.0 / 1024.0) + " Mbps";
         } else if (bitrate > 1024) {
@@ -334,10 +338,13 @@ void PlayerRect::on_ready() {
     GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
 
     auto onTipUpdate = [this](std::string msg, bool bad_news) {
+        auto context = this->get_context();
+        auto translated_msg = context->translation_server->get_translation(msg);
+
         if (bad_news) {
-            show_red_tip(msg);
+            show_red_tip(translated_msg);
         } else {
-            show_green_tip(msg);
+            show_green_tip(translated_msg);
         }
     };
     GuiInterface::Instance().tipCallbacks.emplace_back(onTipUpdate);
@@ -357,6 +364,8 @@ void PlayerRect::on_update(double dt) {
         }
     }
 
+    auto context = get_context();
+
     if (player_) {
         player_->update(dt);
 
@@ -369,14 +378,15 @@ void PlayerRect::on_update(double dt) {
                                                 player_->video_width(),
                                                 player_->video_height());
                 render_image_ = std::make_shared<vecgui::RenderImage>(
+                    context,
                     Pathfinder::Vec2I{player_->video_width(), player_->video_height()});
                 texture = render_image_;
             }
         }
     }
 
-    render_fps_label_->set_text(FTR("render fps") + ": " +
-                                std::to_string(vecgui::Engine::get_singleton()->get_fps_int()));
+    render_fps_label_->set_text(context->translation_server->get_translation("render fps") + ": " +
+                                std::to_string(context->engine->get_fps_int()));
 
     if (is_recording) {
         std::chrono::duration<double> duration = std::chrono::steady_clock::now() - record_start_time;
@@ -387,7 +397,7 @@ void PlayerRect::on_update(double dt) {
         int seconds = total_seconds % 60;
 
         std::ostringstream ss;
-        ss << FTR("recording") << ": ";
+        ss << context->translation_server->get_translation("recording") << ": ";
         if (hours > 0) {
             ss << hours << ":";
         }
@@ -420,7 +430,7 @@ void PlayerRect::start_playing(const std::string &url) {
 
     playing_ = true;
 
-    auto render_context = vecgui::RenderContext::get_singleton();
+    auto render_context = get_context()->render_context;
 
     if (!player_) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Creating video player");

@@ -1,7 +1,7 @@
-﻿#include <vecgui/nodes/scene_tree.h>
+﻿#include <vecgui/app.h>
+#include <vecgui/nodes/scene_tree.h>
 #include <vecgui/resources/default_resource.h>
 
-#include <vecgui/app.h>
 #include "gui/control_panel.h"
 #include "gui/player_rect.h"
 #include "gui_interface.h"
@@ -16,10 +16,12 @@ int main() {
 
     const auto theme =
         GuiInterface::Instance().dark_mode_ ? vecgui::Theme::default_dark() : vecgui::Theme::default_light();
-    theme->load_font("zcool_canger_yuyang.ttf");
-    vecgui::DefaultResource::get_singleton()->set_default_theme(theme);
 
-    vecgui::TranslationServer::get_singleton()->load_translations(vecgui::get_asset_dir("translations.csv"));
+    auto context = app->get_context();
+    context.default_resource->set_default_theme(theme);
+
+    context.translation_server->load_translations(vecgui::get_asset_dir("translations.csv"));
+    context.translation_server->set_locale(GuiInterface::Instance().locale_);
 
     // Initialize the default libusb context.
     int rc = libusb_init(nullptr);

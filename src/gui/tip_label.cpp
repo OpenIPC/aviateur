@@ -1,6 +1,8 @@
 #include "tip_label.h"
 
 void TipLabel::on_ready() {
+    Label::on_ready();
+
     set_font_size(32);
 
     auto style_box = vecgui::StyleBox();
