@@ -208,7 +208,8 @@ void PlayerRect::on_ready() {
             for (const auto &link : GuiInterface::Instance().links_) {
                 min_loss = std::min(min_loss, link->get_packet_loss());
             }
-            pl_label_->set_text(FTR("packet loss") + ": " + std::to_string(min_loss));
+            pl_label_->set_text(get_context()->translation_server->get_translation("packet loss") + ": " +
+                                std::to_string(min_loss));
 
             if (GuiInterface::Instance().alink_enabled_) {
                 fec_label_->set_visibility(true);
