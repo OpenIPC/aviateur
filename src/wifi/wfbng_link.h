@@ -40,15 +40,13 @@
 struct DeviceId {
     uint16_t vendor_id;
     uint16_t product_id;
-    /// Human-readable, shown in the UI, e.g. "RTL8812AU-VS  (0bda:881a) [1:11]".
+    /// Human-readable, shown in the UI, e.g. "RTL8812AU-VS [1:11]".
     std::string display_name;
     uint8_t bus_num;
     uint8_t port_num;
     /// Stable identity, e.g. "0bda:881a [1:11]". This is what older configs stored
     /// as the whole display name, so it doubles as a backwards-compatible key.
     std::string id_key;
-    /// Product string from the OS, empty if it could not be read.
-    std::string product_name;
     /// True for adapters devourer can actually drive; these sort to the top.
     bool known_adapter = false;
 

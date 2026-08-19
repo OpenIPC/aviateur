@@ -98,7 +98,6 @@ private:
 };
 #endif
 
-
 namespace {
 
 /// Adapters devourer can actually drive. They sort to the top of the device list and
@@ -233,19 +232,19 @@ std::vector<DeviceId> WfbngLink::get_device_list() {
                 const bool is_known = known != kKnownAdapters.end();
 
                 std::string product_name = query_product_name(dev, desc);
-                std::string label = is_known ? known->second : product_name;
-                if (label.empty()) {
-                    label = "Unknown USB device";
+                std::string final_product_name = is_known ? known->second : product_name;
+                if (final_product_name.empty()) {
+                    final_product_name = "Unknown USB device";
                 }
 
                 DeviceId dev_id = {
                     .vendor_id = desc.idVendor,
                     .product_id = desc.idProduct,
-                    .display_name = elide(label, kMaxProductNameChars) + "  (" + id_key + ")",
+                    .display_name = elide(final_product_name, kMaxProductNameChars) + " [" + std::to_string(bus_num) +
+                                    ":" + std::to_string(port_num) + "]",
                     .bus_num = bus_num,
                     .port_num = port_num,
                     .id_key = id_key,
-                    .product_name = product_name,
                     .known_adapter = is_known,
                 };
 
