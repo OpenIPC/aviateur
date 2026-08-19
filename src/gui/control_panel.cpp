@@ -140,13 +140,7 @@ void ControlPanel::on_ready() {
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
 
-            // Mirror the construction path above: update_dongle_list() may clear the
-            // selection when the previously selected device is gone, so the button
-            // text has to be refreshed too, otherwise it keeps showing a stale device.
-            auto callback2 = [this] {
-                update_dongle_list(dongle_menu_button_, dongle_names[0].value());
-                dongle_menu_button_->set_text(dongle_names[0].value());
-            };
+            auto callback2 = [this] { update_dongle_list(dongle_menu_button_, dongle_names[0].value()); };
             refresh_dongle_button_->connect_signal("triggered", callback2);
         }
 
