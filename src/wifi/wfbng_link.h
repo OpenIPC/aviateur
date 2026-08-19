@@ -40,20 +40,15 @@
 struct DeviceId {
     uint16_t vendor_id;
     uint16_t product_id;
-    /// Human-readable, shown in the UI, e.g. "RTL8812AU-VS [1:11]".
-    std::string display_name;
     uint8_t bus_num;
     uint8_t port_num;
-    /// Stable identity, e.g. "0bda:881a [1:11]". This is what older configs stored
-    /// as the whole display name, so it doubles as a backwards-compatible key.
-    std::string id_key;
+    /// Human-readable, shown in the UI, e.g. "RTL8812AU-VS [1:11]".
+    std::string display_name;
     /// True for adapters devourer can actually drive; these sort to the top.
     bool known_adapter = false;
 
-    /// Accepts either the current display name or a name saved by an older build,
-    /// so upgrading does not silently drop a user's selected device.
     [[nodiscard]] bool matches_saved_name(const std::string &saved) const {
-        return !saved.empty() && (saved == display_name || saved == id_key);
+        return !saved.empty() && saved == display_name;
     }
 };
 

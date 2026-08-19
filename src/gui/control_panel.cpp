@@ -67,9 +67,7 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 
 void ControlPanel::on_ready() {
     auto &ini = GuiInterface::Instance().ini_;
-    dongle_names.resize(2);
-    dongle_names[0] = ini[CONFIG_WIFI][WIFI_DEVICE];
-    dongle_names[1] = {};
+    dongle_name_ = ini[CONFIG_WIFI][WIFI_DEVICE];
     channel = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
@@ -124,12 +122,12 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(dongle_menu_button_);
 
             // Do this before setting dongle button text.
-            update_dongle_list(dongle_menu_button_, dongle_names[0].value());
-            dongle_menu_button_->set_text(dongle_names[0].value());
+            update_dongle_list(dongle_menu_button_, dongle_name_.value());
+            dongle_menu_button_->set_text(dongle_name_.value());
 
             auto callback = [this](uint32_t) {
-                dongle_names[0] = dongle_menu_button_->get_selected_item_text();
-                GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = *dongle_names[0];
+                dongle_name_ = dongle_menu_button_->get_selected_item_text();
+                GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = *dongle_name_;
             };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
@@ -140,7 +138,7 @@ void ControlPanel::on_ready() {
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
 
-            auto callback2 = [this] { update_dongle_list(dongle_menu_button_, dongle_names[0].value()); };
+            auto callback2 = [this] { update_dongle_list(dongle_menu_button_, dongle_name_.value()); };
             refresh_dongle_button_->connect_signal("triggered", callback2);
         }
 
@@ -359,57 +357,46 @@ void ControlPanel::on_ready() {
                 GuiInterface::Instance().links_.clear();
 
                 if (start) {
-                    bool all_started = true;
+                    bool started_successfully = true;
 
-                    if (dongle_names[1].has_value() && dongle_names[1] == dongle_names[0]) {
-                        GuiInterface::Instance().ShowTip("Same device for dual adapter mode", true);
-                        all_started = false;
-                    } else {
-                        for (const auto &dongle_name : dongle_names) {
-                            if (!dongle_name.has_value()) {
-                                continue;
+                    if (dongle_name_.has_value()) {
+                        // Check if the device is available.
+                        std::optional<DeviceId> target_device_id;
+                        for (auto &d : devices_) {
+                            if (d.matches_saved_name(*dongle_name_)) {
+                                target_device_id = d;
+                                break;
                             }
+                        }
 
-                            // Check if the device is available.
-                            std::optional<DeviceId> target_device_id;
-                            for (auto &d : devices_) {
-                                if (d.matches_saved_name(*dongle_name)) {
-                                    target_device_id = d;
-                                }
-                            }
-
-                            if (target_device_id.has_value()) {
-                                bool res = false;
-
-                                std::optional<std::string> forward_port;
-                                if (!forward_con->get_collapse()) {
-                                    if (forward_port_edit->get_text().empty()) {
-                                        GuiInterface::Instance().ShowTip("Invalid port for RTP forwarding", true);
-                                        all_started = false;
-                                        break;
-                                    }
+                        if (target_device_id.has_value()) {
+                            std::optional<std::string> forward_port;
+                            if (!forward_con->get_collapse()) {
+                                if (forward_port_edit->get_text().empty()) {
+                                    GuiInterface::Instance().ShowTip("Invalid port for RTP forwarding", true);
+                                    started_successfully = false;
+                                } else {
                                     forward_port = forward_port_edit->get_text();
                                 }
-
-                                res = GuiInterface::Start(target_device_id.value(),
-                                                          channel,
-                                                          channelWidthMode,
-                                                          keyPath,
-                                                          forward_port);
-
-                                if (!res) {
-                                    GuiInterface::Instance().ShowTip("Device failed to start", true);
-                                }
-
-                                all_started &= res;
-                            } else {
-                                all_started = false;
-                                GuiInterface::Instance().ShowTip("Null device", true);
                             }
+
+                            bool res = GuiInterface::Start(target_device_id.value(),
+                                                           channel,
+                                                           channelWidthMode,
+                                                           keyPath,
+                                                           forward_port);
+
+                            if (!res) {
+                                GuiInterface::Instance().ShowTip("Device failed to start", true);
+                                started_successfully = false;
+                            }
+                        } else {
+                            GuiInterface::Instance().ShowTip("Null device", true);
+                            started_successfully = false;
                         }
                     }
 
-                    if (!all_started) {
+                    if (!started_successfully) {
                         start = false;
                         GuiInterface::Stop();
                     }

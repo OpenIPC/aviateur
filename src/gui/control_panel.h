@@ -17,7 +17,8 @@ public:
     std::shared_ptr<vecgui::Label> tx_pwr_label_;
     std::shared_ptr<vecgui::Slider> tx_pwr_slider_;
 
-    std::vector<std::optional<std::string>> dongle_names;
+    std::optional<std::string> dongle_name_;
+
     uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
     std::string keyPath;

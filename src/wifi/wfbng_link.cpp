@@ -220,12 +220,6 @@ std::vector<DeviceId> WfbngLink::get_device_list() {
                 uint8_t bus_num = libusb_get_bus_number(dev);
                 uint8_t port_num = libusb_get_port_number(dev);
 
-                std::stringstream ss;
-                ss << std::setw(4) << std::setfill('0') << std::hex << desc.idVendor << ":";
-                ss << std::setw(4) << std::setfill('0') << std::hex << desc.idProduct;
-                ss << std::dec << " [" << (int)bus_num << ":" << (int)port_num << "]";
-                const std::string id_key = ss.str();
-
                 // Prefer the chip name we know over a vague product string like
                 // "802.11n NIC", but fall back to whatever the OS reports.
                 const auto known = kKnownAdapters.find(make_device_key(desc.idVendor, desc.idProduct));
@@ -240,11 +234,10 @@ std::vector<DeviceId> WfbngLink::get_device_list() {
                 DeviceId dev_id = {
                     .vendor_id = desc.idVendor,
                     .product_id = desc.idProduct,
-                    .display_name = elide(final_product_name, kMaxProductNameChars) + " [" + std::to_string(bus_num) +
-                                    ":" + std::to_string(port_num) + "]",
                     .bus_num = bus_num,
                     .port_num = port_num,
-                    .id_key = id_key,
+                    .display_name = elide(final_product_name, kMaxProductNameChars) + " [" + std::to_string(bus_num) +
+                                    ":" + std::to_string(port_num) + "]",
                     .known_adapter = is_known,
                 };
 
