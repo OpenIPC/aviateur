@@ -14,8 +14,10 @@ void ControlPanel::update_dongle_list(const std::shared_ptr<vecgui::MenuButton> 
 
     bool previous_device_exists = false;
     for (const auto &d : devices_) {
-        if (dongle_name == d.display_name) {
+        if (d.matches_saved_name(dongle_name)) {
             previous_device_exists = true;
+            // Upgrade a legacy id-only name to the current display name.
+            dongle_name = d.display_name;
         }
         menu->create_item(d.display_name);
     }
@@ -371,7 +373,7 @@ void ControlPanel::on_ready() {
                             // Check if the device is available.
                             std::optional<DeviceId> target_device_id;
                             for (auto &d : devices_) {
-                                if (dongle_name == d.display_name) {
+                                if (d.matches_saved_name(*dongle_name)) {
                                     target_device_id = d;
                                 }
                             }

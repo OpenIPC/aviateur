@@ -1,6 +1,10 @@
 #include "wfbng_link.h"
 
+#include <algorithm>
+#include <array>
+#include <fstream>
 #include <iomanip>
+#include <map>
 #include <mutex>
 #include <set>
 #include <sstream>
@@ -94,6 +98,103 @@ private:
 };
 #endif
 
+namespace {
+
+/// Adapters devourer can actually drive. They sort to the top of the device list and
+/// get a meaningful label even when the OS will not hand us a product string.
+const std::map<uint32_t, const char *> kKnownAdapters = {
+    {0x0bda8812, "RTL8812AU"},
+    {0x0bda881a, "RTL8812AU-VS"},
+    {0x0bda8813, "RTL8814AU"},
+    {0x0bdaa81a, "RTL8812EU"},
+    {0x0bdac812, "RTL8812CU"},
+    {0x0bda8821, "RTL8821AU"},
+    {0x0b0517d2, "RTL8812AU (ASUS USB-AC56)"},
+    {0x23570120, "RTL8821AU (TP-Link Archer T2U Plus)"},
+    {0x35bc0108, "RTL8852BU (TP-Link Archer TX20U Nano)"},
+};
+
+/// Product strings are vendor-controlled and occasionally absurd. The button label is
+/// sized by its text, so cap the human-readable part; the vid:pid[bus:port] suffix is
+/// always kept because it is what disambiguates two identical adapters.
+constexpr size_t kMaxProductNameChars = 32;
+
+std::string elide(const std::string &text, size_t max_chars) {
+    if (text.size() <= max_chars) {
+        return text;
+    }
+    return text.substr(0, max_chars > 3 ? max_chars - 3 : 0) + "...";
+}
+
+uint32_t make_device_key(uint16_t vendor_id, uint16_t product_id) {
+    return (static_cast<uint32_t>(vendor_id) << 16) | product_id;
+}
+
+std::string read_first_line(const std::string &path) {
+    std::ifstream f(path);
+    std::string line;
+    if (f && std::getline(f, line)) {
+        while (!line.empty() && (line.back() == '\n' || line.back() == '\r' || line.back() == ' ')) {
+            line.pop_back();
+        }
+        return line;
+    }
+    return {};
+}
+
+/// Best-effort product string for a device.
+///
+/// On Linux sysfs is preferred: it needs no permissions, so we can name every device
+/// rather than only the ones we are allowed to open. Elsewhere (and as a fallback) we
+/// ask the device itself, which requires opening it and therefore usually only works
+/// for the adapter our udev rule covers.
+std::string query_product_name(libusb_device *dev, const libusb_device_descriptor &desc) {
+#ifdef __linux__
+    std::array<uint8_t, 8> ports{};
+    const int depth = libusb_get_port_numbers(dev, ports.data(), static_cast<int>(ports.size()));
+    if (depth > 0) {
+        std::string sysfs_name = std::to_string(static_cast<int>(libusb_get_bus_number(dev))) + "-";
+        for (int i = 0; i < depth; ++i) {
+            sysfs_name += std::to_string(static_cast<int>(ports[i]));
+            if (i + 1 < depth) {
+                sysfs_name += ".";
+            }
+        }
+        const std::string base = "/sys/bus/usb/devices/" + sysfs_name + "/";
+        std::string product = read_first_line(base + "product");
+        if (!product.empty()) {
+            const std::string manufacturer = read_first_line(base + "manufacturer");
+            // Some devices repeat the vendor inside the product string; do not say it twice.
+            if (!manufacturer.empty() && product.find(manufacturer) == std::string::npos) {
+                product = manufacturer + " " + product;
+            }
+            return product;
+        }
+    }
+#endif
+
+    if (desc.iProduct == 0) {
+        return {};
+    }
+
+    libusb_device_handle *handle = nullptr;
+    if (libusb_open(dev, &handle) != LIBUSB_SUCCESS || handle == nullptr) {
+        // Almost always a permissions issue; the caller falls back to the known table.
+        return {};
+    }
+
+    unsigned char buf[256] = {};
+    const int len = libusb_get_string_descriptor_ascii(handle, desc.iProduct, buf, sizeof(buf) - 1);
+    libusb_close(handle);
+
+    if (len > 0) {
+        return std::string(reinterpret_cast<char *>(buf), len);
+    }
+    return {};
+}
+
+} // namespace
+
 std::vector<DeviceId> WfbngLink::get_device_list() {
     std::vector<DeviceId> list;
 
@@ -123,13 +224,28 @@ std::vector<DeviceId> WfbngLink::get_device_list() {
                 ss << std::setw(4) << std::setfill('0') << std::hex << desc.idVendor << ":";
                 ss << std::setw(4) << std::setfill('0') << std::hex << desc.idProduct;
                 ss << std::dec << " [" << (int)bus_num << ":" << (int)port_num << "]";
+                const std::string id_key = ss.str();
+
+                // Prefer the chip name we know over a vague product string like
+                // "802.11n NIC", but fall back to whatever the OS reports.
+                const auto known = kKnownAdapters.find(make_device_key(desc.idVendor, desc.idProduct));
+                const bool is_known = known != kKnownAdapters.end();
+
+                std::string product_name = query_product_name(dev, desc);
+                std::string final_product_name = is_known ? known->second : product_name;
+                if (final_product_name.empty()) {
+                    final_product_name = "Unknown USB device";
+                }
 
                 DeviceId dev_id = {
                     .vendor_id = desc.idVendor,
                     .product_id = desc.idProduct,
-                    .display_name = ss.str(),
+                    .display_name = elide(final_product_name, kMaxProductNameChars) + " [" + std::to_string(bus_num) +
+                                    ":" + std::to_string(port_num) + "]",
                     .bus_num = bus_num,
                     .port_num = port_num,
+                    .id_key = id_key,
+                    .known_adapter = is_known,
                 };
 
                 list.push_back(dev_id);
@@ -137,18 +253,14 @@ std::vector<DeviceId> WfbngLink::get_device_list() {
         }
     }
 
-    // std::sort(list.begin(), list.end(), [](std::string &a, std::string &b) {
-    //     static std::vector<std::string> specialStrings = {"0b05:17d2", "0bda:8812", "0bda:881a"};
-    //     auto itA = std::find(specialStrings.begin(), specialStrings.end(), a);
-    //     auto itB = std::find(specialStrings.begin(), specialStrings.end(), b);
-    //     if (itA != specialStrings.end() && itB == specialStrings.end()) {
-    //         return true;
-    //     }
-    //     if (itB != specialStrings.end() && itA == specialStrings.end()) {
-    //         return false;
-    //     }
-    //     return a < b;
-    // });
+    // Supported FPV adapters first, then alphabetically, so the one the user
+    // actually wants is at the top instead of buried among mice and hubs.
+    std::sort(list.begin(), list.end(), [](const DeviceId &a, const DeviceId &b) {
+        if (a.known_adapter != b.known_adapter) {
+            return a.known_adapter;
+        }
+        return a.display_name < b.display_name;
+    });
 
     // Free the list of devices
     libusb_free_device_list(devs, 1);
