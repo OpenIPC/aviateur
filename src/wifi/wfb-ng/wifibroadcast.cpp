@@ -70,25 +70,25 @@ int open_udp_socket_for_rx(int port, int rcv_buf_size, uint32_t bind_addr, int s
     if (fd < 0) throw runtime_error(string_format("Error opening socket: %s", strerror(errno)));
 
     const int optval = 1;
-    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(optval)) !=0)
+    if(wfb_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(optval)) !=0)
     {
-        close(fd);
+        wfb_close(fd);
         throw runtime_error(string_format("Unable to set SO_REUSEADDR: %s", strerror(errno)));
     }
 
     #ifdef __linux__
-    if(setsockopt(fd, SOL_SOCKET, SO_RXQ_OVFL, (const void *)&optval , sizeof(optval)) != 0)
+    if(wfb_setsockopt(fd, SOL_SOCKET, SO_RXQ_OVFL, (const void *)&optval , sizeof(optval)) != 0)
     {
-        close(fd);
+        wfb_close(fd);
         throw runtime_error(string_format("Unable to set SO_RXQ_OVFL: %s", strerror(errno)));
     }
     #endif
 
     if (rcv_buf_size > 0)
     {
-        if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const void *)&rcv_buf_size , sizeof(rcv_buf_size)) !=0)
+        if(wfb_setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const void *)&rcv_buf_size , sizeof(rcv_buf_size)) !=0)
         {
-            close(fd);
+            wfb_close(fd);
             throw runtime_error(string_format("Unable to set SO_RCVBUF: %s", strerror(errno)));
         }
     }
@@ -100,7 +100,7 @@ int open_udp_socket_for_rx(int port, int rcv_buf_size, uint32_t bind_addr, int s
 
     if (::bind(fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0)
     {
-        close(fd);
+        wfb_close(fd);
         throw runtime_error(string_format("Unable to bind to %s:%d : %s", inet_ntoa(saddr.sin_addr), port, strerror(errno)));
     }
     return fd;
@@ -115,25 +115,25 @@ int open_unix_socket_for_rx(const char *socket_path, int rcv_buf_size, int socke
     if (fd < 0) throw runtime_error(string_format("Error opening socket: %s", strerror(errno)));
 
     const int optval = 1;
-    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(optval)) !=0)
+    if(wfb_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(optval)) !=0)
     {
-        close(fd);
+        wfb_close(fd);
         throw runtime_error(string_format("Unable to set SO_REUSEADDR: %s", strerror(errno)));
     }
 
     #ifdef __linux__
-    if(setsockopt(fd, SOL_SOCKET, SO_RXQ_OVFL, (const void *)&optval , sizeof(optval)) != 0)
+    if(wfb_setsockopt(fd, SOL_SOCKET, SO_RXQ_OVFL, (const void *)&optval , sizeof(optval)) != 0)
     {
-        close(fd);
+        wfb_close(fd);
         throw runtime_error(string_format("Unable to set SO_RXQ_OVFL: %s", strerror(errno)));
     }
     #endif
 
     if (rcv_buf_size > 0)
     {
-        if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const void *)&rcv_buf_size , sizeof(rcv_buf_size)) !=0)
+        if(wfb_setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const void *)&rcv_buf_size , sizeof(rcv_buf_size)) !=0)
         {
-            close(fd);
+            wfb_close(fd);
             throw runtime_error(string_format("Unable to set SO_RCVBUF: %s", strerror(errno)));
         }
     }
@@ -144,7 +144,7 @@ int open_unix_socket_for_rx(const char *socket_path, int rcv_buf_size, int socke
 
     if (::bind(fd, (struct sockaddr *) &saddr, sizeof(sa_family_t) + strlen(saddr.sun_path + 1) + 1) < 0)
     {
-        close(fd);
+        wfb_close(fd);
         throw runtime_error(string_format("Unable to bind to @%s : %s", saddr.sun_path + 1, strerror(errno)));
     }
     return fd;

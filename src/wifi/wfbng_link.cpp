@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <sstream>
 
@@ -19,15 +20,17 @@
 #include "rx_frame.h"
 #include "signal_quality.h"
 
-#ifdef _WIN32
-    #include "cross/wfbng_processor.h"
-
-    #pragma comment(lib, "ws2_32.lib")
-#else
+#ifdef __linux__
     #include "linux/tun.h"
-    #include "linux/tx_frame.h"
-    #include "wfb-ng/rx.hpp"
 #endif
+
+// clang-format off
+#undef min
+#undef max
+#include "wfb-ng/rx.hpp"
+// clang-format on
+
+#include "tx_frame.h"
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
 
@@ -41,7 +44,6 @@ inline bool isH264(const uint8_t *data) {
     return h264NalType == 24 || h264NalType == 28;
 }
 
-#ifndef _WIN32
 class AggregatorX : public AggregatorUDPv4 {
 public:
     AggregatorX(const std::string &client_addr,
@@ -62,10 +64,10 @@ protected:
         }
 
         auto *header = (RtpHeader *)payload;
-        const uint16_t seq_num = htons(header->seq);
+        const uint16_t seq_num = be16toh(header->seq);
 
-        GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP sequence number: {}", seq_num);
-        GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP timestamp: {}", htonl(header->stamp));
+        // GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP sequence number: {}", seq_num);
+        // GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP timestamp: {}", be32toh(header->stamp));
 
         if (!prev_seq_num.has_value()) {
             // Check H264 or H265
@@ -76,7 +78,7 @@ protected:
             }
 
             GuiInterface::Instance().NotifyRtpStream(header->pt,
-                                                     ntohl(header->ssrc),
+                                                     be32toh(header->ssrc),
                                                      GuiInterface::Instance().playerPort,
                                                      GuiInterface::Instance().playerCodec);
         }
@@ -87,7 +89,7 @@ protected:
         prev_seq_num = seq_num;
 
         // Send payload via socket.
-        sendto(sockfd, payload, packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
+        wfb_sendto(sockfd, (const char *)payload, packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
     }
 
 private:
@@ -96,7 +98,6 @@ private:
 
     std::optional<uint16_t> prev_seq_num;
 };
-#endif
 
 namespace {
 
@@ -278,6 +279,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     }
 
     auto logger = std::make_shared<Logger>();
+    logger->set_level(Logger::Level::Info);
 
     if (ctx) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "libusb context should be null");
@@ -372,9 +374,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
-#ifndef _WIN32
     tx_frame = std::make_shared<TxFrame>(tun_enabled);
-#endif
 
     usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
@@ -389,7 +389,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 return;
             }
 
-#ifndef _WIN32
             // if (!usb_event_thread) {
             //     auto usb_event_thread_func = [this] {
             //         while (true) {
@@ -437,7 +436,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 stop_adaptive_link();
                 start_link_quality_thread();
             }
-#endif
 
             rtlDevice->Init(
                 [this](const Packet &p) {
@@ -472,13 +470,11 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
 
-#ifndef _WIN32
         stop_adaptive_link();
         tx_frame->stop();
         destroy_thread(usb_tx_thread);
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread stopped");
-// destroy_thread(usb_event_thread);
-#endif
+        // destroy_thread(usb_event_thread);
 
         libusb_close(devHandle);
         libusb_exit(ctx);
@@ -504,7 +500,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     return true;
 }
 
-#ifndef _WIN32
 void WfbngLink::init_thread(std::unique_ptr<std::thread> &thread,
                             const std::function<std::unique_ptr<std::thread>()> &init_func) {
     std::unique_lock lock(thread_mutex);
@@ -531,12 +526,12 @@ void WfbngLink::start_link_quality_thread() {
         std::string ip = "127.0.0.1";
         int port = 8001;
 
-    #ifdef __linux__
+#ifdef __linux__
         if (tun_enabled) {
             ip = "10.5.0.10";
             port = 9999;
         }
-    #endif
+#endif
 
         const int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -547,7 +542,7 @@ void WfbngLink::start_link_quality_thread() {
         }
 
         int opt = 1;
-        setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        wfb_setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(opt));
 
         struct sockaddr_in server_addr = {};
         server_addr.sin_family = AF_INET;
@@ -556,7 +551,7 @@ void WfbngLink::start_link_quality_thread() {
         // Convert the IP address from text to binary form
         if (inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr) <= 0) {
             printf("Invalid IP address");
-            close(sock_fd);
+            wfb_close(sock_fd);
             return;
         }
 
@@ -632,7 +627,7 @@ void WfbngLink::start_link_quality_thread() {
                          fec_lvl,
                          quality.idr_code.c_str());
 
-                len = strlen(message + sizeof(len));
+                len = (uint32_t)strlen(message + sizeof(len));
 
                 // Put message length in the message header
                 uint32_t net_len = htonl(len);
@@ -644,8 +639,12 @@ void WfbngLink::start_link_quality_thread() {
 
                 // printf("Alink thread sends a packet, size %lu\n", buf_size);
 
-                const ssize_t sent =
-                    sendto(sock_fd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+                const ssize_t sent = wfb_sendto(sock_fd,
+                                                message,
+                                                (int)buf_size,
+                                                0,
+                                                (struct sockaddr *)&server_addr,
+                                                sizeof(server_addr));
                 if (sent < 0) {
                     printf("Failed to send message");
                     break;
@@ -654,7 +653,7 @@ void WfbngLink::start_link_quality_thread() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        close(sock_fd);
+        wfb_close(sock_fd);
         this->alink_should_stop = false;
     };
 
@@ -677,7 +676,6 @@ void WfbngLink::stop_adaptive_link() {
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "Alink thread stopped");
 }
-#endif
 
 void WfbngLink::handle_80211_frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
@@ -713,7 +711,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
     std::string client_addr = "127.0.0.1";
 
-#ifndef _WIN32
     if (!video_aggregator) {
         video_aggregator = std::make_unique<AggregatorX>(client_addr,
                                                          GuiInterface::Instance().playerPort,
@@ -726,15 +723,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         udp_aggregator =
             std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
     }
-#else
-    if (!video_aggregator) {
-        video_aggregator = std::make_unique<Aggregator>(
-            keyPath.c_str(),
-            epoch,
-            video_channel_id_f,
-            [this](uint8_t *payload, uint16_t packet_size) { handle_rtp(payload, packet_size); });
-    }
-#endif
 
     static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
@@ -749,7 +737,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         signal_quality_calculator->add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
         signal_quality_calculator->add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
-#ifndef _WIN32
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -767,13 +754,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
 
         // This is necessary.
         video_aggregator->clear_stats();
-#else
-        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                         0,
-                                         antenna,
-                                         rssi);
-#endif
 
         const auto quality = signal_quality_calculator->calculate_signal_quality();
         link_score_[0] = quality.link_score[0];
@@ -813,52 +793,6 @@ int WfbngLink::get_packet_loss() const {
     return packets_lost_;
 }
 
-#if defined(_WIN32)
-void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
-    GuiInterface::Instance().rtpPktCount_++;
-    GuiInterface::Instance().UpdateCount();
-
-    if (exit_requested) {
-        return;
-    }
-    if (packet_size < 12) {
-        return;
-    }
-
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(GuiInterface::Instance().playerPort);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    auto *header = (RtpHeader *)payload;
-
-    if (!first_rtp_packet_received) {
-        first_rtp_packet_received = true;
-        // Check H264 or H265
-        if (isH264(header->getPayloadData())) {
-            GuiInterface::Instance().playerCodec = "H264";
-        } else {
-            GuiInterface::Instance().playerCodec = "H265";
-        }
-        GuiInterface::Instance().NotifyRtpStream(header->pt,
-                                                 ntohl(header->ssrc),
-                                                 GuiInterface::Instance().playerPort,
-                                                 GuiInterface::Instance().playerCodec);
-    }
-
-    // Send payload via socket.
-    auto ret = sendto(socketFd,
-                      reinterpret_cast<const char *>(payload),
-                      packet_size,
-                      0,
-                      (sockaddr *)&serverAddr,
-                      sizeof(serverAddr));
-    if (ret == -1) {
-        fprintf(stderr, "sendto failed: %s\n", strerror(errno));
-    }
-}
-#endif
-
 void WfbngLink::stop() {
     // Signal the thread immediately.
     exit_requested = true;
@@ -888,7 +822,6 @@ int WfbngLink::get_alink_tx_power() const {
 }
 
 void WfbngLink::enable_alink(const bool enable) {
-#ifndef _WIN32
     if (alink_enabled == enable) {
         return;
     }
@@ -904,11 +837,9 @@ void WfbngLink::enable_alink(const bool enable) {
         }
         start_link_quality_thread();
     }
-#endif
 }
 
 void WfbngLink::set_alink_tx_power(const int tx_power) {
-#ifndef _WIN32
     if (tx_power <= 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
         return;
@@ -923,20 +854,15 @@ void WfbngLink::set_alink_tx_power(const int tx_power) {
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
-#endif
 }
 
 WfbngLink::WfbngLink() {
-#if defined(_WIN32) || defined(__APPLE__)
-    #if defined(_WIN32)
+#ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
-    #endif
-
-    socketFd = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
 
     signal_quality_calculator = std::make_unique<SignalQualityCalculator>();
@@ -944,15 +870,8 @@ WfbngLink::WfbngLink() {
 
 WfbngLink::~WfbngLink() {
 #ifdef _WIN32
-    closesocket(socketFd);
     WSACleanup();
 #endif
-
-#ifdef __APPLE__
-    close(socketFd);
-#endif
-
-    socketFd = INVALID_SOCKET;
 
     stop();
 }

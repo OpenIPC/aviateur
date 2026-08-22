@@ -173,14 +173,12 @@ void PlayerRect::on_ready() {
     decoder_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     decoder_label_->set_visibility(false);
 
-#ifndef _WIN32
     pl_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(pl_label_);
     pl_label_->set_font_size(HUD_LABEL_FONT_SIZE);
     fec_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(fec_label_);
     fec_label_->set_font_size(HUD_LABEL_FONT_SIZE);
-#endif
 
     rx_status_update_timer = std::make_shared<vecgui::Timer>();
     add_child(rx_status_update_timer);
@@ -199,7 +197,6 @@ void PlayerRect::on_ready() {
             }
         }
 
-#ifndef _WIN32
         if (GuiInterface::Instance().is_using_wifi) {
             pl_label_->set_visibility(true);
             fec_label_->set_visibility(false);
@@ -219,7 +216,6 @@ void PlayerRect::on_ready() {
             pl_label_->set_visibility(false);
             fec_label_->set_visibility(false);
         }
-#endif
 
         rx_status_update_timer->start_timer(0.1);
     };

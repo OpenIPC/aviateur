@@ -36,7 +36,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/wifi/cross/endian.h"
+#include "../cross/endian.h"
 #include "zfex.h"
 
 extern "C"
@@ -104,7 +104,7 @@ Receiver::Receiver(const char *wlan, int wlan_idx, uint32_t channel_id, BaseAggr
 
 Receiver::~Receiver()
 {
-    close(fd);
+    wfb_close(fd);
     pcap_close(ppcap);
 }
 
@@ -347,7 +347,7 @@ void Aggregator::deinit_fec(void)
         rx_ring[ring_idx].fragment_map = NULL;
         for(int i=0; i < fec_n; i++)
         {
-            free(rx_ring[ring_idx].fragments[i]);
+            wfb_aligned_free(rx_ring[ring_idx].fragments[i]);
         }
         delete[] rx_ring[ring_idx].fragments;
         rx_ring[ring_idx].fragments = NULL;
@@ -368,9 +368,9 @@ Forwarder::Forwarder(const string &client_addr, int client_port, int snd_buf_siz
 
     if (snd_buf_size > 0)
     {
-        if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
+        if(wfb_setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
         {
-            close(sockfd);
+            wfb_close(sockfd);
             throw runtime_error(string_format("Unable to set SO_SNDBUF: %s", strerror(errno)));
         }
     }
@@ -414,7 +414,7 @@ void Forwarder::process_packet(const uint8_t *buf, size_t size, uint8_t wlan_idx
 
 Forwarder::~Forwarder()
 {
-    close(sockfd);
+    wfb_close(sockfd);
 }
 
 int Aggregator::rx_ring_push(void)
@@ -868,12 +868,14 @@ void Aggregator::apply_fec(int ring_idx)
     assert(fec_k <= fec_n);
     assert(fec_p != NULL);
 
-    unsigned index[fec_k];
-    uint8_t *in_blocks[fec_k];
-    uint8_t *out_blocks[fec_n - fec_k];
+    unsigned index[256];
+    uint8_t *in_blocks[256];
+    uint8_t *out_blocks[256];
     int j = fec_k;
     int ob_idx = 0;
     size_t max_packet_size = 0;
+
+    assert(fec_n <= 256); // Safety check for fixed-size buffer
 
     for(int i=0; i < fec_k; i++)
     {
@@ -913,9 +915,9 @@ AggregatorUDPv4::AggregatorUDPv4(const std::string &client_addr, int client_port
 
     if (snd_buf_size > 0)
     {
-        if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
+        if(wfb_setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
         {
-            close(sockfd);
+            wfb_close(sockfd);
             throw runtime_error(string_format("Unable to set SO_SNDBUF: %s", strerror(errno)));
         }
     }
@@ -928,12 +930,12 @@ AggregatorUDPv4::AggregatorUDPv4(const std::string &client_addr, int client_port
 
 AggregatorUDPv4::~AggregatorUDPv4()
 {
-    close(sockfd);
+    wfb_close(sockfd);
 }
 
 void AggregatorUDPv4::send_to_socket(const uint8_t *payload, uint16_t packet_size)
 {
-    sendto(sockfd, payload, packet_size, MSG_DONTWAIT, (sockaddr*)&saddr, sizeof(saddr));
+    wfb_sendto(sockfd, payload, packet_size, MSG_DONTWAIT, (sockaddr*)&saddr, sizeof(saddr));
 }
 
 AggregatorUNIX::AggregatorUNIX(const std::string &socket_path, const std::string &keypair, uint64_t epoch, uint32_t channel_id, int snd_buf_size) : \
@@ -944,9 +946,9 @@ AggregatorUNIX::AggregatorUNIX(const std::string &socket_path, const std::string
 
     if (snd_buf_size > 0)
     {
-        if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
+        if(wfb_setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (const void *)&snd_buf_size , sizeof(snd_buf_size)) !=0)
         {
-            close(sockfd);
+            wfb_close(sockfd);
             throw runtime_error(string_format("Unable to set SO_SNDBUF: %s", strerror(errno)));
         }
     }
@@ -958,12 +960,12 @@ AggregatorUNIX::AggregatorUNIX(const std::string &socket_path, const std::string
 
 AggregatorUNIX::~AggregatorUNIX()
 {
-    close(sockfd);
+    wfb_close(sockfd);
 }
 
 void AggregatorUNIX::send_to_socket(const uint8_t *payload, uint16_t packet_size)
 {
-    sendto(sockfd, payload, packet_size, MSG_DONTWAIT, (sockaddr*)&saddr, sizeof(sa_family_t) + strlen(saddr.sun_path + 1) + 1);
+    wfb_sendto(sockfd, payload, packet_size, MSG_DONTWAIT, (sockaddr*)&saddr, sizeof(sa_family_t) + strlen(saddr.sun_path + 1) + 1);
 }
 
 void radio_loop(int argc, char* const *argv, int optind, uint32_t channel_id, unique_ptr<BaseAggregator> &agg, int log_interval, int rcv_buf_size)
@@ -990,7 +992,7 @@ void radio_loop(int argc, char* const *argv, int optind, uint32_t channel_id, un
     for(;;)
     {
         uint64_t cur_ts = get_time_ms();
-        int rc = poll(fds, nfds, log_send_ts > cur_ts ? log_send_ts - cur_ts : 0);
+        int rc = wfb_poll(fds, nfds, log_send_ts > cur_ts ? log_send_ts - cur_ts : 0);
 
         if (rc < 0){
             if (errno == EINTR || errno == EAGAIN) continue;
@@ -1037,7 +1039,7 @@ void network_loop(int srv_port, unique_ptr<BaseAggregator> &agg, int log_interva
     for(;;)
     {
         uint64_t cur_ts = get_time_ms();
-        int rc = poll(fds, 1, log_send_ts > cur_ts ? log_send_ts - cur_ts : 0);
+        int rc = wfb_poll(fds, 1, log_send_ts > cur_ts ? log_send_ts - cur_ts : 0);
 
         if (rc < 0){
             if (errno == EINTR || errno == EAGAIN) continue;

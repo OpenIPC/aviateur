@@ -130,6 +130,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             ${FFMPEG_LIBRARIES}
+            ws2_32
+            mswsock
             PkgConfig::LIBUSB
             unofficial-sodium::sodium
             devourer

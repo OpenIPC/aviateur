@@ -260,7 +260,6 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(select_button);
         }
 
-#ifndef _WIN32
         {
             auto alink_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);
             alink_con->set_title(get_context()->translation_server->get_translation("alink"));
@@ -308,7 +307,6 @@ void ControlPanel::on_ready() {
                 tx_pwr_slider_->set_value(std::stoi(tx_power));
             }
         }
-#endif
 
         {
             forward_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);

@@ -4,7 +4,7 @@
 #include <cinttypes>
 #include <cstring>
 
-#include "../cross/endian.h"
+#include "cross/endian.h"
 
 //-------------------------------------------------------------
 // Transmitter
@@ -159,9 +159,10 @@ void Transmitter::makeSessionKey() {
     hdr->packet_type = WFB_PACKET_SESSION;
     randombytes_buf(hdr->session_nonce, sizeof(hdr->session_nonce));
 
-    wsession_data_t sessionData = {};
+    wsession_data_t sessionData;
+    std::memset(&sessionData, 0, sizeof(sessionData));
     sessionData.epoch = htobe64(epoch_);
-    sessionData.channel_id = htonl(channelId_);
+    sessionData.channel_id = htobe32(channelId_);
     sessionData.fec_type = WFB_FEC_VDM_RS;
     sessionData.k = static_cast<uint8_t>(fecK_);
     sessionData.n = static_cast<uint8_t>(fecN_);
@@ -208,8 +209,8 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
         }
 
         const int optval = 1;
-        if (setsockopt(fd, SOL_PACKET, PACKET_QDISC_BYPASS, &optval, sizeof(optval)) != 0) {
-            close(fd);
+        if (wfb_setsockopt(fd, SOL_PACKET, PACKET_QDISC_BYPASS, &optval, sizeof(optval)) != 0) {
+            wfb_close(fd);
             throw std::runtime_error(
                 string_format("Unable to set PACKET_QDISC_BYPASS on %s: %s", iface.c_str(), std::strerror(errno)));
         }
@@ -218,7 +219,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
         std::strncpy(ifr.ifr_name, iface.c_str(), sizeof(ifr.ifr_name) - 1);
 
         if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
-            ::close(fd);
+            ::wfb_close(fd);
             throw std::runtime_error(
                 string_format("Unable to get interface index for %s: %s", iface.c_str(), std::strerror(errno)));
         }
@@ -229,7 +230,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
         sll.sll_protocol = 0;
 
         if (::bind(fd, reinterpret_cast<struct sockaddr *>(&sll), sizeof(sll)) < 0) {
-            ::close(fd);
+            ::wfb_close(fd);
             throw std::runtime_error(string_format("Unable to bind to %s: %s", iface.c_str(), std::strerror(errno)));
         }
 
@@ -239,7 +240,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
 
 RawSocketTransmitter::~RawSocketTransmitter() {
     for (int fd : sockFds_) {
-        close(fd);
+        wfb_close(fd);
     }
 }
 
@@ -357,7 +358,7 @@ UdpTransmitter::UdpTransmitter(int k,
 }
 
 UdpTransmitter::~UdpTransmitter() {
-    close(sockFd_);
+    wfb_close(sockFd_);
 }
 
 void UdpTransmitter::selectOutput(int idx) {
