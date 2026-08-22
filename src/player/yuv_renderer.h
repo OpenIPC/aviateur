@@ -11,32 +11,23 @@
 #include <optional>
 
 #ifdef __APPLE__
-// Undefine MSR to avoid conflict with macOS SDK headers.
-// devourer's hal_com_reg.h defines MSR which clashes with MachineExceptions.h
-// included transitively by CoreVideo headers.
-#ifdef MSR
-#undef MSR
-#endif
+    // Undefine MSR to avoid conflict with macOS SDK headers.
+    // devourer's hal_com_reg.h defines MSR which clashes with MachineExceptions.h
+    // included transitively by CoreVideo headers.
+    #ifdef MSR
+        #undef MSR
+    #endif
 
-// CoreVideo base types (CVImageBufferRef etc.) are defined in CoreVideo.h
-#include <CoreVideo/CoreVideo.h>
+    // CoreVideo base types (CVImageBufferRef etc.) are defined in CoreVideo.h
+    #include <CoreVideo/CoreVideo.h>
 
 // Forward declaration for CVMetalTextureCache (Metal-specific type not in base CoreView.h)
-typedef struct __CVMetalTextureCache *CVMetalTextureCacheRef;
+typedef struct __CVMetalTextureCache* CVMetalTextureCacheRef;
 
 // CVMetalTextureRef is actually CVImageBufferRef (defined in CoreVideo.h)
 // We create a matching typedef for clarity
 typedef CVImageBufferRef CVMetalTextureRef;
 #endif
-
-#ifdef AVIATEUR_USE_OPENCV
-    #include "../feature/low_light_enhancer.h"
-    #include "../feature/video_stabilizer.h"
-#endif
-
-namespace cv {
-class Mat;
-}
 
 class YuvRenderer {
 public:
@@ -49,17 +40,15 @@ public:
 
     void clear();
 
-    bool isTextureAllocated() const { return mTextureAllocated; }
+    bool isTextureAllocated() const {
+        return mTextureAllocated;
+    }
 
 #ifdef __APPLE__
-    bool isZeroCopyAvailable() const { return mZeroCopyAvailable; }
+    bool isZeroCopyAvailable() const {
+        return mZeroCopyAvailable;
+    }
     void updateTextureFromHwFrame(const std::shared_ptr<AVFrame>& hwFrame);
-#endif
-
-#ifdef AVIATEUR_USE_OPENCV
-    bool mStabilize = false;
-    bool mLowLightEnhancement = false;
-    std::optional<LowLightEnhancer> mLowLightEnhancer;
 #endif
 
 protected:
@@ -71,12 +60,14 @@ private:
     std::shared_ptr<Pathfinder::Queue> mQueue;
     std::shared_ptr<Pathfinder::Fence> mFence;
     std::shared_ptr<Pathfinder::RenderPass> mRenderPass;
+
     std::shared_ptr<Pathfinder::Texture> mTexY;
     std::shared_ptr<Pathfinder::Texture> mTexU;
     std::shared_ptr<Pathfinder::Texture> mTexV;
-    std::shared_ptr<AVFrame> mPrevFrameData;
+
     std::shared_ptr<Pathfinder::DescriptorSetLayout> mDescriptorSetLayout;
     std::shared_ptr<Pathfinder::DescriptorSet> mDescriptorSet;
+
     std::shared_ptr<Pathfinder::Sampler> mSampler;
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
     std::shared_ptr<Pathfinder::Buffer> mUniformBuffer;
@@ -88,11 +79,6 @@ private:
     bool mPixFmtChanged = true;
     bool mTextureAllocated = false;
     bool mZeroCopyAvailable = false;
-
-#ifdef AVIATEUR_USE_OPENCV
-    VideoStabilizer mStabilizer;
-    std::optional<cv::Mat> mPreviousFrameY;
-#endif
 
     bool mNeedClear = false;
 

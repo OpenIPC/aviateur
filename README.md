@@ -71,14 +71,14 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 
 - CMake 3.18+
 - C++20 compatible compiler
-- Dependencies: FFmpeg, libusb, libsodium, OpenCV, SDL3
+- Dependencies: FFmpeg, libusb, libsodium, SDL3
 
 #### Windows (using vcpkg)
 
 1. Install [vcpkg](https://github.com/microsoft/vcpkg).
 2. Install dependencies:
    ```powershell
-   .\vcpkg install libusb ffmpeg libsodium opencv sdl3
+   .\vcpkg install libusb ffmpeg libsodium sdl3
    ```
 3. Set `VCPKG_ROOT` environment variable to your vcpkg path.
 4. Build:
@@ -96,7 +96,7 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 ```bash
 sudo apt install cmake libavformat-dev libavcodec-dev libswresample-dev \
                  libswscale-dev libavutil-dev libvulkan-dev libusb-1.0-0-dev \
-                 libsodium-dev libopencv-dev xorg-dev libpcap-dev
+                 libsodium-dev xorg-dev libpcap-dev
 git clone https://github.com/OpenIPC/aviateur
 git submodule update --init --recursive -- 3rd/json 3rd/mINI 3rd/SDL 3rd/vecgui
 git submodule update --init -- 3rd/devourer
@@ -108,7 +108,7 @@ make
 #### macOS (Homebrew)
 
 ```bash
-brew install pkgconf libusb ffmpeg libsodium opencv libpcap cmake sdl3
+brew install pkgconf libusb ffmpeg libsodium libpcap cmake sdl3
 git clone https://github.com/OpenIPC/aviateur
 git submodule update --init --recursive -- 3rd/json 3rd/mINI 3rd/SDL 3rd/vecgui
 git submodule update --init -- 3rd/devourer

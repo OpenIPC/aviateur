@@ -22,8 +22,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-option(AVIATEUR_ENABLE_OPENCV "Enable OpenCV" OFF)
-
 find_package(PkgConfig REQUIRED)
 
 if (WIN32)
@@ -41,10 +39,6 @@ else ()
     )
 
     pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
-endif ()
-
-if (AVIATEUR_ENABLE_OPENCV)
-    find_package(OpenCV REQUIRED)
 endif ()
 
 if (APPLE)
@@ -86,13 +80,6 @@ else ()
     )
 endif ()
 
-if (AVIATEUR_ENABLE_OPENCV)
-    target_compile_definitions(
-            ${PROJECT_NAME} PRIVATE
-            AVIATEUR_USE_OPENCV
-    )
-endif ()
-
 # Enable SIMD FEC
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         ZFEX_UNROLL_ADDMUL_SIMD=8
@@ -105,7 +92,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 add_subdirectory(src/gui)
 add_subdirectory(src/player)
 add_subdirectory(src/wifi)
-add_subdirectory(src/feature)
 
 if (WIN32)
     string(APPEND CMAKE_CXX_FLAGS " /utf-8")
@@ -146,12 +132,6 @@ else ()
             vecgui
             SDL3::SDL3-static
             pcap
-    )
-endif ()
-
-if (AVIATEUR_ENABLE_OPENCV)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-            ${OpenCV_LIBS}
     )
 endif ()
 

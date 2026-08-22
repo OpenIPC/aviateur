@@ -306,158 +306,58 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& newFrameData
 
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
-#ifdef AVIATEUR_USE_OPENCV
-    if (mStabilize) {
-        const auto frameY = cv::Mat(mTexY->get_size().y,
-                                    mTexY->get_size().x,
-                                    CV_8UC1,
-                                    (void*)newFrameData->data[0],
-                                    newFrameData->linesize[0]);
+    if (newFrameData->linesize[0]) {
+        const void* texYData = newFrameData->data[0];
 
-        if (mPreviousFrameY.has_value()) {
-            auto stabXform = mStabilizer.stabilize(mPreviousFrameY.value(), frameY);
-            mXform = Pathfinder::Mat3(1);
-            mXform.v[0] = stabXform.at<double>(0, 0);
-            mXform.v[3] = stabXform.at<double>(0, 1);
-            mXform.v[1] = stabXform.at<double>(1, 0);
-            mXform.v[4] = stabXform.at<double>(1, 1);
-            mXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
-            mXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
-            mXform = mXform.scale(
-                Pathfinder::Vec2F(1.0f + static_cast<float>(HORIZONTAL_BORDER_CROP) / mTexY->get_size().x));
-        }
+        int width = mTexY->get_size().x;
+        int height = mTexY->get_size().y;
 
-        mPreviousFrameY = frameY.clone();
-
-        if (!mPrevFrameData) {
-            mPrevFrameData = newFrameData;
-        }
-
-        if (mPrevFrameData->linesize[0]) {
-            const void* texYData = mPrevFrameData->data[0];
-            int width = mTexY->get_size().x;
-            int height = mTexY->get_size().y;
-            if (mPrevFrameData->linesize[0] != width) {
-                mPackedY.resize(width * height);
-                for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedY.data() + i * width,
-                           mPrevFrameData->data[0] + i * mPrevFrameData->linesize[0],
-                           width);
-                }
-                texYData = mPackedY.data();
+        if (newFrameData->linesize[0] != width) {
+            mPackedY.resize(width * height);
+            for (int i = 0; i < height; ++i) {
+                memcpy(mPackedY.data() + i * width, newFrameData->data[0] + i * newFrameData->linesize[0], width);
             }
-            encoder->write_texture(mTexY, {}, texYData);
-        }
-        if (mPrevFrameData->linesize[1]) {
-            const void* texUData = mPrevFrameData->data[1];
-            int rowWidth = mTexU->get_size().x * (mPixFmt == AV_PIX_FMT_NV12 ? 2 : 1);
-            int height = mTexU->get_size().y;
-            if (mPrevFrameData->linesize[1] != rowWidth) {
-                mPackedU.resize(rowWidth * height);
-                for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedU.data() + i * rowWidth,
-                           mPrevFrameData->data[1] + i * mPrevFrameData->linesize[1],
-                           rowWidth);
-                }
-                texUData = mPackedU.data();
-            }
-            encoder->write_texture(mTexU, {}, texUData);
-        }
-        if (mPrevFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
-            const void* texVData = mPrevFrameData->data[2];
-            int width = mTexV->get_size().x;
-            int height = mTexV->get_size().y;
-            if (mPrevFrameData->linesize[2] != width) {
-                mPackedV.resize(width * height);
-                for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedV.data() + i * width,
-                           mPrevFrameData->data[2] + i * mPrevFrameData->linesize[2],
-                           width);
-                }
-                texVData = mPackedV.data();
-            }
-            encoder->write_texture(mTexV, {}, texVData);
+            texYData = mPackedY.data();
         }
 
-        mQueue->submit(encoder, mFence);
-
-        mPrevFrameData = newFrameData;
-    } else
-#endif
-    {
-#ifdef AVIATEUR_USE_OPENCV
-        if (mPreviousFrameY.has_value()) {
-            mPreviousFrameY.reset();
-        }
-#endif
-
-        if (mPrevFrameData) {
-            mPrevFrameData.reset();
-        }
-
-        mXform = Pathfinder::Mat3(1);
-
-#ifdef AVIATEUR_USE_OPENCV
-        cv::Mat enhancedFrameY;
-#endif
-
-        if (newFrameData->linesize[0]) {
-            const void* texYData = newFrameData->data[0];
-            int width = mTexY->get_size().x;
-            int height = mTexY->get_size().y;
-
-#ifdef AVIATEUR_USE_OPENCV
-            if (mLowLightEnhancement) {
-                if (!mLowLightEnhancer.has_value()) {
-                    mLowLightEnhancer = LowLightEnhancer(vecgui::get_asset_dir("weights/pairlie_180x320.onnx"));
-                }
-                cv::Mat originalFrameY =
-                    cv::Mat(height, width, CV_8UC1, (void*)newFrameData->data[0], newFrameData->linesize[0]);
-                enhancedFrameY = mLowLightEnhancer->detect(originalFrameY);
-                texYData = enhancedFrameY.data;
-            } else
-#endif
-                if (newFrameData->linesize[0] != width) {
-                mPackedY.resize(width * height);
-                for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedY.data() + i * width, newFrameData->data[0] + i * newFrameData->linesize[0], width);
-                }
-                texYData = mPackedY.data();
-            }
-
-            encoder->write_texture(mTexY, {}, texYData);
-        }
-        if (newFrameData->linesize[1]) {
-            const void* texUData = newFrameData->data[1];
-            int rowWidth = mTexU->get_size().x * (mPixFmt == AV_PIX_FMT_NV12 ? 2 : 1);
-            int height = mTexU->get_size().y;
-            if (newFrameData->linesize[1] != rowWidth) {
-                mPackedU.resize(rowWidth * height);
-                for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedU.data() + i * rowWidth,
-                           newFrameData->data[1] + i * newFrameData->linesize[1],
-                           rowWidth);
-                }
-                texUData = mPackedU.data();
-            }
-            encoder->write_texture(mTexU, {}, texUData);
-        }
-        if (newFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
-            const void* texVData = newFrameData->data[2];
-            int width = mTexV->get_size().x;
-            int height = mTexV->get_size().y;
-            if (newFrameData->linesize[2] != width) {
-                mPackedV.resize(width * height);
-                for (int i = 0; i < height; ++i) {
-                    memcpy(mPackedV.data() + i * width, newFrameData->data[2] + i * newFrameData->linesize[2], width);
-                }
-                texVData = mPackedV.data();
-            }
-            encoder->write_texture(mTexV, {}, texVData);
-        }
-
-        mQueue->submit(encoder, mFence);
+        encoder->write_texture(mTexY, {}, texYData);
     }
+
+    if (newFrameData->linesize[1]) {
+        const void* texUData = newFrameData->data[1];
+
+        int rowWidth = mTexU->get_size().x * (mPixFmt == AV_PIX_FMT_NV12 ? 2 : 1);
+        int height = mTexU->get_size().y;
+
+        if (newFrameData->linesize[1] != rowWidth) {
+            mPackedU.resize(rowWidth * height);
+            for (int i = 0; i < height; ++i) {
+                memcpy(mPackedU.data() + i * rowWidth, newFrameData->data[1] + i * newFrameData->linesize[1], rowWidth);
+            }
+            texUData = mPackedU.data();
+        }
+
+        encoder->write_texture(mTexU, {}, texUData);
+    }
+
+    if (newFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
+        const void* texVData = newFrameData->data[2];
+
+        int width = mTexV->get_size().x;
+        int height = mTexV->get_size().y;
+
+        if (newFrameData->linesize[2] != width) {
+            mPackedV.resize(width * height);
+            for (int i = 0; i < height; ++i) {
+                memcpy(mPackedV.data() + i * width, newFrameData->data[2] + i * newFrameData->linesize[2], width);
+            }
+            texVData = mPackedV.data();
+        }
+
+        encoder->write_texture(mTexV, {}, texVData);
+    }
+
+    mQueue->submit(encoder, mFence);
 }
 
 void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) {
