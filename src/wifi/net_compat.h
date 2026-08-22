@@ -185,7 +185,7 @@
         #define CLOCK_MONOTONIC 1
     #endif
 
-    #ifdef __plusplus
+    #ifdef __cplusplus
     extern "C" {
     #endif
     inline int clock_gettime(int clk_id, struct timespec *tp) {
@@ -201,11 +201,19 @@
         tp->tv_nsec = (long)(((count.QuadPart % freq.QuadPart) * 1000000000LL) / freq.QuadPart);
         return 0;
     }
-    #ifdef __plusplus
+    #ifdef __cplusplus
     }
     #endif
 
-    // PCAP 桩
+    // PCAP stubs
+    #ifndef lib_pcap_pcap_h
+    #define lib_pcap_pcap_h
+    #define lib_pcap_bpf_h
+
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
+
     #define PCAP_ERRBUF_SIZE 256
     #define DLT_IEEE802_11_RADIO 127
     typedef void pcap_t;
@@ -227,6 +235,11 @@
     inline const unsigned char* pcap_next(pcap_t *, struct pcap_pkthdr *) { return NULL; }
     inline void pcap_close(pcap_t *) {}
     inline char* pcap_geterr(pcap_t *) { return (char*)"pcap not supported on Windows"; }
+
+    #ifdef __cplusplus
+    }
+    #endif
+    #endif
 
     #ifndef UNIX_PATH_MAX
         #define UNIX_PATH_MAX 108
