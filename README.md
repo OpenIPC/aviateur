@@ -1,9 +1,5 @@
 # Aviateur
 
-> [!CAUTION]
-> **This repository is no longer maintained and is now unbuildable.**
-> Due to commercial requirements, a key dependency (submodule) has been moved to a private repository. As a result, this public version of the project can no longer be compiled or updated.
-
 <p align="center">
   <a href="https://github.com/OpenIPC/aviateur">
     <img src="assets/logo.svg" width="120" alt="Aviateur logo">
