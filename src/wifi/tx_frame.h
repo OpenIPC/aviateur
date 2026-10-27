@@ -107,6 +107,8 @@ private:
 
     bool tun_enabled_ = false;
 
+    std::vector<int> rx_fds_;
+
     std::shared_ptr<Transmitter> transmitter_;
 
     /**

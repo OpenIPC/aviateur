@@ -29,6 +29,13 @@ void TxFrame::stop() {
     if (transmitter_) {
         transmitter_->stop();
     }
+
+    for (int fd : rx_fds_) {
+        if (fd >= 0) {
+            wfb_close(fd);
+        }
+    }
+    rx_fds_.clear();
 }
 
 uint32_t TxFrame::extractRxqOverflow(struct msghdr *msg) {
@@ -453,7 +460,6 @@ void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
 #endif
 
     // Attempt to create a UDP listening socket
-    std::vector<int> rxFds;
     int bindPort = arg->udp_port;
     int udpFd = open_udp_socket_for_rx(bindPort, arg->rcv_buf);
 
@@ -471,7 +477,7 @@ void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
 
     std::printf("Transmitter is listening on UDP port: %d\n", bindPort);
 
-    rxFds.push_back(udpFd);
+    rx_fds_.push_back(udpFd);
 
     if (arg->udp_port == 0) {
         std::fprintf(stderr, "Invalid UDP port: %d\n", bindPort);
@@ -508,7 +514,7 @@ void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
         transmitter_ = transmitter;
 
         // Start polling loop
-        dataSource(transmitter, rxFds, arg->fec_timeout, arg->mirror, arg->log_interval);
+        dataSource(transmitter, rx_fds_, arg->fec_timeout, arg->mirror, arg->log_interval);
         transmitter_.reset();
     } catch (const std::runtime_error &ex) {
         std::fprintf(stderr, "Error in TxFrame::run: %s\n", ex.what());

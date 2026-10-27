@@ -811,6 +811,13 @@ void WfbngLink::stop() {
         usbThread->join();
         usbThread.reset();
     }
+
+    // 销毁视频和 UDP 聚合器，强制关闭其持有的 Socket 端口
+    {
+        std::lock_guard lock(agg_mutex);
+        video_aggregator.reset();
+        udp_aggregator.reset();
+    }
 }
 
 bool WfbngLink::get_alink_enabled() const {
