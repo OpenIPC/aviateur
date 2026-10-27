@@ -445,12 +445,13 @@ void ControlPanel::on_ready() {
         margin_container->name = get_context()->translation_server->get_translation("local test");
         tab_container_->add_child(margin_container);
 
-        auto vbox = std::make_shared<vecgui::GridContainer>();
-        vbox->set_separation(8);
-        margin_container->add_child(vbox);
+        auto grid = std::make_shared<vecgui::GridContainer>();
+        grid->set_separation(8);
+        margin_container->add_child(grid);
 
         auto con = std::make_shared<vecgui::Container>();
-        vbox->add_child(con);
+        con->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        grid->add_child(con);
 
         auto vbox_blockable = std::make_shared<vecgui::VBoxContainer>();
         con->add_child(vbox_blockable);
@@ -548,7 +549,7 @@ void ControlPanel::on_ready() {
             };
 
             play_port_button_->connect_signal("triggered", callback1);
-            vbox->add_child(play_port_button_);
+            grid->add_child(play_port_button_);
         }
     }
 #endif
