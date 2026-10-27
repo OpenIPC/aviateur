@@ -323,7 +323,19 @@ void PlayerRect::on_ready() {
     record_button_->connect_signal("triggered", record_callback);
 
     {
+        auto open_capture_folder_button = std::make_shared<vecgui::MenuButton>();
+
+        open_capture_folder_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        video_tab_grid->add_child(open_capture_folder_button);
+        open_capture_folder_button->set_text(context->translation_server->get_translation("capture folder"));
+
+        auto callback = [] { open_explorer(GuiInterface::GetCaptureDir()); };
+        open_capture_folder_button->connect_signal("triggered", callback);
+    }
+
+    {
         auto sw_button = std::make_shared<vecgui::CheckButton>();
+        sw_button->set_custom_minimum_size({0, button_height});
         sw_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         sw_button->set_text(context->translation_server->get_translation("force sw decoding"));
         video_tab_grid->add_child(sw_button);

@@ -800,6 +800,7 @@ void WfbngLink::stop() {
     if (rtlDevice) {
         rtlDevice->StopRxLoop();
     }
+
 #ifdef __linux__
     if (tun_) {
         tun_->stop();

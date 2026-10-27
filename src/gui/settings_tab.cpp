@@ -6,40 +6,6 @@
 constexpr const char* AVIATEUR_VERSION_NUM = "0.4.0";
 constexpr const char* AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
-static void open_explorer(const std::string& dir) {
-    // Check if the directory exists
-    if (!std::filesystem::exists(dir)) {
-        // If it doesn't exist, create it
-        if (std::filesystem::create_directory(dir)) {
-            GuiInterface::Instance().PutLog(LogLevel::Info, "Directory '{}' created successfully.", dir);
-        } else {
-            GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to create directory '{}'!", dir);
-        }
-    }
-
-#ifdef _WIN32
-    ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
-#elif defined(__APPLE__)
-    std::string cmd = "open \"" + dir + "\"";
-    system(cmd.c_str());
-#else
-    const std::string cmd = "xdg-open \"" + dir + "\"";
-    std::system(cmd.c_str());
-#endif
-}
-
-static void open_url(const std::string& url) {
-#ifdef _WIN32
-    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWDEFAULT);
-#elif defined(__APPLE__)
-    std::string cmd = "open \"" + url + "\"";
-    system(cmd.c_str());
-#else
-    const std::string cmd = "xdg-open \"" + url + "\"";
-    std::system(cmd.c_str());
-#endif
-}
-
 void SettingsContainer::on_ready() {
     set_margin_all(8);
 
@@ -98,6 +64,7 @@ void SettingsContainer::on_ready() {
 
     {
         fullscreen_button_ = std::make_shared<vecgui::CheckButton>();
+        fullscreen_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         grid->add_child(fullscreen_button_);
         fullscreen_button_->set_text(context->translation_server->get_translation("fullscreen") + " (F11)");
 
@@ -110,6 +77,7 @@ void SettingsContainer::on_ready() {
     {
         auto dark_mode_btn = std::make_shared<vecgui::CheckButton>();
         dark_mode_btn->set_text(context->translation_server->get_translation("dark mode"));
+        dark_mode_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         grid->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
         auto callback = [context](const bool toggled) {
@@ -133,6 +101,7 @@ void SettingsContainer::on_ready() {
     {
         auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->set_custom_minimum_size({0, button_height});
+        hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         hbox_container->theme_override_bg = radio_group_bg;
         grid->add_child(hbox_container);
 
@@ -188,19 +157,7 @@ void SettingsContainer::on_ready() {
     }
 
     {
-        auto open_capture_folder_button = std::make_shared<vecgui::MenuButton>();
-
-        open_capture_folder_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        grid->add_child(open_capture_folder_button);
-        open_capture_folder_button->set_text(context->translation_server->get_translation("capture folder"));
-
-        auto callback = [] { open_explorer(GuiInterface::GetCaptureDir()); };
-        open_capture_folder_button->connect_signal("triggered", callback);
-    }
-
-    {
         auto open_appdata_button = std::make_shared<vecgui::Button>();
-
         open_appdata_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
         grid->add_child(open_appdata_button);
         open_appdata_button->set_text(context->translation_server->get_translation("config folder"));
