@@ -268,7 +268,11 @@ void PlayerRect::on_ready() {
     auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("CaptureImage.svg"), true);
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this, context] {
-        auto output_file = player_->capture_jpeg();
+        std::string output_file;
+        if (player_) {
+            output_file = player_->capture_jpeg();
+        }
+
         if (output_file.empty()) {
             show_red_tip(context->translation_server->get_translation("capture fail"));
         } else {
@@ -287,7 +291,9 @@ void PlayerRect::on_ready() {
     auto record_button_raw = record_button_.get();
     auto record_callback = [record_button_raw, this, context] {
         if (!is_recording) {
-            is_recording = player_->start_mp4_recording();
+            if (player_) {
+                is_recording = player_->start_mp4_recording();
+            }
 
             if (is_recording) {
                 record_button_raw->set_text(context->translation_server->get_translation("stop recording") + " (F10)");
