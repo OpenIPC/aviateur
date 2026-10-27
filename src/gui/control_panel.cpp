@@ -436,7 +436,6 @@ void ControlPanel::on_ready() {
     // Video tab
     {
         video_tab_->name = get_context()->translation_server->get_translation("video");
-        video_tab_->debug_box = vecgui::StyleBox::simple_outline();
         tab_container_->add_child(video_tab_);
     }
 
