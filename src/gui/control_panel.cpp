@@ -39,12 +39,12 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
         play_button_->theme_override_normal.value().bg_color = RED;
         play_button_->theme_override_pressed.value().bg_color = RED;
         play_button_->set_text(context->translation_server->get_translation("stop") + " (F5)");
-
+        item_mask_->show();
     } else {
         play_button_->theme_override_normal.value().bg_color = GREEN;
         play_button_->theme_override_pressed.value().bg_color = GREEN;
         play_button_->set_text(context->translation_server->get_translation("start") + " (F5)");
-        // adapter_prop_block_->set_visibility(false);
+        item_mask_->hide();
     }
 }
 
@@ -78,7 +78,7 @@ void ControlPanel::on_ready() {
     tab_container_ = std::make_shared<vecgui::TabContainer>();
     tab_container_->theme_override_bg = vecgui::StyleBox::from_empty();
     tab_container_->theme_override_bg->bg_color = vecgui::ColorU{30, 30, 30, 200};
-    tab_container_->theme_override_bg->corner_radius = 16;
+    tab_container_->theme_override_bg->corner_radius = 12;
     tab_container_->set_tab_width(tab_button_width);
     tab_container_->set_tab_height(button_height);
     tab_container_->set_tab_alignment(vecgui::TabAlignment::Center);
@@ -419,12 +419,8 @@ void ControlPanel::on_ready() {
                         start = false;
                         GuiInterface::Stop();
                     }
-
-                    item_mask_->show();
                 } else {
                     GuiInterface::Stop();
-
-                    item_mask_->hide();
                 }
 
                 update_adapter_start_button_looking(!start);

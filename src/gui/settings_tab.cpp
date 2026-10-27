@@ -132,6 +132,7 @@ void SettingsContainer::on_ready() {
 
     {
         auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
+        hbox_container->set_custom_minimum_size({0, button_height});
         hbox_container->theme_override_bg = radio_group_bg;
         grid->add_child(hbox_container);
 
@@ -178,6 +179,7 @@ void SettingsContainer::on_ready() {
             auto metal_btn = std::make_shared<vecgui::RadioButton>();
             metal_btn->set_text("Metal");
             metal_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            metal_btn->container_sizing.flag_v = vecgui::ContainerSizingFlag::Fill;
             vbox_container2->add_child(metal_btn);
             metal_btn->set_toggled_no_signal(true);
             render_btn_group->add_button(metal_btn);
