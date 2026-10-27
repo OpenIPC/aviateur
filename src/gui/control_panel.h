@@ -11,7 +11,7 @@ public:
     std::shared_ptr<vecgui::MenuButton> channel_width_button_;
     std::shared_ptr<vecgui::Button> refresh_dongle_button_;
 
-    std::shared_ptr<vecgui::Panel> adapter_prop_block_;
+    // std::shared_ptr<vecgui::Panel> adapter_prop_block_;
     std::shared_ptr<vecgui::Panel> udp_prop_block_;
 
     std::shared_ptr<vecgui::Label> tx_pwr_label_;
@@ -27,12 +27,14 @@ public:
     std::shared_ptr<vecgui::TextEdit> forward_port_edit;
 
     std::shared_ptr<vecgui::Button> play_button_;
+    std::shared_ptr<vecgui::Panel> item_mask_;
 
     std::shared_ptr<vecgui::Button> play_port_button_;
     std::shared_ptr<vecgui::TextEdit> local_listener_port_edit_;
     std::string local_listener_codec;
 
     std::shared_ptr<vecgui::TabContainer> tab_container_;
+    std::shared_ptr<vecgui::MarginContainer> video_tab_;
 
     std::vector<DeviceId> devices_;
 

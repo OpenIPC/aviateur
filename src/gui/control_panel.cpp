@@ -28,7 +28,7 @@ void ControlPanel::update_dongle_list(const std::shared_ptr<vecgui::MenuButton> 
 }
 
 void ControlPanel::update_adapter_start_button_looking(bool start_status) const {
-    tab_container_->set_tab_disabled(!start_status);
+    // tab_container_->set_tab_disabled(!start_status);
 
     play_button_->theme_override_normal = vecgui::StyleBox();
     play_button_->theme_override_pressed = vecgui::StyleBox();
@@ -39,17 +39,17 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
         play_button_->theme_override_normal.value().bg_color = RED;
         play_button_->theme_override_pressed.value().bg_color = RED;
         play_button_->set_text(context->translation_server->get_translation("stop") + " (F5)");
-        adapter_prop_block_->set_visibility(true);
+
     } else {
         play_button_->theme_override_normal.value().bg_color = GREEN;
         play_button_->theme_override_pressed.value().bg_color = GREEN;
         play_button_->set_text(context->translation_server->get_translation("start") + " (F5)");
-        adapter_prop_block_->set_visibility(false);
+        // adapter_prop_block_->set_visibility(false);
     }
 }
 
 void ControlPanel::update_url_start_button_looking(bool start_status) const {
-    tab_container_->set_tab_disabled(!start_status);
+    // tab_container_->set_tab_disabled(!start_status);
 
     play_port_button_->theme_override_normal = vecgui::StyleBox();
     play_port_button_->theme_override_pressed = vecgui::StyleBox();
@@ -72,52 +72,59 @@ void ControlPanel::on_ready() {
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
 
-    set_anchor_flag(vecgui::AnchorFlag::RightWide);
+    const int button_height = 48;
 
     tab_container_ = std::make_shared<vecgui::TabContainer>();
+    tab_container_->theme_override_bg = vecgui::StyleBox::from_empty();
+    tab_container_->theme_override_bg->bg_color = vecgui::ColorU{30, 30, 30, 200};
+    tab_container_->theme_override_bg->corner_radius = 16;
+    tab_container_->set_tab_height(button_height);
+    tab_container_->set_tab_alignment(vecgui::TabAlignment::Center);
+    tab_container_->theme_override_tab_bg = vecgui::StyleBox::from_empty();
     add_child(tab_container_);
-    tab_container_->set_anchor_flag(vecgui::AnchorFlag::FullRect);
 
-    // Wi-Fi adapter tab
+    // Channel tab
     {
         auto margin_container = std::make_shared<vecgui::MarginContainer>();
         margin_container->set_margin_all(8);
-        margin_container->name = "Wi-Fi";
+        margin_container->name = get_context()->translation_server->get_translation("channel");
         tab_container_->add_child(margin_container);
 
-        auto vbox = std::make_shared<vecgui::VBoxContainer>();
-        vbox->set_separation(8);
-        margin_container->add_child(vbox);
+        auto top_vbox = std::make_shared<vecgui::VBoxContainer>();
+        top_vbox->set_separation(8);
+        margin_container->add_child(top_vbox);
 
-        auto con = std::make_shared<vecgui::Container>();
-        vbox->add_child(con);
+        auto masked_container = std::make_shared<vecgui::Container>();
+        top_vbox->add_child(masked_container);
 
-        auto vbox_blockable = std::make_shared<vecgui::VBoxContainer>();
-        con->add_child(vbox_blockable);
+        auto grid = std::make_shared<vecgui::GridContainer>();
+        grid->set_column_limit(2);
+        grid->set_separation(8);
+        grid->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkStart;
+        masked_container->add_child(grid);
 
-        adapter_prop_block_ = std::make_shared<vecgui::Panel>();
+        item_mask_ = std::make_shared<vecgui::Panel>();
         vecgui::StyleBox new_theme;
         new_theme.bg_color = vecgui::ColorU(0, 0, 0, 150);
         new_theme.border_width = 0;
         new_theme.corner_radius = 0;
         new_theme.border_color = vecgui::ColorU(0, 0, 0);
-        adapter_prop_block_->theme_override_bg_ = new_theme;
-        con->add_child(adapter_prop_block_);
-
-        auto vbox_unblockable = std::make_shared<vecgui::VBoxContainer>();
-        vbox->add_child(vbox_unblockable);
+        item_mask_->theme_override_bg_ = new_theme;
+        masked_container->add_child(item_mask_);
+        item_mask_->hide();
 
         {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
+            hbox_container->set_custom_minimum_size({0, button_height});
             hbox_container->set_separation(8);
-            vbox_blockable->add_child(hbox_container);
+            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            grid->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
             label->set_text(get_context()->translation_server->get_translation("device"));
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<vecgui::MenuButton>();
-            dongle_menu_button_->set_custom_minimum_size({0, 32});
             dongle_menu_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
 
@@ -136,6 +143,7 @@ void ControlPanel::on_ready() {
                 std::make_shared<vecgui::VectorImage>(get_context(), vecgui::get_asset_dir("Refresh.svg"), true);
             refresh_dongle_button_->set_icon_normal(icon);
             refresh_dongle_button_->set_text("");
+            refresh_dongle_button_->set_custom_minimum_size({button_height, button_height});
             hbox_container->add_child(refresh_dongle_button_);
 
             auto callback2 = [this] { update_dongle_list(dongle_menu_button_, dongle_name_.value()); };
@@ -144,7 +152,9 @@ void ControlPanel::on_ready() {
 
         {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-            vbox_blockable->add_child(hbox_container);
+            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            hbox_container->set_custom_minimum_size({0, button_height});
+            grid->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
             label->set_text(get_context()->translation_server->get_translation("channel"));
@@ -180,7 +190,8 @@ void ControlPanel::on_ready() {
 
         {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-            vbox_blockable->add_child(hbox_container);
+            hbox_container->set_custom_minimum_size({0, button_height});
+            grid->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
             label->set_text(get_context()->translation_server->get_translation("channel width"));
@@ -218,7 +229,8 @@ void ControlPanel::on_ready() {
 
         {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-            vbox_blockable->add_child(hbox_container);
+            hbox_container->set_custom_minimum_size({0, button_height});
+            grid->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
             label->set_text(get_context()->translation_server->get_translation("key"));
@@ -243,6 +255,7 @@ void ControlPanel::on_ready() {
             }
 
             auto select_button = std::make_shared<vecgui::Button>();
+            select_button->set_custom_minimum_size({button_height, button_height});
             select_button->set_text(get_context()->translation_server->get_translation("open"));
 
             std::weak_ptr file_dialog_weak = file_dialog;
@@ -261,11 +274,44 @@ void ControlPanel::on_ready() {
         }
 
         {
+            forward_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);
+            forward_con->set_custom_minimum_size({0, button_height});
+            forward_con->set_title(get_context()->translation_server->get_translation("forward"));
+            forward_con->set_collapse(true);
+            forward_con->set_color(vecgui::ColorU(147, 115, 165));
+            grid->add_child(forward_con);
+
+            auto vbox_container = std::make_shared<vecgui::VBoxContainer>();
+            forward_con->add_child(vbox_container);
+
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
+            hbox_container->set_separation(8);
+            vbox_container->add_child(hbox_container);
+
+            auto label = std::make_shared<vecgui::Label>();
+            label->set_text(get_context()->translation_server->get_translation("target port"));
+            hbox_container->add_child(label);
+
+            forward_port_edit = std::make_shared<vecgui::TextEdit>();
+            forward_port_edit->set_custom_minimum_size({0, 32});
+            forward_port_edit->set_numbers_only(true);
+            forward_port_edit->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            forward_port_edit->set_text("");
+            hbox_container->add_child(forward_port_edit);
+
+            auto forward_tip = std::make_shared<vecgui::Label>();
+            forward_tip->set_text(get_context()->translation_server->get_translation("forward tip"));
+            forward_tip->set_font_size(16);
+            forward_tip->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            vbox_container->add_child(forward_tip);
+        }
+
+        {
             auto alink_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);
             alink_con->set_title(get_context()->translation_server->get_translation("alink"));
             alink_con->set_collapse(false);
             alink_con->set_color(vecgui::ColorU(210, 137, 94));
-            vbox_unblockable->add_child(alink_con);
+            top_vbox->add_child(alink_con);
 
             auto callback2 = [](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
             alink_con->connect_signal("collapsed", callback2);
@@ -312,38 +358,6 @@ void ControlPanel::on_ready() {
                 std::string tx_power = GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER];
                 tx_pwr_slider_->set_value(std::stoi(tx_power));
             }
-        }
-
-        {
-            forward_con = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Check);
-            forward_con->set_title(get_context()->translation_server->get_translation("forward"));
-            forward_con->set_collapse(true);
-            forward_con->set_color(vecgui::ColorU(147, 115, 165));
-            vbox_blockable->add_child(forward_con);
-
-            auto vbox_container = std::make_shared<vecgui::VBoxContainer>();
-            forward_con->add_child(vbox_container);
-
-            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-            hbox_container->set_separation(8);
-            vbox_container->add_child(hbox_container);
-
-            auto label = std::make_shared<vecgui::Label>();
-            label->set_text(get_context()->translation_server->get_translation("target port"));
-            hbox_container->add_child(label);
-
-            forward_port_edit = std::make_shared<vecgui::TextEdit>();
-            forward_port_edit->set_custom_minimum_size({0, 32});
-            forward_port_edit->set_numbers_only(true);
-            forward_port_edit->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-            forward_port_edit->set_text("");
-            hbox_container->add_child(forward_port_edit);
-
-            auto forward_tip = std::make_shared<vecgui::Label>();
-            forward_tip->set_text(get_context()->translation_server->get_translation("forward tip"));
-            forward_tip->set_font_size(16);
-            forward_tip->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-            vbox_container->add_child(forward_tip);
         }
 
         {
@@ -403,25 +417,38 @@ void ControlPanel::on_ready() {
                         start = false;
                         GuiInterface::Stop();
                     }
+
+                    item_mask_->show();
                 } else {
                     GuiInterface::Stop();
+
+                    item_mask_->hide();
                 }
 
                 update_adapter_start_button_looking(!start);
             };
             play_button_->connect_signal("triggered", callback1);
-            vbox_unblockable->add_child(play_button_);
+            play_button_->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
+            top_vbox->add_child(play_button_);
         }
     }
 
-    // Local tab
+    // Video tab
+    {
+        video_tab_->name = get_context()->translation_server->get_translation("video");
+        video_tab_->debug_box = vecgui::StyleBox::simple_outline();
+        tab_container_->add_child(video_tab_);
+    }
+
+#ifndef NDEBUG
+    // Test tab
     {
         auto margin_container = std::make_shared<vecgui::MarginContainer>();
         margin_container->set_margin_all(8);
-        margin_container->name = get_context()->translation_server->get_translation("local");
+        margin_container->name = get_context()->translation_server->get_translation("local test");
         tab_container_->add_child(margin_container);
 
-        auto vbox = std::make_shared<vecgui::VBoxContainer>();
+        auto vbox = std::make_shared<vecgui::GridContainer>();
         vbox->set_separation(8);
         margin_container->add_child(vbox);
 
@@ -527,6 +554,7 @@ void ControlPanel::on_ready() {
             vbox->add_child(play_port_button_);
         }
     }
+#endif
 
     // Settings tab
     {

@@ -3,7 +3,7 @@
 #include <vecgui/resources/default_resource.h>
 #include <vecgui/resources/theme.h>
 
-constexpr const char* AVIATEUR_VERSION_NUM = "v0.3.3";
+constexpr const char* AVIATEUR_VERSION_NUM = "0.4.0";
 constexpr const char* AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 static void open_explorer(const std::string& dir) {
@@ -43,16 +43,24 @@ static void open_url(const std::string& url) {
 void SettingsContainer::on_ready() {
     set_margin_all(8);
 
-    auto vbox_container = std::make_shared<vecgui::VBoxContainer>();
-    vbox_container->set_separation(8);
-    add_child(vbox_container);
+    auto top_container = std::make_shared<vecgui::VBoxContainer>();
+    top_container->set_separation(8);
+    add_child(top_container);
+
+    const int button_height = 48;
+
+    auto grid = std::make_shared<vecgui::GridContainer>();
+    grid->set_separation(8);
+    grid->set_column_limit(3);
+    top_container->add_child(grid);
 
     auto context = get_context();
 
     {
         auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->set_separation(8);
-        vbox_container->add_child(hbox_container);
+        hbox_container->set_custom_minimum_size({0, button_height});
+        grid->add_child(hbox_container);
 
         auto label = std::make_shared<vecgui::Label>();
         label->set_text(context->translation_server->get_translation("lang"));
@@ -90,7 +98,7 @@ void SettingsContainer::on_ready() {
 
     {
         fullscreen_button_ = std::make_shared<vecgui::CheckButton>();
-        vbox_container->add_child(fullscreen_button_);
+        grid->add_child(fullscreen_button_);
         fullscreen_button_->set_text(context->translation_server->get_translation("fullscreen") + " (F11)");
 
         auto on_fullscreen_toggled = [context](bool toggled) {
@@ -102,7 +110,7 @@ void SettingsContainer::on_ready() {
     {
         auto dark_mode_btn = std::make_shared<vecgui::CheckButton>();
         dark_mode_btn->set_text(context->translation_server->get_translation("dark mode"));
-        vbox_container->add_child(dark_mode_btn);
+        grid->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
         auto callback = [context](const bool toggled) {
             GuiInterface::Instance().dark_mode_ = toggled;
@@ -125,7 +133,7 @@ void SettingsContainer::on_ready() {
     {
         auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->theme_override_bg = radio_group_bg;
-        vbox_container->add_child(hbox_container);
+        grid->add_child(hbox_container);
 
         auto label = std::make_shared<vecgui::Label>();
         label->set_text(context->translation_server->get_translation("render backend"));
@@ -181,7 +189,7 @@ void SettingsContainer::on_ready() {
         auto open_capture_folder_button = std::make_shared<vecgui::MenuButton>();
 
         open_capture_folder_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        vbox_container->add_child(open_capture_folder_button);
+        grid->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(context->translation_server->get_translation("capture folder"));
 
         auto callback = [] { open_explorer(GuiInterface::GetCaptureDir()); };
@@ -192,7 +200,7 @@ void SettingsContainer::on_ready() {
         auto open_appdata_button = std::make_shared<vecgui::Button>();
 
         open_appdata_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        vbox_container->add_child(open_appdata_button);
+        grid->add_child(open_appdata_button);
         open_appdata_button->set_text(context->translation_server->get_translation("config folder"));
 
         auto callback = [] { open_explorer(GuiInterface::GetAppDataDir()); };
@@ -200,50 +208,57 @@ void SettingsContainer::on_ready() {
     }
 
 #ifdef _WIN32
-    {
-        auto open_crash_dumps_button = std::make_shared<vecgui::Button>();
-
-        open_crash_dumps_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        vbox_container->add_child(open_crash_dumps_button);
-        open_crash_dumps_button->set_text(context->translation_server->get_translation("crash dump folder"));
-
-        auto callback = [] {
-            auto dir = GuiInterface::GetAppDataDir();
-            auto path = std::filesystem::path(dir).parent_path().parent_path().parent_path();
-            auto appdata_local = path.string() + "\\Local";
-            auto dumps_dir = appdata_local + "\\CrashDumps";
-            open_explorer(dumps_dir);
-        };
-        open_crash_dumps_button->connect_signal("triggered", callback);
-    }
+    // {
+    //     auto open_crash_dumps_button = std::make_shared<vecgui::Button>();
+    //
+    //     open_crash_dumps_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+    //     grid->add_child(open_crash_dumps_button);
+    //     open_crash_dumps_button->set_text(context->translation_server->get_translation("crash dump folder"));
+    //
+    //     auto callback = [] {
+    //         auto dir = GuiInterface::GetAppDataDir();
+    //         auto path = std::filesystem::path(dir).parent_path().parent_path().parent_path();
+    //         auto appdata_local = path.string() + "\\Local";
+    //         auto dumps_dir = appdata_local + "\\CrashDumps";
+    //         open_explorer(dumps_dir);
+    //     };
+    //     open_crash_dumps_button->connect_signal("triggered", callback);
+    // }
 #endif
+
+    auto about_container = std::make_shared<vecgui::HBoxContainer>();
+    about_container->set_separation(8);
+    about_container->set_custom_minimum_size({0, button_height});
+    about_container->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
+    top_container->add_child(about_container);
+
+    {
+        auto version_label = std::make_shared<vecgui::Label>();
+        version_label->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        about_container->add_child(version_label);
+        version_label->set_text(context->translation_server->get_translation("version") +
+                                std::string(AVIATEUR_VERSION_NUM));
+    }
 
     {
         auto button = std::make_shared<vecgui::Button>();
         button->container_sizing.flag_h = vecgui::ContainerSizingFlag::ShrinkCenter;
-        button->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
-        vbox_container->add_child(button);
+        button->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkCenter;
+        about_container->add_child(button);
         auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("icon-github.svg"));
         button->set_icon_normal(icon);
         button->set_flat(true);
-        button->set_text("");
+        button->set_text("GitHub");
 
         auto callback = [] { open_url(AVIATEUR_REPO_URL); };
         button->connect_signal("triggered", callback);
     }
 
     {
-        auto version_label = std::make_shared<vecgui::Label>();
-        version_label->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        vbox_container->add_child(version_label);
-        version_label->set_text(AVIATEUR_VERSION_NUM);
-    }
-
-    {
         auto exit_button = std::make_shared<vecgui::MenuButton>();
 
         exit_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        vbox_container->add_child(exit_button);
+        about_container->add_child(exit_button);
         exit_button->set_text(context->translation_server->get_translation("exit"));
 
         auto callback = [this] { get_tree()->quit(); };

@@ -31,8 +31,6 @@ public:
 
     std::shared_ptr<vecgui::Timer> rx_status_update_timer;
 
-    std::shared_ptr<vecgui::CollapseContainer> collapse_panel_;
-
     std::shared_ptr<vecgui::VBoxContainer> hud_container_;
 
     std::shared_ptr<vecgui::Label> record_status_label_;
@@ -54,7 +52,7 @@ public:
     std::shared_ptr<vecgui::Button> video_stabilization_button_;
     std::shared_ptr<vecgui::Button> low_light_enhancement_button_;
 
-    std::shared_ptr<vecgui::Button> control_panel_button_;
+    // std::shared_ptr<vecgui::Button> control_panel_button_;
 
     std::shared_ptr<vecgui::Button> record_button_;
 

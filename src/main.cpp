@@ -27,59 +27,9 @@ int main() {
     int rc = libusb_init(nullptr);
 
     {
-        auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-        hbox_container->set_anchor_flag(vecgui::AnchorFlag::FullRect);
-        hbox_container->set_separation(0);
-        app->get_tree_root()->add_child(hbox_container);
-
         auto player_rect = std::make_shared<PlayerRect>();
-        player_rect->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-        player_rect->container_sizing.flag_v = vecgui::ContainerSizingFlag::Fill;
-        hbox_container->add_child(player_rect);
-
-        auto control_panel = std::make_shared<ControlPanel>();
-        control_panel->container_sizing.flag_v = vecgui::ContainerSizingFlag::Fill;
-        control_panel->set_custom_minimum_size({340, 0});
-        hbox_container->add_child(control_panel);
-
-        std::weak_ptr control_panel_weak = control_panel;
-        std::weak_ptr player_rect_weak = player_rect;
-
-        auto on_wifi_stopped = [control_panel_weak, player_rect_weak] {
-            if (!control_panel_weak.expired() && !player_rect_weak.expired()) {
-                player_rect_weak.lock()->stop_playing();
-                control_panel_weak.lock()->update_adapter_start_button_looking(true);
-            }
-        };
-        GuiInterface::Instance().wifiStopCallbacks.emplace_back(on_wifi_stopped);
-
-        {
-            player_rect->control_panel_button_ = std::make_shared<vecgui::Button>();
-            player_rect->add_child(player_rect->control_panel_button_);
-            player_rect->control_panel_button_->set_text(">");
-            player_rect->control_panel_button_->set_size({24, 64});
-            player_rect->control_panel_button_->set_anchor_flag(vecgui::AnchorFlag::CenterRight);
-            player_rect->control_panel_button_->theme_override_normal = vecgui::StyleBox::from_empty();
-            player_rect->control_panel_button_->theme_override_normal->bg_color = vecgui::ColorU{30, 30, 30, 100};
-            player_rect->control_panel_button_->theme_override_hovered = vecgui::StyleBox::from_empty();
-            player_rect->control_panel_button_->theme_override_hovered->bg_color = vecgui::ColorU{30, 30, 30, 150};
-            player_rect->control_panel_button_->theme_override_pressed = vecgui::StyleBox::from_empty();
-            player_rect->control_panel_button_->theme_override_pressed->bg_color = vecgui::ColorU{30, 30, 30, 200};
-
-            auto on_control_panel_triggered = [player_rect_weak, control_panel_weak]() {
-                bool visible = false;
-                if (!control_panel_weak.expired()) {
-                    visible = control_panel_weak.lock()->get_visibility();
-                }
-                if (visible) {
-                    player_rect_weak.lock()->control_panel_button_->set_text("<");
-                } else {
-                    player_rect_weak.lock()->control_panel_button_->set_text(">");
-                }
-                control_panel_weak.lock()->set_visibility(!visible);
-            };
-            player_rect->control_panel_button_->connect_signal("triggered", on_control_panel_triggered);
-        }
+        player_rect->set_anchor_flag(vecgui::AnchorFlag::FullRect);
+        app->get_tree_root()->add_child(player_rect);
     }
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "Entering app main loop");

@@ -1,6 +1,7 @@
 #include "player_rect.h"
 
 #include "../gui_interface.h"
+#include "control_panel.h"
 #include "src/player/ffmpeg/video_player.h"
 
 constexpr uint32_t HUD_LABEL_FONT_SIZE = 20;
@@ -67,16 +68,47 @@ void PlayerRect::on_ready() {
 
     auto context = get_context();
 
-    collapse_panel_ = std::make_shared<vecgui::CollapseContainer>(vecgui::CollapseButtonType::Default);
-    collapse_panel_->set_title(context->translation_server->get_translation("player control"));
-    collapse_panel_->set_collapse(true);
-    collapse_panel_->set_color(vecgui::ColorU(106, 171, 114));
-    collapse_panel_->set_visibility(false);
-    collapse_panel_->set_anchor_flag(vecgui::AnchorFlag::TopRight);
-    add_child(collapse_panel_);
+    auto show_hide_button = std::make_shared<vecgui::Button>();
+    add_child(show_hide_button);
+    show_hide_button->set_anchor_flag(vecgui::AnchorFlag::FullRect);
+    show_hide_button->set_text("");
+    show_hide_button->theme_override_normal = vecgui::StyleBox::from_empty();
+    show_hide_button->theme_override_hovered = vecgui::StyleBox::from_empty();
+    show_hide_button->theme_override_pressed = vecgui::StyleBox::from_empty();
 
-    auto vbox = std::make_shared<vecgui::VBoxContainer>();
-    collapse_panel_->add_child(vbox);
+    auto control_panel = std::make_shared<ControlPanel>();
+    control_panel->set_anchor_flag(vecgui::AnchorFlag::Center);
+    control_panel->set_custom_minimum_size({640, 400});
+    add_child(control_panel);
+
+    std::weak_ptr control_panel_weak = control_panel;
+
+    auto on_wifi_stopped = [control_panel_weak, this] {
+        if (!control_panel_weak.expired()) {
+            stop_playing();
+            control_panel_weak.lock()->update_adapter_start_button_looking(true);
+        }
+    };
+    GuiInterface::Instance().wifiStopCallbacks.emplace_back(on_wifi_stopped);
+
+    auto on_control_panel_triggered = [control_panel_weak]() {
+        bool visible = false;
+        if (!control_panel_weak.expired()) {
+            visible = control_panel_weak.lock()->get_visibility();
+        }
+        control_panel_weak.lock()->set_visibility(!visible);
+    };
+    show_hide_button->connect_signal("triggered", on_control_panel_triggered);
+
+    const int button_height = 48;
+
+    auto video_tab = std::make_shared<vecgui::MarginContainer>();
+    video_tab->set_margin_all(8);
+
+    auto video_tab_grid = std::make_shared<vecgui::GridContainer>();
+    video_tab_grid->set_column_limit(3);
+    video_tab->add_child(video_tab_grid);
+    control_panel->video_tab_ = video_tab;
 
     logo_ = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("openipc-logo-white.svg"));
     texture = logo_;
@@ -229,7 +261,9 @@ void PlayerRect::on_ready() {
     record_status_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
     auto capture_button = std::make_shared<vecgui::Button>();
-    vbox->add_child(capture_button);
+    capture_button->set_custom_minimum_size({0, button_height});
+    capture_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+    video_tab_grid->add_child(capture_button);
     capture_button->set_text(context->translation_server->get_translation("capture frame"));
     auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("CaptureImage.svg"), true);
     capture_button->set_icon_normal(icon);
@@ -244,7 +278,8 @@ void PlayerRect::on_ready() {
     capture_button->connect_signal("triggered", capture_callback);
 
     record_button_ = std::make_shared<vecgui::Button>();
-    vbox->add_child(record_button_);
+    record_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+    video_tab_grid->add_child(record_button_);
     auto icon2 = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("RecordVideo.svg"), true);
     record_button_->set_icon_normal(icon2);
     record_button_->set_text(context->translation_server->get_translation("record mp4") + " (F10)");
@@ -282,9 +317,10 @@ void PlayerRect::on_ready() {
     record_button_->connect_signal("triggered", record_callback);
 
     {
-        auto button = std::make_shared<vecgui::CheckButton>();
-        button->set_text(context->translation_server->get_translation("force sw decoding"));
-        vbox->add_child(button);
+        auto sw_button = std::make_shared<vecgui::CheckButton>();
+        sw_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        sw_button->set_text(context->translation_server->get_translation("force sw decoding"));
+        video_tab_grid->add_child(sw_button);
 
         auto callback = [this](bool toggled) {
             force_software_decoding = toggled;
@@ -293,7 +329,7 @@ void PlayerRect::on_ready() {
                 player_->play(play_url_, force_software_decoding);
             }
         };
-        button->connect_signal("toggled", callback);
+        sw_button->connect_signal("toggled", callback);
     }
 
     // {
@@ -438,8 +474,6 @@ void PlayerRect::start_playing(const std::string &url) {
 
     texture = render_image_;
 
-    collapse_panel_->set_visibility(true);
-
     hud_container_->set_visibility(true);
 }
 
@@ -464,6 +498,5 @@ void PlayerRect::stop_playing() {
     }
 
     texture = logo_;
-    collapse_panel_->set_visibility(false);
     hud_container_->set_visibility(false);
 }

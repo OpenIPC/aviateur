@@ -20,7 +20,7 @@ stop,Stop,停止
 open,Open,打开
 close,Close,关闭
 port,Port,端口
-local,Local,本机
+local test,Local test,本地测试
 on,On,开
 off,Off,关
 invalid usb msg,Invalid USB device!,无效的 USB 设备！
@@ -60,3 +60,6 @@ alink tip,"Automatically balances image clarity and real-time
 smoothness based on wireless signal strength.","根据无线信号强弱，自动平衡画面清晰度与实时流畅度。"
 forward tip,"Forward the RTP video stream to the target port only,
 without decoding.","仅转发RTP视频流到目标端口，不进行解码。"
+version,"Version: ","版本："
+channel,Channel,频道
+video,Video,视频
