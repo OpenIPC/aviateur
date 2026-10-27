@@ -72,12 +72,14 @@ void ControlPanel::on_ready() {
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
 
+    const int tab_button_width = 128;
     const int button_height = 48;
 
     tab_container_ = std::make_shared<vecgui::TabContainer>();
     tab_container_->theme_override_bg = vecgui::StyleBox::from_empty();
     tab_container_->theme_override_bg->bg_color = vecgui::ColorU{30, 30, 30, 200};
     tab_container_->theme_override_bg->corner_radius = 16;
+    tab_container_->set_tab_width(tab_button_width);
     tab_container_->set_tab_height(button_height);
     tab_container_->set_tab_alignment(vecgui::TabAlignment::Center);
     tab_container_->theme_override_tab_bg = vecgui::StyleBox::from_empty();
