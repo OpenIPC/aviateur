@@ -25,7 +25,7 @@
     #define INVALID_SOCKET (-1)
 #endif
 
-#include "IRtlDevice.h"
+#include "IRadio.h"
 #include "RxPacket.h"
 #include "WiFiDriver.h"
 #include "fec_controller.h"
@@ -87,7 +87,7 @@ protected:
     libusb_device_handle *devHandle{};
 
     std::shared_ptr<std::thread> usbThread;
-    std::unique_ptr<IRtlDevice> rtlDevice;
+    std::unique_ptr<IRadio> rtlDevice;
 
     // In case a link is stopped before initializing an RTL device.
     std::atomic<bool> exit_requested{false};

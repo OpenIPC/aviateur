@@ -351,7 +351,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
     }
 }
 
-void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
+void TxFrame::run(IRadio *rtlDevice, TxArgs *arg) {
     // Decide if using VHT
     if (arg->bandwidth >= 80) {
         arg->vht_mode = true;

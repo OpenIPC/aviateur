@@ -5,7 +5,7 @@
 
 #include "transmitter.h"
 
-class IRtlDevice;
+class IRadio;
 
 /**
  * @struct TxArgs
@@ -92,10 +92,10 @@ public:
 
     /**
      * @brief Configures and runs the transmitter with the given arguments.
-     * @param rtlDevice The IRtlDevice pointer (if using USB).
+     * @param rtlDevice The IRadio pointer (if using USB).
      * @param arg TxArgs structure with user parameters.
      */
-    void run(IRtlDevice *rtlDevice, TxArgs *arg);
+    void run(IRadio *rtlDevice, TxArgs *arg);
 
     /**
      * @brief Signals that the main loop should stop.

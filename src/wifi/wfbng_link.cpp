@@ -385,7 +385,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 return;
             }
 
-            rtlDevice = wifi_driver.CreateRtlDevice(devHandle, ctx, usb_lock);
+            rtlDevice = wifi_driver.CreateRadio(devHandle, ctx, usb_lock);
 
             if (exit_requested) {
                 return;

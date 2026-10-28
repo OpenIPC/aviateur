@@ -14,7 +14,7 @@ extern "C" {
 #include <vector>
 
 #include "wfb-ng/wifibroadcast.hpp"
-#include "IRtlDevice.h"
+#include "IRadio.h"
 
 #undef min
 #undef max
@@ -270,7 +270,7 @@ public:
                    uint8_t *radiotapHeader,
                    size_t radiotapHeaderLen,
                    uint8_t frameType,
-                   IRtlDevice *device);
+                   IRadio *device);
 
     ~UsbTransmitter() override = default;
 
@@ -295,6 +295,6 @@ private:
     uint8_t *radiotapHeader_;
     size_t radiotapHeaderLen_;
     uint8_t frameType_;
-    IRtlDevice *rtlDevice_;
+    IRadio *rtlDevice_;
     std::atomic<bool> stopped_{false};
 };
