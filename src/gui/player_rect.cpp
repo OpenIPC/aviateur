@@ -10,8 +10,10 @@ class SignalBar : public vecgui::ProgressBar {
     void on_ready() override {
         theme_fg = {};
         theme_bg = {};
-        theme_progress->border_width = 0;
+
         theme_progress->corner_radius = 0;
+        theme_progress->border_color = vecgui::ColorU::white();
+        theme_progress->border_width = 1;
 
         set_lerp_enabled(true);
         set_label_visibility(false);
@@ -131,30 +133,26 @@ void PlayerRect::on_ready() {
     hud_container_->set_separation(2);
 
     {
-        auto lq_container = std::make_shared<vecgui::GridContainer>();
+        auto lq_container = std::make_shared<vecgui::HBoxContainer>();
         hud_container_->add_child(lq_container);
         lq_container->set_separation(2);
-        lq_container->set_anchor_flag(vecgui::AnchorFlag::BottomWide);
 
         for (int j = 0; j < ANTENNA_COUNT; j++) {
             auto bar = std::make_shared<SignalBar>();
+            bar->set_value(1500);
+            bar->set_min_value(1000);
+            bar->set_max_value(2000);
+            bar->set_custom_minimum_size({0, 8});
+            bar->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             if (j == 0) {
                 bar->set_fill_mode(vecgui::ProgressBar::FillMode::RightToLeft);
             } else {
                 bar->set_fill_mode(vecgui::ProgressBar::FillMode::LeftToRight);
             }
+            bar->debug_box = vecgui::StyleBox::simple_outline();
 
             link_score_bars_.push_back(bar);
-        }
-
-        for (const auto &bar : link_score_bars_) {
             lq_container->add_child(bar);
-            bar->set_value(0);
-            bar->set_min_value(1000);
-            bar->set_max_value(2000);
-            bar->set_custom_minimum_size({0, 4});
-            bar->set_size({0, 4});
-            bar->set_visibility(false);
         }
     }
 
@@ -214,15 +212,10 @@ void PlayerRect::on_ready() {
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
-        for (const auto &bar : link_score_bars_) {
-            bar->set_visibility(false);
-        }
-
         if (GuiInterface::Instance().link_) {
             auto link_score = GuiInterface::Instance().link_->get_link_score();
 
             for (int j = 0; j != ANTENNA_COUNT; ++j) {
-                link_score_bars_[j]->set_visibility(true);
                 link_score_bars_[j]->set_value(link_score[j]);
             }
         }
