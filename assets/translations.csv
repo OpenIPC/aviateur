@@ -49,7 +49,6 @@ packet loss,Packet loss,丢包
 restart app to take effect,Restart app to take effect,重启应用生效
 codec backend,Codec backend,编解码后端
 render backend,Render backend,渲染后端
-dual adapter,Dual Adapter,双网卡
 forward,Forward RTP,转发 RTP
 target port,Target port,目标端口
 exit,Exit,退出

@@ -136,17 +136,15 @@ void PlayerRect::on_ready() {
         lq_container->set_separation(2);
         lq_container->set_anchor_flag(vecgui::AnchorFlag::BottomWide);
 
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < ANTENNA_COUNT; j++) {
-                auto bar = std::make_shared<SignalBar>();
-                if (j == 0) {
-                    bar->set_fill_mode(vecgui::ProgressBar::FillMode::RightToLeft);
-                } else {
-                    bar->set_fill_mode(vecgui::ProgressBar::FillMode::LeftToRight);
-                }
-
-                link_score_bars_.push_back(bar);
+        for (int j = 0; j < ANTENNA_COUNT; j++) {
+            auto bar = std::make_shared<SignalBar>();
+            if (j == 0) {
+                bar->set_fill_mode(vecgui::ProgressBar::FillMode::RightToLeft);
+            } else {
+                bar->set_fill_mode(vecgui::ProgressBar::FillMode::LeftToRight);
             }
+
+            link_score_bars_.push_back(bar);
         }
 
         for (const auto &bar : link_score_bars_) {
@@ -220,12 +218,12 @@ void PlayerRect::on_ready() {
             bar->set_visibility(false);
         }
 
-        for (int i = 0; i != GuiInterface::Instance().links_.size(); ++i) {
-            auto link_score = GuiInterface::Instance().links_[i]->get_link_score();
+        if (GuiInterface::Instance().link_) {
+            auto link_score = GuiInterface::Instance().link_->get_link_score();
 
             for (int j = 0; j != ANTENNA_COUNT; ++j) {
-                link_score_bars_[i * 2 + j]->set_visibility(true);
-                link_score_bars_[i * 2 + j]->set_value(link_score[j]);
+                link_score_bars_[j]->set_visibility(true);
+                link_score_bars_[j]->set_value(link_score[j]);
             }
         }
 
@@ -234,8 +232,8 @@ void PlayerRect::on_ready() {
             fec_label_->set_visibility(false);
 
             int min_loss = std::numeric_limits<int>::max();
-            for (const auto &link : GuiInterface::Instance().links_) {
-                min_loss = std::min(min_loss, link->get_packet_loss());
+            if (GuiInterface::Instance().link_) {
+                min_loss = std::min(min_loss, GuiInterface::Instance().link_->get_packet_loss());
             }
             pl_label_->set_text(get_context()->translation_server->get_translation("packet loss") + ": " +
                                 std::to_string(min_loss));

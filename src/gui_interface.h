@@ -137,7 +137,7 @@ public:
 
     ~GuiInterface() = default;
 
-    std::vector<std::shared_ptr<WfbngLink>> links_;
+    std::shared_ptr<WfbngLink> link_;
 
     void init() {
 #ifdef _WIN32
@@ -330,29 +330,23 @@ public:
         }
 
         auto link = std::make_shared<WfbngLink>();
-
-        // In dual adapter mode, we should have only one up link.
-        if (Instance().links_.empty()) {
-            link->enable_alink(Instance().alink_enabled_);
-            link->set_alink_tx_power(Instance().alink_tx_power_);
-        } else {
-            link->enable_alink(false);
-        }
+        link->enable_alink(Instance().alink_enabled_);
+        link->set_alink_tx_power(Instance().alink_tx_power_);
 
         const bool started = link->start(deviceId, channel, channelWidthMode, gsKeyPath);
 
         if (started) {
-            Instance().links_.push_back(link);
+            Instance().link_ = link;
         }
 
         return started;
     }
 
     static bool Stop() {
-        for (const auto &link : Instance().links_) {
-            link->stop();
+        if (Instance().link_) {
+            Instance().link_->stop();
         }
-        Instance().links_.clear();
+        Instance().link_.reset();
         return true;
     }
 
@@ -361,16 +355,16 @@ public:
 
         Instance().alink_enabled_ = enable;
 
-        if (!Instance().links_.empty()) {
-            Instance().links_.front()->enable_alink(enable);
+        if (Instance().link_) {
+            Instance().link_->enable_alink(enable);
         }
     }
 
     static void SetAlinkTxPower(int power) {
         Instance().alink_tx_power_ = power;
 
-        if (!Instance().links_.empty()) {
-            Instance().links_.front()->set_alink_tx_power(power);
+        if (Instance().link_) {
+            Instance().link_->set_alink_tx_power(power);
         }
     }
 

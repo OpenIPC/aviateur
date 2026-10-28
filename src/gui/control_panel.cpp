@@ -373,7 +373,7 @@ void ControlPanel::on_ready() {
                     play_button_->get_text() == get_context()->translation_server->get_translation("start") + " (F5)";
 
                 GuiInterface::Instance().is_using_wifi = true;
-                GuiInterface::Instance().links_.clear();
+                GuiInterface::Instance().link_.reset();
 
                 if (start) {
                     bool started_successfully = true;
