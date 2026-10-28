@@ -278,6 +278,8 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
+    exit_requested = false;
+
     auto logger = std::make_shared<Logger>();
     logger->set_level(Logger::Level::Info);
 
