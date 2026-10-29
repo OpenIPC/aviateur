@@ -3,7 +3,7 @@
 #include <vecgui/resources/default_resource.h>
 #include <vecgui/resources/theme.h>
 
-constexpr const char* AVIATEUR_VERSION_NUM = "0.4.0";
+constexpr const char* AVIATEUR_VERSION_NUM = "0.4.1";
 constexpr const char* AVIATEUR_REPO_URL = "https://github.com/OpenIPC/aviateur";
 
 void SettingsContainer::on_ready() {
