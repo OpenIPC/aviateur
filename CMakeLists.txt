@@ -105,6 +105,8 @@ add_subdirectory(3rd/vecgui)
 add_subdirectory(3rd/json)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
 
+add_subdirectory(3rd/LwIP-2.2.1)
+
 add_subdirectory(3rd/mINI)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/mINI/src")
 
@@ -123,6 +125,7 @@ if (WIN32)
             devourer
             vecgui
             SDL3::SDL3-static
+            lwip
     )
 else ()
     target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -132,6 +135,7 @@ else ()
             vecgui
             SDL3::SDL3-static
             pcap
+            lwip
     )
 endif ()
 

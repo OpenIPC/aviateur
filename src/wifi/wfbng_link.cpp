@@ -486,6 +486,9 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
     });
 
+    web_ui_bridge_ = std::make_unique<WebUiBridge>();
+    web_ui_bridge_->start(8080, "10.5.0.10", 80);
+
     return true;
 }
 
@@ -779,6 +782,11 @@ void WfbngLink::stop() {
         std::lock_guard lock(agg_mutex);
         video_aggregator.reset();
         udp_aggregator.reset();
+    }
+
+    if (web_ui_bridge_) {
+        web_ui_bridge_->stop();
+        web_ui_bridge_.reset();
     }
 }
 

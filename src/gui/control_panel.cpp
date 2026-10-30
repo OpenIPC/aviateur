@@ -429,6 +429,20 @@ void ControlPanel::on_ready() {
             play_button_->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
             top_vbox->add_child(play_button_);
         }
+
+        {
+            auto webui_button = std::make_shared<vecgui::Button>();
+            webui_button->set_custom_minimum_size({0, 48});
+            webui_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            webui_button->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
+            webui_button->set_text("Open Web UI");
+
+            auto callback = [] {
+                open_url("http://127.0.0.1:8080");
+            };
+            webui_button->connect_signal("triggered", callback);
+            top_vbox->add_child(webui_button);
+        }
     }
 
     // Video tab

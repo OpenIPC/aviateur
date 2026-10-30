@@ -30,6 +30,7 @@
 #include "WiFiDriver.h"
 #include "fec_controller.h"
 #include "tx_frame.h"
+#include "web_ui_bridge.h"
 
 struct DeviceId {
     uint16_t vendor_id;
@@ -126,4 +127,6 @@ protected:
     bool alink_enabled = false;
     int alink_tx_power = 30;
     // --------------- Adaptive link
+
+    std::unique_ptr<WebUiBridge> web_ui_bridge_;
 };
