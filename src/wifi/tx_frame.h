@@ -65,7 +65,7 @@ struct TxArgs {
  */
 class TxFrame {
 public:
-    explicit TxFrame(bool tun_enabled);
+    explicit TxFrame(bool add_ip_udp_headers);
 
     ~TxFrame();
 
@@ -105,7 +105,7 @@ public:
 private:
     bool shouldStop_ = false;
 
-    bool tun_enabled_ = false;
+    bool add_ip_udp_headers_ = false;
 
     std::vector<int> rx_fds_;
 

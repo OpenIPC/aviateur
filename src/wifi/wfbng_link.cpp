@@ -20,10 +20,6 @@
 #include "rx_frame.h"
 #include "signal_quality.h"
 
-#ifdef __linux__
-    #include "linux/tun.h"
-#endif
-
 // clang-format off
 #undef min
 #undef max
@@ -376,7 +372,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
-    tx_frame = std::make_shared<TxFrame>(tun_enabled);
+    tx_frame = std::make_shared<TxFrame>(true);
 
     usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
@@ -489,15 +485,6 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
     });
-    // usbThread->detach();
-
-#ifdef __linux__
-    if (tun_enabled) {
-        tun_ = std::make_unique<Tun>();
-        tun_->init("10.5.0.3", 24, 8001, 8000);
-        tun_->start();
-    }
-#endif
 
     return true;
 }
@@ -527,13 +514,6 @@ void WfbngLink::start_link_quality_thread() {
 
         std::string ip = "127.0.0.1";
         int port = 8001;
-
-#ifdef __linux__
-        if (tun_enabled) {
-            ip = "10.5.0.10";
-            port = 9999;
-        }
-#endif
 
         const int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -769,21 +749,6 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     // UDP frame
     else if (frame.MatchesChannelID(udp_channel_id_be8)) {
         // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
-
-#ifdef __linux__
-        if (tun_enabled) {
-            udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                           packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                           0,
-                                           antenna,
-                                           rssi,
-                                           noise,
-                                           freq,
-                                           0,
-                                           0,
-                                           NULL);
-        }
-#endif
     }
 }
 
@@ -802,12 +767,6 @@ void WfbngLink::stop() {
     if (rtlDevice) {
         rtlDevice->StopRxLoop();
     }
-
-#ifdef __linux__
-    if (tun_) {
-        tun_->stop();
-    }
-#endif
 
     // Wait for the USB thread to exit.
     if (usbThread && usbThread->joinable()) {

@@ -18,8 +18,8 @@
 #include <cstring>
 #include <stdexcept>
 
-TxFrame::TxFrame(const bool tun_enabled) {
-    tun_enabled_ = tun_enabled;
+TxFrame::TxFrame(const bool add_ip_udp_headers) {
+    add_ip_udp_headers_ = add_ip_udp_headers;
 }
 
 TxFrame::~TxFrame() = default;
@@ -285,8 +285,8 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
-                    // Craft IP packets manually.
-                    if (!tun_enabled_) {
+                    // Craft IP&UDP packets manually.
+                    if (add_ip_udp_headers_) {
                         int iphdr_len = sizeof(struct iphdr);
                         int udphdr_len = sizeof(struct udphdr);
 
@@ -331,7 +331,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         // Forward packet
                         transmitter->sendPacket(packet.data(), packet_size, 0);
                     } else {
-                        // Forward packet
+                        // Forward raw packet
                         transmitter->sendPacket(buf, static_cast<size_t>(rsize), 0);
                     }
 

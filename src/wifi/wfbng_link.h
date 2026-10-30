@@ -31,10 +31,6 @@
 #include "fec_controller.h"
 #include "tx_frame.h"
 
-#ifdef __linux__
-    #include "linux/tun.h"
-#endif
-
 struct DeviceId {
     uint16_t vendor_id;
     uint16_t product_id;
@@ -130,10 +126,4 @@ protected:
     bool alink_enabled = false;
     int alink_tx_power = 30;
     // --------------- Adaptive link
-
-    // Use TUN instead of manually crafted IP packets.
-    bool tun_enabled = false;
-#ifdef __linux__
-    std::unique_ptr<Tun> tun_;
-#endif
 };
