@@ -667,19 +667,19 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     const uint32_t video_channel_id_f = (link_id << 8) + video_radio_port;
     const uint32_t video_channel_id_be = htobe32(video_channel_id_f);
 
-    const auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
+    const auto *video_channel_id_be8 = reinterpret_cast<const uint8_t *>(&video_channel_id_be);
 
     int mavlink_client_port = 14550;
     uint8_t mavlink_radio_port = 0x10;
     uint32_t mavlink_channel_id_f = (link_id << 8) + mavlink_radio_port;
     const uint32_t mavlink_channel_id_be = htobe32(mavlink_channel_id_f);
-    auto *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
+    const auto *mavlink_channel_id_be8 = reinterpret_cast<const uint8_t *>(&mavlink_channel_id_be);
 
     int udp_client_port = 8000;
     uint8_t udp_radio_port = WFB_RX_PORT;
     uint32_t udp_channel_id_f = (link_id << 8) + udp_radio_port;
     const uint32_t udp_channel_id_be = htobe32(udp_channel_id_f);
-    auto *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
+    const auto *udp_channel_id_be8 = reinterpret_cast<const uint8_t *>(&udp_channel_id_be);
 
     std::string client_addr = "127.0.0.1";
 
