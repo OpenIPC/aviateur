@@ -62,3 +62,4 @@ without decoding.","仅转发RTP视频流到目标端口，不进行解码。"
 version,"Version: ","版本："
 channel,Channel,频道
 video,Video,视频
+link id,Link ID,链路 ID

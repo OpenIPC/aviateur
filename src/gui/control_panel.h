@@ -21,7 +21,10 @@ public:
 
     uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
+    uint32_t link_id = DEFAULT_LINK_ID;
     std::string keyPath;
+
+    std::shared_ptr<vecgui::TextEdit> link_id_edit_;
 
     std::shared_ptr<vecgui::CollapseContainer> forward_con;
     std::shared_ptr<vecgui::TextEdit> forward_port_edit;

@@ -70,6 +70,8 @@ void ControlPanel::on_ready() {
     dongle_name_ = ini[CONFIG_WIFI][WIFI_DEVICE];
     channel = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
+    link_id = std::stoul(ini[CONFIG_WIFI][WIFI_LINK_ID]);
+    GuiInterface::Instance().link_id_ = link_id;
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
 
     const int tab_button_width = 128;
@@ -227,6 +229,25 @@ void ControlPanel::on_ready() {
                 }
                 channel_width_button_->select_item(selected);
             }
+        }
+
+        {
+            auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
+            hbox_container->set_custom_minimum_size({0, button_height});
+            hbox_container->set_separation(8);
+            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            grid->add_child(hbox_container);
+
+            auto label = std::make_shared<vecgui::Label>();
+            label->set_text(get_context()->translation_server->get_translation("link id"));
+            hbox_container->add_child(label);
+
+            link_id_edit_ = std::make_shared<vecgui::TextEdit>();
+            link_id_edit_->set_custom_minimum_size({0, button_height});
+            link_id_edit_->set_numbers_only(true);
+            link_id_edit_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            link_id_edit_->set_text(std::to_string(link_id));
+            hbox_container->add_child(link_id_edit_);
         }
 
         {
@@ -397,6 +418,15 @@ void ControlPanel::on_ready() {
                                 } else {
                                     forward_port = forward_port_edit->get_text();
                                 }
+                            }
+
+                            if (!link_id_edit_->get_text().empty()) {
+                                link_id = std::stoul(link_id_edit_->get_text());
+                                GuiInterface::Instance().link_id_ = link_id;
+                                GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_LINK_ID] = link_id_edit_->get_text();
+                            } else {
+                                GuiInterface::Instance().ShowTip("Invalid link ID", true);
+                                started_successfully = false;
                             }
 
                             bool res = GuiInterface::Start(target_device_id.value(),

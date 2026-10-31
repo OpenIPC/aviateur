@@ -30,6 +30,7 @@
 #define WIFI_ALINK_ENABLED "alink_enabled"
 #define WIFI_ALINK_TX_POWER "alink_tx_power"
 #define WIFI_FORWARD_PORT "forward_port"
+#define WIFI_LINK_ID "link_id"
 
 #define CONFIG_LOCALHOST "localhost"
 #define CONFIG_LOCALHOST_PORT "port"
@@ -45,7 +46,7 @@
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 8;
+constexpr auto CONFIG_VERSION_NUM = 9;
 
 const vecgui::ColorU GREEN = vecgui::ColorU(78, 135, 82);
 const vecgui::ColorU RED = vecgui::ColorU(201, 79, 79);
@@ -182,6 +183,7 @@ public:
             use_vulkan_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] == "vulkan";
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
+            link_id_ = std::stoul(ini_[CONFIG_WIFI][WIFI_LINK_ID]);
         }
     }
 
@@ -245,6 +247,7 @@ public:
             ini[CONFIG_WIFI][WIFI_CHANNEL] = "161";
             ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = "0";
             ini[CONFIG_WIFI][WIFI_GS_KEY] = "";
+            ini[CONFIG_WIFI][WIFI_LINK_ID] = std::to_string(DEFAULT_LINK_ID);
             ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "false";
             ini[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = "20";
             ini[CONFIG_WIFI][WIFI_FORWARD_PORT] = "5600";
@@ -274,6 +277,7 @@ public:
 
         Instance().ini_[CONFIG_WIFI][WIFI_ALINK_ENABLED] = Instance().alink_enabled_ ? "true" : "false";
         Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = std::to_string(Instance().alink_tx_power_);
+        Instance().ini_[CONFIG_WIFI][WIFI_LINK_ID] = std::to_string(Instance().link_id_);
 
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
 #ifdef __APPLE__
@@ -330,6 +334,7 @@ public:
         }
 
         auto link = std::make_shared<WfbngLink>();
+        link->set_link_id(Instance().link_id_);
         link->enable_alink(Instance().alink_enabled_);
         link->set_alink_tx_power(Instance().alink_tx_power_);
 
@@ -511,6 +516,7 @@ public:
 
     bool alink_enabled_ = false;
     int alink_tx_power_ = 0;
+    uint32_t link_id_ = DEFAULT_LINK_ID;
 
     std::optional<std::string> forward_port_;
 

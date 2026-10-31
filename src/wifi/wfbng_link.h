@@ -49,6 +49,7 @@ struct DeviceId {
 class AggregatorX;
 
 constexpr int ANTENNA_COUNT = 2;
+constexpr uint32_t DEFAULT_LINK_ID = 7669206;
 
 /// Receive packets from a Wi-Fi adapter.
 class WfbngLink {
@@ -70,6 +71,13 @@ public:
     int get_alink_tx_power() const;
 
     void set_alink_tx_power(int tx_power);
+
+    void set_link_id(uint32_t id) {
+        link_id = id;
+    }
+    uint32_t get_link_id() const {
+        return link_id;
+    }
 
     /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
@@ -94,7 +102,7 @@ protected:
 
     /// Unique identifier for this link. Must match between transmitter and receiver.
     /// Use different values for separate links to avoid interference.
-    uint32_t link_id = 7669206;
+    uint32_t link_id = DEFAULT_LINK_ID;
 
     std::mutex agg_mutex;
 
