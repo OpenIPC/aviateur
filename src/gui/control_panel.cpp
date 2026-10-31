@@ -252,6 +252,20 @@ void ControlPanel::on_ready() {
             link_id_edit_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
             link_id_edit_->set_text(std::to_string(link_id));
             hbox_container->add_child(link_id_edit_);
+
+            default_link_id_button_ = std::make_shared<vecgui::Button>();
+            default_link_id_button_->set_custom_minimum_size({button_height, button_height});
+            default_link_id_button_->set_text(get_context()->translation_server->get_translation("default"));
+            hbox_container->add_child(default_link_id_button_);
+
+            auto callback = [this] {
+                link_id = DEFAULT_LINK_ID;
+                const auto id_string = std::to_string(DEFAULT_LINK_ID);
+                link_id_edit_->set_text(id_string);
+                GuiInterface::Instance().link_id_ = link_id;
+                GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_LINK_ID] = id_string;
+            };
+            default_link_id_button_->connect_signal("triggered", callback);
         }
 
         {

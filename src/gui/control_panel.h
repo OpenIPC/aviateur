@@ -25,6 +25,7 @@ public:
     std::string keyPath;
 
     std::shared_ptr<vecgui::TextEdit> link_id_edit_;
+    std::shared_ptr<vecgui::Button> default_link_id_button_;
 
     std::shared_ptr<vecgui::CollapseContainer> forward_con;
     std::shared_ptr<vecgui::TextEdit> forward_port_edit;
