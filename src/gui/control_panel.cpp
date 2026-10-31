@@ -79,7 +79,11 @@ void ControlPanel::on_ready() {
 
     tab_container_ = std::make_shared<vecgui::TabContainer>();
     tab_container_->theme_override_bg = vecgui::StyleBox::from_empty();
-    tab_container_->theme_override_bg->bg_color = vecgui::ColorU{30, 30, 30, 200};
+    auto bg_color = vecgui::ColorU{220, 220, 220, 150};
+    if (GuiInterface::Instance().dark_mode_) {
+        bg_color = vecgui::ColorU{30, 30, 30, 150};
+    }
+    tab_container_->theme_override_bg->bg_color = bg_color;
     tab_container_->theme_override_bg->corner_radius = 12;
     tab_container_->set_tab_width(tab_button_width);
     tab_container_->set_tab_height(button_height);
