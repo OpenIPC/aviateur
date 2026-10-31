@@ -488,10 +488,13 @@ void WfbngLink::init_thread(std::unique_ptr<std::thread> &thread,
 }
 
 void WfbngLink::destroy_thread(std::unique_ptr<std::thread> &thread) {
-    std::unique_lock lock(thread_mutex);
-    if (thread && thread->joinable()) {
-        thread->join();
-        thread = nullptr;
+    std::unique_ptr<std::thread> target_thread;
+    {
+        std::unique_lock lock(thread_mutex);
+        target_thread = std::move(thread);
+    }
+    if (target_thread && target_thread->joinable()) {
+        target_thread->join();
     }
 }
 
