@@ -267,9 +267,9 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     GuiInterface::Instance().rtpPktCount_ = 0;
     GuiInterface::Instance().UpdateCount();
 
-    keyPath = kPath;
+    key_path = kPath;
 
-    if (usbThread) {
+    if (usb_thread) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "USB thread already exists");
         return false;
     }
@@ -332,12 +332,12 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
     // This cannot handle multiple devices with the same vendor_id and product_id.
     // devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
-    libusb_open(target_dev, &devHandle);
+    libusb_open(target_dev, &dev_handle);
 
     // Free the list of devices
     libusb_free_device_list(devs, 1);
 
-    if (devHandle == nullptr) {
+    if (dev_handle == nullptr) {
         libusb_exit(ctx);
         ctx = nullptr;
 
@@ -353,16 +353,16 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     }
 
     // Find the Wi-Fi interface (handles composite devices like RTL8822BU)
-    int iface = devourer::find_wifi_interface(devHandle);
+    int iface = devourer::find_wifi_interface(dev_handle);
 
     // Prepare the USB device: lock, detach kernel driver, set config, claim
     // (do_reset=false: libusb_reset_device can cause RTL8812AU to re-enumerate
     //  with a stale handle on Windows/WinUSB, breaking URB completion)
     std::shared_ptr<devourer::UsbDeviceLock> usb_lock;
-    rc = devourer::claim_interface_then_reset(devHandle, iface, logger, false, usb_lock);
+    rc = devourer::claim_interface_then_reset(dev_handle, iface, logger, false, usb_lock);
     if (rc < 0) {
-        libusb_close(devHandle);
-        devHandle = nullptr;
+        libusb_close(dev_handle);
+        dev_handle = nullptr;
 
         libusb_exit(ctx);
         ctx = nullptr;
@@ -374,36 +374,18 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
     tx_frame = std::make_shared<TxFrame>(true);
 
-    usbThread = std::make_shared<std::thread>([=, this]() {
+    usb_thread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
         try {
             if (exit_requested) {
                 return;
             }
 
-            rtlDevice = wifi_driver.CreateRadio(devHandle, ctx, usb_lock);
+            rtl_device = wifi_driver.CreateRadio(dev_handle, ctx, usb_lock);
 
             if (exit_requested) {
                 return;
             }
-
-            // if (!usb_event_thread) {
-            //     auto usb_event_thread_func = [this] {
-            //         while (true) {
-            //             if (devHandle == nullptr) {
-            //                 break;
-            //             }
-            //             struct timeval timeout = {0, 500000}; // 500 ms timeout
-            //             int r = libusb_handle_events_timeout(ctx, &timeout);
-            //             if (r < 0) {
-            //                 // this->log->error("Error handling events: {}", r);
-            //             }
-            //         }
-            //     };
-            //
-            //     init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func);
-            //     });
-            // }
 
             // Unconditionally spawn the USB TX thread on link startup.
             // The TX worker (tx_frame) listens on UDP port 8001 to route uplink packets to USB Wi-Fi.
@@ -416,7 +398,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
                 args->udp_port = 8001;
                 args->link_id = link_id;
-                args->keypair = keyPath;
+                args->keypair = key_path;
                 args->stbc = true;
                 args->ldpc = true;
                 args->mcs_index = 0;
@@ -431,7 +413,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
                 init_thread(usb_tx_thread, [&]() {
                     return std::make_unique<std::thread>([this, args] {
-                        tx_frame->run(rtlDevice.get(), args.get());
+                        tx_frame->run(rtl_device.get(), args.get());
                         GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread should stop");
                     });
                 });
@@ -442,7 +424,9 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 start_link_quality_thread();
             }
 
-            rtlDevice->Init(
+            // Note: Init() brings up RX DMA and enters a blocking receive loop.
+            // Must be called last after initializing all worker threads (TX, alink, etc.).
+            rtl_device->Init(
                 [this](const Packet &p) {
                     handle_80211_frame(p);
                     GuiInterface::Instance().UpdateCount();
@@ -465,12 +449,12 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         // still open, then destroy the device object so its destructor
         // (quiesce_tx, thread joins, hal_deinit) runs BEFORE libusb_close.
         // Destroying after close is UB (destructor does USB register writes).
-        if (rtlDevice) {
-            rtlDevice->Stop();
-            rtlDevice.reset();
+        if (rtl_device) {
+            rtl_device->Stop();
+            rtl_device.reset();
         }
 
-        auto rc1 = libusb_release_interface(devHandle, iface);
+        auto rc1 = libusb_release_interface(dev_handle, iface);
         if (rc1 < 0) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
@@ -481,10 +465,10 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread stopped");
         // destroy_thread(usb_event_thread);
 
-        libusb_close(devHandle);
+        libusb_close(dev_handle);
         libusb_exit(ctx);
 
-        devHandle = nullptr;
+        dev_handle = nullptr;
         ctx = nullptr;
 
         GuiInterface::Instance().EmitWifiStopped();
@@ -648,7 +632,7 @@ void WfbngLink::start_link_quality_thread() {
 
     init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
 
-    rtlDevice->SetTxPower(static_cast<uint8_t>(alink_tx_power));
+    rtl_device->SetTxPower(static_cast<uint8_t>(alink_tx_power));
 }
 
 void WfbngLink::stop_adaptive_link() {
@@ -703,14 +687,14 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     if (!video_aggregator) {
         video_aggregator = std::make_unique<AggregatorX>(client_addr,
                                                          GuiInterface::Instance().playerPort,
-                                                         keyPath.c_str(),
+                                                         key_path.c_str(),
                                                          epoch,
                                                          video_channel_id_f,
                                                          0);
     }
     if (!udp_aggregator) {
         udp_aggregator =
-            std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
+            std::make_unique<AggregatorX>(client_addr, udp_client_port, key_path, epoch, udp_channel_id_f, 0);
     }
 
     static int8_t rssi[2] = {1, 1};
@@ -771,14 +755,14 @@ void WfbngLink::stop() {
     // Signal the thread immediately.
     exit_requested = true;
 
-    if (rtlDevice) {
-        rtlDevice->StopRxLoop();
+    if (rtl_device) {
+        rtl_device->StopRxLoop();
     }
 
     // Wait for the USB thread to exit.
-    if (usbThread && usbThread->joinable()) {
-        usbThread->join();
-        usbThread.reset();
+    if (usb_thread && usb_thread->joinable()) {
+        usb_thread->join();
+        usb_thread.reset();
     }
 
     // 销毁视频和 UDP 聚合器，强制关闭其持有的 Socket 端口
@@ -806,7 +790,7 @@ void WfbngLink::enable_alink(const bool enable) {
     alink_should_stop = !enable;
 
     // Enable alink during playing.
-    if (alink_enabled && usbThread) {
+    if (alink_enabled && usb_thread) {
         if (link_quality_thread && link_quality_thread->joinable()) {
             link_quality_thread->join();
             link_quality_thread = nullptr;
@@ -826,7 +810,7 @@ void WfbngLink::set_alink_tx_power(const int tx_power) {
     if (alink_enabled && link_quality_thread) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power (live): {}", tx_power);
 
-        rtlDevice->SetTxPower(static_cast<uint8_t>(alink_tx_power));
+        rtl_device->SetTxPower(static_cast<uint8_t>(alink_tx_power));
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }

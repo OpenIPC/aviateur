@@ -1,13 +1,13 @@
 #pragma once
 
 #include <array>
+#include <atomic>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
-#include <atomic>
-#include <memory>
-#include <functional>
 
 #include "net_compat.h"
 #include "signal_quality.h"
@@ -80,15 +80,15 @@ public:
 
 protected:
     libusb_context *ctx{};
-    libusb_device_handle *devHandle{};
+    libusb_device_handle *dev_handle{};
 
-    std::shared_ptr<std::thread> usbThread;
-    std::unique_ptr<IRadio> rtlDevice;
+    std::shared_ptr<std::thread> usb_thread;
+    std::unique_ptr<IRadio> rtl_device;
 
     // In case a link is stopped before initializing an RTL device.
     std::atomic<bool> exit_requested{false};
 
-    std::string keyPath;
+    std::string key_path;
 
     bool first_rtp_packet_received = false;
 
