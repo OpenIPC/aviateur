@@ -658,24 +658,24 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     GuiInterface::Instance().wfbngFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
-    static uint8_t video_radio_port = 0;
-    static uint64_t epoch = 0;
+    const uint8_t video_radio_port = 0;
+    const uint64_t epoch = 0;
 
-    static uint32_t video_channel_id_f = (link_id << 8) + video_radio_port;
-    static uint32_t video_channel_id_be = htobe32(video_channel_id_f);
+    const uint32_t video_channel_id_f = (link_id << 8) + video_radio_port;
+    const uint32_t video_channel_id_be = htobe32(video_channel_id_f);
 
-    static auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
+    const auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
 
     int mavlink_client_port = 14550;
     uint8_t mavlink_radio_port = 0x10;
     uint32_t mavlink_channel_id_f = (link_id << 8) + mavlink_radio_port;
-    static uint32_t mavlink_channel_id_be = htobe32(mavlink_channel_id_f);
+    const uint32_t mavlink_channel_id_be = htobe32(mavlink_channel_id_f);
     auto *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
 
     int udp_client_port = 8000;
     uint8_t udp_radio_port = WFB_RX_PORT;
     uint32_t udp_channel_id_f = (link_id << 8) + udp_radio_port;
-    static uint32_t udp_channel_id_be = htobe32(udp_channel_id_f);
+    const uint32_t udp_channel_id_be = htobe32(udp_channel_id_f);
     auto *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
 
     std::string client_addr = "127.0.0.1";
@@ -803,8 +803,8 @@ void WfbngLink::set_alink_tx_power(const int tx_power) {
     alink_tx_power = tx_power;
 
     // Change alink tx power during playing.
-    if (alink_enabled && link_quality_thread) {
-        GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power (live): {}", tx_power);
+    if (alink_enabled && link_quality_thread && rtl_device) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power dynamically: {}", tx_power);
 
         rtl_device->SetTxPower(static_cast<uint8_t>(alink_tx_power));
     } else {

@@ -110,7 +110,7 @@ protected:
     std::unique_ptr<std::thread> usb_tx_thread;
     std::recursive_mutex thread_mutex;
     std::shared_ptr<TxFrame> tx_frame;
-    bool alink_should_stop = false;
+    std::atomic<bool> alink_should_stop{false};
     std::unique_ptr<std::thread> link_quality_thread;
     FecController fec_controller;
 
