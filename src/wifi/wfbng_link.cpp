@@ -568,17 +568,13 @@ void WfbngLink::start_link_quality_thread() {
                 else {
                     if (quality.recovered_last_second > 30) {
                         fec_controller.bump(5);
-                    }
-                    if (quality.recovered_last_second > 24) {
+                    } else if (quality.recovered_last_second > 24) {
                         fec_controller.bump(3);
-                    }
-                    if (quality.recovered_last_second > 22) {
+                    } else if (quality.recovered_last_second > 22) {
                         fec_controller.bump(2);
-                    }
-                    if (quality.recovered_last_second > 18) {
+                    } else if (quality.recovered_last_second > 18) {
                         fec_controller.bump(1);
-                    }
-                    if (quality.recovered_last_second < 18) {
+                    } else {
                         fec_controller.bump(0);
                     }
                 }
