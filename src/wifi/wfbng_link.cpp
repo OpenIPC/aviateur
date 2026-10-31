@@ -405,23 +405,30 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             //     });
             // }
 
-            std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
-            args->udp_port = 8001;
-            args->link_id = link_id;
-            args->keypair = keyPath;
-            args->stbc = true;
-            args->ldpc = true;
-            args->mcs_index = 0;
-            args->vht_mode = false;
-            args->short_gi = false;
-            args->bandwidth = 20;
-            args->k = 1;
-            args->n = 5;
-            args->radio_port = WFB_TX_PORT;
-
-            // printf("Radio link ID %d, radio port %d\n", args->link_id, args->radio_port);
-
+            // Unconditionally spawn the USB TX thread on link startup.
+            // The TX worker (tx_frame) listens on UDP port 8001 to route uplink packets to USB Wi-Fi.
+            //
+            // Note: Do NOT conditionally wrap this thread creation with `alink_enabled`.
+            // Adaptive Link can be enabled/disabled dynamically at runtime via enable_alink().
+            // Pre-starting the TX worker guarantees uplink readiness whenever Adaptive Link is turned on.
+            // When no TX packets are being sent, the thread blocks in socket wait with negligible overhead.
             if (!usb_tx_thread) {
+                std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
+                args->udp_port = 8001;
+                args->link_id = link_id;
+                args->keypair = keyPath;
+                args->stbc = true;
+                args->ldpc = true;
+                args->mcs_index = 0;
+                args->vht_mode = false;
+                args->short_gi = false;
+                args->bandwidth = 20;
+                args->k = 1;
+                args->n = 5;
+                args->radio_port = WFB_TX_PORT;
+
+                // printf("Radio link ID %d, radio port %d\n", args->link_id, args->radio_port);
+
                 init_thread(usb_tx_thread, [&]() {
                     return std::make_unique<std::thread>([this, args] {
                         tx_frame->run(rtlDevice.get(), args.get());
