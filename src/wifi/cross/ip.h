@@ -3,14 +3,13 @@
 #include <cstdint>
 
 struct iphdr {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    uint8_t ihl : 4; // uint8_t, not unsigned int: MSVC would otherwise give the
-    uint8_t version : 4; // bitfields their own 4-byte unit and shift every field
-#elif __BYTE_ORDER == __BIG_ENDIAN
+    // GCC/Clang define __BYTE_ORDER__; MSVC doesn't define it and falls through to #else (Little Endian, which Windows uses)
+#if (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || defined(__BIG_ENDIAN__)
     uint8_t version : 4;
     uint8_t ihl : 4;
 #else
-    #error "Please fix <bits/endian.h>"
+    uint8_t ihl : 4;     // uint8_t, not unsigned int: MSVC would otherwise give the
+    uint8_t version : 4; // bitfields their own 4-byte unit and shift every field
 #endif
     int8_t tos;
     int16_t tot_len;
