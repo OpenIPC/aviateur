@@ -124,6 +124,16 @@ private:
 
     bool createHwCtx(AVCodecContext *ctx, enum AVHWDeviceType type);
 
+    /// Opens the first working hardware decoder for the codec: a hwaccel (if allowHwaccel), then a standalone
+    /// hardware decoder (e.g. hevc_v4l2m2m). Sets the hardware decoder state. Returns nullptr if none works.
+    AVCodecContext *openHwDecoder(const AVCodecParameters *codecpar,
+                                  int frameWidth,
+                                  int frameHeight,
+                                  bool allowHwaccel);
+
+    /// Opens the software decoder for the codec. Returns nullptr if it fails.
+    AVCodecContext *openSwDecoder(const AVCodecParameters *codecpar);
+
     void emitBitrateUpdate(uint64_t pBitrate) {
         bitrateUpdateCallback(pBitrate);
     }
