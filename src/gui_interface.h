@@ -5,6 +5,7 @@
 #include <vecgui/common/any_callable.h>
 #include <vecgui/servers/translation_server.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -198,12 +199,43 @@ public:
         std::string home_dir = getenv("HOME");
         auto dir = std::string(home_dir + "/Library/Application Support/Aviateur/");
 #elif defined(__linux__)
-        passwd *pw = getpwuid(getuid());
-        const char *home_dir = pw->pw_dir;
-        auto dir = std::string(home_dir) + "/.aviateur/";
+        // Use the first location that already holds a config, so existing configs stay where they are.
+        // Otherwise create the config in the most preferred location.
+        std::vector<std::string> candidates;
+        // XDG Base Directory spec: $XDG_CONFIG_HOME must be an absolute path, otherwise it is ignored.
+        const auto *config_home = GetAbsolutePathEnv("XDG_CONFIG_HOME");
+        if (config_home) {
+            candidates.push_back(std::string(config_home) + "/aviateur/");
+        }
+        candidates.push_back(GetHomeDir() + "/.config/aviateur/");
+        // Location used before adopting the XDG spec.
+        candidates.push_back(GetHomeDir() + "/.aviateur/");
+
+        std::error_code ec;
+        auto it = std::find_if(candidates.begin(), candidates.end(), [&ec](const std::string &dir) {
+            return std::filesystem::is_regular_file(dir + CONFIG_FILE, ec);
+        });
+        auto dir = it != candidates.end() ? *it : candidates.front();
 #endif
         return dir;
     }
+
+#if defined(__linux__)
+    // Returns the value of the environment variable if it holds an absolute path, otherwise nullptr.
+    static const char *GetAbsolutePathEnv(const char *name) {
+        const auto *value = getenv(name);
+        return value && value[0] == '/' ? value : nullptr;
+    }
+
+    static std::string GetHomeDir() {
+        const auto *home_dir = GetAbsolutePathEnv("HOME");
+        if (home_dir) {
+            return home_dir;
+        }
+        const auto *pw = getpwuid(getuid());
+        return (pw && pw->pw_dir) ? pw->pw_dir : "";
+    }
+#endif
 
     static std::string GetCaptureDir() {
 #if defined(_WIN32)
@@ -212,9 +244,7 @@ public:
         std::string home_dir = getenv("HOME");
         auto dir = std::string(home_dir + "/Movies/Aviateur Captures/");
 #else
-        passwd *pw = getpwuid(getuid());
-        const char *home_dir = pw->pw_dir;
-        auto dir = std::string(home_dir) + "/Videos/Aviateur Captures/";
+        auto dir = GetHomeDir() + "/Videos/Aviateur Captures/";
 #endif
         return dir;
     }
