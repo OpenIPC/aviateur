@@ -63,3 +63,4 @@ version,"Version: ","版本："
 channel,Channel,频道
 video,Video,视频
 link id,Link ID,链路 ID
+hw decoding failed,Hardware decoding failed. Using software decoding,硬件解码失败，改用软件解码

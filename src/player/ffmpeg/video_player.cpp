@@ -143,16 +143,23 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
         };
 
         // Handle dynamic resolution change
-        localDecoder->videoConfigChangedCallback = [this](int w, int h, AVPixelFormat fmt) {
-            if (w > 0 && h > 0) {
-                // If resolution changed, re-emit ready signal to update UI labels
-                if (!has_emitted_ready_ || w != video_width() || h != video_height()) {
-                    GuiInterface::Instance().EmitDecoderReady(w, h, decoder->GetFramerate(), current_decoder_name);
-                    has_emitted_ready_ = true;
+        // Weak pointer: the decoder owns this callback, a shared_ptr would form a reference cycle.
+        localDecoder->videoConfigChangedCallback =
+            [this, weakDecoder = std::weak_ptr(localDecoder)](int w, int h, AVPixelFormat fmt) {
+                const auto dec = weakDecoder.lock();
+                if (dec && w > 0 && h > 0) {
+                    // The decoder may have fallen back to software decoding.
+                    const std::string previous_decoder_name = current_decoder_name;
+                    current_decoder_name = dec->hwDecoderName.value_or("Software");
+                    // If resolution or decoder changed, re-emit ready signal to update UI labels
+                    if (!has_emitted_ready_ || w != video_width() || h != video_height() ||
+                        current_decoder_name != previous_decoder_name) {
+                        GuiInterface::Instance().EmitDecoderReady(w, h, decoder->GetFramerate(), current_decoder_name);
+                        has_emitted_ready_ = true;
+                    }
+                    update_video_info(w, h, fmt);
                 }
-                update_video_info(w, h, fmt);
-            }
-        };
+            };
 
         decodeThread = std::thread([this, forceSoftwareDecoding, localDecoder] {
             int readRetryCount = 0;
