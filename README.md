@@ -24,21 +24,17 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 
 ![Interface](tutorials/interface.jpg)
 
-## ✨ Features
+## Features
 
 - **Ultra-Low Latency**: Optimized for real-time FPV flight.
 - **Cross-Platform**: Native support for Linux, Windows, and macOS.
-- **Flight Recording**: Capture your flights in MP4 or GIF formats.
+- **Flight Recording**: Capture your flights in MP4.
 - **Snapshots**: Save high-quality JPEG screenshots during flight.
-- **Hardware Acceleration**: Utilizes GPU for efficient video decoding and rendering (Vulkan/OpenGL).
+- **Hardware Acceleration**: Utilizes GPU for efficient video decoding and rendering.
 - **Audio Support**: Real-time audio streaming from the drone.
 - **Telemetry & Stats**: Monitor bitrate and link quality in real-time.
 
-## ⚠️ Important Notes
-
-- **MAVLink**: Basic MAVLink telemetry support is on the roadmap but not yet fully implemented.
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Windows
 
@@ -46,8 +42,7 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 2. Select your adapter in Zadig (*Options* → *List All Devices*).
 3. Install the **libusb** driver.
 4. Run `aviateur.exe`.
-   > **Note**: If the application fails to start, install
-   the [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+   > **Note**: If the application fails to start, install the [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
 
 ### Linux (Debian13 or higher)
 
@@ -64,13 +59,12 @@ drone with minimal lag, supporting modern codecs and hardware acceleration.
 1. Mount DMG, move the executable to Applications.
 2. Launch app.
 
-## 🛠 How to Build
+## How to Build
 
 ### Prerequisites
 
 - CMake 3.18+
 - C++20 compatible compiler
-- Dependencies: FFmpeg, libusb, libsodium, SDL3
 
 #### Windows (using vcpkg)
 
@@ -116,7 +110,7 @@ cmake ..
 make
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 - **Windows Build**: If CMake fails to find packages despite `VCPKG_ROOT` being set, the pre-installed vcpkg from Visual
   Studio might be overriding it. In `CMakeLists.txt`, you may need to explicitly set `CMAKE_TOOLCHAIN_FILE` to your
@@ -124,14 +118,14 @@ make
 - **WSL2**: If you are trying to run Aviateur inside WSL2, you will need to map the USB adapter using `usbipd`.
   See [wsl-map-usb.md](wsl-map-usb.md) for details.
 
-## 🚧 Roadmap
+## Roadmap
 
-- [ ] Zero-Copy YUV renderer.
+- [x] Zero-Copy YUV renderer (only on macOS).
 - [ ] Integrated Ground-side OSD.
 - [ ] Full MAVLink telemetry support.
 - [x] Support for additional Wi-Fi chipsets.
 
-## 📄 License
+## License
 
 Aviateur is released under the [GPL-3.0 License](LICENSE).
 
