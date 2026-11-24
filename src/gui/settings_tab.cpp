@@ -34,7 +34,7 @@ void SettingsContainer::on_ready() {
 
         auto lang_menu_button = std::make_shared<vecgui::MenuButton>();
 
-        lang_menu_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        lang_menu_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         hbox_container->add_child(lang_menu_button);
 
         if (GuiInterface::Instance().locale_ == "en") {
@@ -64,7 +64,7 @@ void SettingsContainer::on_ready() {
 
     {
         fullscreen_button_ = std::make_shared<vecgui::CheckButton>();
-        fullscreen_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        fullscreen_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         grid->add_child(fullscreen_button_);
         fullscreen_button_->set_text(context->translation_server->get_translation("fullscreen") + " (F11)");
 
@@ -77,7 +77,7 @@ void SettingsContainer::on_ready() {
     {
         auto dark_mode_btn = std::make_shared<vecgui::CheckButton>();
         dark_mode_btn->set_text(context->translation_server->get_translation("dark mode"));
-        dark_mode_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        dark_mode_btn->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         grid->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
         auto callback = [context](const bool toggled) {
@@ -101,17 +101,17 @@ void SettingsContainer::on_ready() {
     {
         auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
         hbox_container->set_custom_minimum_size({0, button_height});
-        hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        hbox_container->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         hbox_container->theme_override_bg = radio_group_bg;
         grid->add_child(hbox_container);
 
         auto label = std::make_shared<vecgui::Label>();
         label->set_text(context->translation_server->get_translation("render backend"));
-        label->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkCenter;
+        label->set_container_sizing_v(vecgui::ContainerSizingFlag::ShrinkCenter);
         hbox_container->add_child(label);
 
         auto vbox_container2 = std::make_shared<vecgui::VBoxContainer>();
-        vbox_container2->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        vbox_container2->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         hbox_container->add_child(vbox_container2);
 
         render_btn_group = std::make_shared<vecgui::ToggleButtonGroup>();
@@ -124,14 +124,14 @@ void SettingsContainer::on_ready() {
             gl_btn->set_toggled_no_signal(!GuiInterface::Instance().use_vulkan_);
             auto callback = [](bool toggled) { GuiInterface::Instance().use_vulkan_ = toggled; };
             gl_btn->connect_signal("toggled", callback);
-            gl_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            gl_btn->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
 
             render_btn_group->add_button(gl_btn);
         }
         {
             auto vk_btn = std::make_shared<vecgui::RadioButton>();
             vk_btn->set_text("Vulkan");
-            vk_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            vk_btn->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             vbox_container2->add_child(vk_btn);
             vk_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
             auto callback = [context](bool toggled) {
@@ -147,8 +147,8 @@ void SettingsContainer::on_ready() {
         {
             auto metal_btn = std::make_shared<vecgui::RadioButton>();
             metal_btn->set_text("Metal");
-            metal_btn->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
-            metal_btn->container_sizing.flag_v = vecgui::ContainerSizingFlag::Fill;
+            metal_btn->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
+            metal_btn->set_container_sizing_v(vecgui::ContainerSizingFlag::Fill);
             vbox_container2->add_child(metal_btn);
             metal_btn->set_toggled_no_signal(true);
             render_btn_group->add_button(metal_btn);
@@ -158,7 +158,7 @@ void SettingsContainer::on_ready() {
 
     {
         auto open_appdata_button = std::make_shared<vecgui::Button>();
-        open_appdata_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        open_appdata_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         grid->add_child(open_appdata_button);
         open_appdata_button->set_text(context->translation_server->get_translation("config folder"));
 
@@ -170,7 +170,7 @@ void SettingsContainer::on_ready() {
     // {
     //     auto open_crash_dumps_button = std::make_shared<vecgui::Button>();
     //
-    //     open_crash_dumps_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+    //     open_crash_dumps_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
     //     grid->add_child(open_crash_dumps_button);
     //     open_crash_dumps_button->set_text(context->translation_server->get_translation("crash dump folder"));
     //
@@ -188,12 +188,12 @@ void SettingsContainer::on_ready() {
     auto about_container = std::make_shared<vecgui::HBoxContainer>();
     about_container->set_separation(8);
     about_container->set_custom_minimum_size({0, button_height});
-    about_container->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
+    about_container->set_container_sizing_v(vecgui::ContainerSizingFlag::ShrinkEnd);
     top_container->add_child(about_container);
 
     {
         auto version_label = std::make_shared<vecgui::Label>();
-        version_label->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        version_label->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         about_container->add_child(version_label);
         version_label->set_text(context->translation_server->get_translation("version") +
                                 std::string(AVIATEUR_VERSION_NUM));
@@ -201,8 +201,8 @@ void SettingsContainer::on_ready() {
 
     {
         auto button = std::make_shared<vecgui::Button>();
-        button->container_sizing.flag_h = vecgui::ContainerSizingFlag::ShrinkCenter;
-        button->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkCenter;
+        button->set_container_sizing_h(vecgui::ContainerSizingFlag::ShrinkCenter);
+        button->set_container_sizing_v(vecgui::ContainerSizingFlag::ShrinkCenter);
         about_container->add_child(button);
         auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("icon-github.svg"));
         button->set_icon_normal(icon);
@@ -216,7 +216,7 @@ void SettingsContainer::on_ready() {
     {
         auto exit_button = std::make_shared<vecgui::MenuButton>();
 
-        exit_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        exit_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         about_container->add_child(exit_button);
         exit_button->set_text(context->translation_server->get_translation("exit"));
 

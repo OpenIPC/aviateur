@@ -143,7 +143,7 @@ void PlayerRect::on_ready() {
             bar->set_min_value(1000);
             bar->set_max_value(2000);
             bar->set_custom_minimum_size({0, 8});
-            bar->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            bar->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             if (j == 0) {
                 bar->set_fill_mode(vecgui::ProgressBar::FillMode::RightToLeft);
             } else {
@@ -247,13 +247,13 @@ void PlayerRect::on_ready() {
 
     record_status_label_ = std::make_shared<vecgui::Label>();
     label_container_->add_child(record_status_label_);
-    record_status_label_->container_sizing.flag_h = vecgui::ContainerSizingFlag::ShrinkEnd;
+    record_status_label_->set_container_sizing_h(vecgui::ContainerSizingFlag::ShrinkEnd);
     record_status_label_->set_text("");
     record_status_label_->set_font_size(HUD_LABEL_FONT_SIZE);
 
     auto capture_button = std::make_shared<vecgui::Button>();
     capture_button->set_custom_minimum_size({0, button_height});
-    capture_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+    capture_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
     video_tab_grid->add_child(capture_button);
     capture_button->set_text(context->translation_server->get_translation("capture frame"));
     auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("CaptureImage.svg"), true);
@@ -273,7 +273,7 @@ void PlayerRect::on_ready() {
     capture_button->connect_signal("triggered", capture_callback);
 
     record_button_ = std::make_shared<vecgui::Button>();
-    record_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+    record_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
     video_tab_grid->add_child(record_button_);
     auto icon2 = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("RecordVideo.svg"), true);
     record_button_->set_icon_normal(icon2);
@@ -316,7 +316,7 @@ void PlayerRect::on_ready() {
     {
         auto open_capture_folder_button = std::make_shared<vecgui::MenuButton>();
 
-        open_capture_folder_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        open_capture_folder_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         video_tab_grid->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(context->translation_server->get_translation("capture folder"));
 
@@ -327,7 +327,7 @@ void PlayerRect::on_ready() {
     {
         auto sw_button = std::make_shared<vecgui::CheckButton>();
         sw_button->set_custom_minimum_size({0, button_height});
-        sw_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        sw_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         sw_button->set_text(context->translation_server->get_translation("force sw decoding"));
         video_tab_grid->add_child(sw_button);
 

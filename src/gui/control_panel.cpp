@@ -108,7 +108,7 @@ void ControlPanel::on_ready() {
         auto grid = std::make_shared<vecgui::GridContainer>();
         grid->set_column_limit(2);
         grid->set_separation(8);
-        grid->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkStart;
+        grid->set_container_sizing_v(vecgui::ContainerSizingFlag::ShrinkStart);
         masked_container->add_child(grid);
 
         item_mask_ = std::make_shared<vecgui::Panel>();
@@ -125,7 +125,7 @@ void ControlPanel::on_ready() {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             hbox_container->set_custom_minimum_size({0, button_height});
             hbox_container->set_separation(8);
-            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            hbox_container->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             grid->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
@@ -133,7 +133,7 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<vecgui::MenuButton>();
-            dongle_menu_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            dongle_menu_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             hbox_container->add_child(dongle_menu_button_);
 
             // Do this before setting dongle button text.
@@ -160,7 +160,7 @@ void ControlPanel::on_ready() {
 
         {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            hbox_container->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             hbox_container->set_custom_minimum_size({0, button_height});
             grid->add_child(hbox_container);
 
@@ -169,7 +169,7 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(label);
 
             channel_button_ = std::make_shared<vecgui::MenuButton>();
-            channel_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            channel_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             hbox_container->add_child(channel_button_);
 
             {
@@ -206,7 +206,7 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(label);
 
             channel_width_button_ = std::make_shared<vecgui::MenuButton>();
-            channel_width_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            channel_width_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             hbox_container->add_child(channel_width_button_);
 
             {
@@ -239,7 +239,7 @@ void ControlPanel::on_ready() {
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
             hbox_container->set_custom_minimum_size({0, button_height});
             hbox_container->set_separation(8);
-            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            hbox_container->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             grid->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
@@ -249,7 +249,7 @@ void ControlPanel::on_ready() {
             link_id_edit_ = std::make_shared<vecgui::TextEdit>();
             link_id_edit_->set_custom_minimum_size({0, button_height});
             link_id_edit_->set_numbers_only(true);
-            link_id_edit_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            link_id_edit_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             link_id_edit_->set_text(std::to_string(link_id));
             hbox_container->add_child(link_id_edit_);
 
@@ -284,7 +284,7 @@ void ControlPanel::on_ready() {
             } else {
                 text_edit->set_text(std::filesystem::path(keyPath).filename().string());
             }
-            text_edit->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            text_edit->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             hbox_container->add_child(text_edit);
 
             auto file_dialog = std::make_shared<vecgui::FileDialog>();
@@ -336,14 +336,14 @@ void ControlPanel::on_ready() {
             forward_port_edit = std::make_shared<vecgui::TextEdit>();
             forward_port_edit->set_custom_minimum_size({0, 32});
             forward_port_edit->set_numbers_only(true);
-            forward_port_edit->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            forward_port_edit->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             forward_port_edit->set_text("");
             hbox_container->add_child(forward_port_edit);
 
             auto forward_tip = std::make_shared<vecgui::Label>();
             forward_tip->set_text(get_context()->translation_server->get_translation("forward tip"));
             forward_tip->set_font_size(16);
-            forward_tip->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            forward_tip->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             vbox_container->add_child(forward_tip);
         }
 
@@ -361,7 +361,7 @@ void ControlPanel::on_ready() {
             alink_con->add_child(vbox_container2);
 
             auto hbox_container = std::make_shared<vecgui::HBoxContainer>();
-            hbox_container->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            hbox_container->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             vbox_container2->add_child(hbox_container);
 
             auto label = std::make_shared<vecgui::Label>();
@@ -373,7 +373,7 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(tx_pwr_label_);
 
             tx_pwr_slider_ = std::make_shared<vecgui::Slider>();
-            tx_pwr_slider_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            tx_pwr_slider_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             tx_pwr_slider_->set_integer_mode(true);
             tx_pwr_slider_->set_range(1, 40);
             hbox_container->add_child(tx_pwr_slider_);
@@ -387,7 +387,7 @@ void ControlPanel::on_ready() {
             auto alink_tip = std::make_shared<vecgui::Label>();
             alink_tip->set_text(get_context()->translation_server->get_translation("alink tip"));
             alink_tip->set_font_size(16);
-            alink_tip->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            alink_tip->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             vbox_container2->add_child(alink_tip);
 
             // Set UI according to config
@@ -404,7 +404,7 @@ void ControlPanel::on_ready() {
         {
             play_button_ = std::make_shared<vecgui::Button>();
             play_button_->set_custom_minimum_size({0, 48});
-            play_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            play_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             update_adapter_start_button_looking(true);
 
             auto callback1 = [this] {
@@ -474,7 +474,7 @@ void ControlPanel::on_ready() {
                 update_adapter_start_button_looking(!start);
             };
             play_button_->connect_signal("triggered", callback1);
-            play_button_->container_sizing.flag_v = vecgui::ContainerSizingFlag::ShrinkEnd;
+            play_button_->set_container_sizing_v(vecgui::ContainerSizingFlag::ShrinkEnd);
             top_vbox->add_child(play_button_);
         }
     }
@@ -498,7 +498,7 @@ void ControlPanel::on_ready() {
         margin_container->add_child(grid);
 
         auto con = std::make_shared<vecgui::Container>();
-        con->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        con->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         grid->add_child(con);
 
         auto vbox_blockable = std::make_shared<vecgui::VBoxContainer>();
@@ -525,7 +525,7 @@ void ControlPanel::on_ready() {
         local_listener_port_edit_->set_editable(true);
         local_listener_port_edit_->set_numbers_only(true);
         local_listener_port_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT]);
-        local_listener_port_edit_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+        local_listener_port_edit_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         hbox_container->add_child(local_listener_port_edit_);
 
         {
@@ -538,7 +538,7 @@ void ControlPanel::on_ready() {
             hbox_container->add_child(label);
 
             auto codec_menu_button = std::make_shared<vecgui::MenuButton>();
-            codec_menu_button->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            codec_menu_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             codec_menu_button->set_text(GuiInterface::Instance().rtp_codec_);
             hbox_container->add_child(codec_menu_button);
 
@@ -567,7 +567,7 @@ void ControlPanel::on_ready() {
         {
             play_port_button_ = std::make_shared<vecgui::Button>();
             play_port_button_->set_custom_minimum_size({0, 48});
-            play_port_button_->container_sizing.flag_h = vecgui::ContainerSizingFlag::Fill;
+            play_port_button_->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
