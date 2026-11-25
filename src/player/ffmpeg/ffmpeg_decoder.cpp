@@ -250,6 +250,25 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
                     int ret = avcodec_receive_frame(pVideoCodecCtx, frameToReceive);
                     if (ret == 0) {
+                        // FFmpeg silently falls back to software decoding when hwaccel initialization fails
+                        // (e.g. a Vulkan device without VK_KHR_video_decode_queue). Switch to the software path.
+                        if (hwDecoderEnabled && frameToReceive->format != hwPixFmt) {
+                            GuiInterface::Instance().PutLog(LogLevel::Warn,
+                                                            "Hardware decoder {} returned software frames, "
+                                                            "falling back to software decoding",
+                                                            hwDecoderName.value_or(""));
+                            GuiInterface::Instance().ShowTip("hw decoding failed", true);
+                            hwDecoderEnabled = false;
+                            hwDecoderName = {};
+                            if (frameToReceive != pFrameVideo.get()) {
+                                av_frame_move_ref(pFrameVideo.get(), frameToReceive);
+                                frameToReceive = pFrameVideo.get();
+                            }
+                            // Force a video config update, the frame format is no longer NV12.
+                            width = 0;
+                            height = 0;
+                        }
+
                         // Check if resolution is valid
                         if (frameToReceive->width <= 0 || frameToReceive->height <= 0) {
                             av_frame_unref(frameToReceive);
