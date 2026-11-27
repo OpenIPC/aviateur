@@ -2,16 +2,19 @@
 
 #include <memory>
 
+#include "src/gui_interface.h"
+
 inline bool convertToYUV420P(const std::shared_ptr<AVFrame> &frame, std::shared_ptr<AVFrame> &yuvFrame) {
-    int width = frame->width;
-    int height = frame->height;
+    const int width = frame->width;
+    const int height = frame->height;
 
     // Allocate YUV frame
     yuvFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f) { av_frame_free(&f); });
     if (!yuvFrame) {
         return false;
     }
-    yuvFrame->format = AV_PIX_FMT_YUVJ420P;
+    yuvFrame->format = AV_PIX_FMT_YUV420P;
+    yuvFrame->color_range = AVCOL_RANGE_JPEG;
     yuvFrame->width = width;
     yuvFrame->height = height;
 
@@ -22,53 +25,77 @@ inline bool convertToYUV420P(const std::shared_ptr<AVFrame> &frame, std::shared_
     }
 
     // Convert RGB to YUV420P
-    struct SwsContext *sws_ctx = sws_getContext(width,
-                                                height,
-                                                static_cast<AVPixelFormat>(frame->format),
-                                                width,
-                                                height,
-                                                AV_PIX_FMT_YUVJ420P,
-                                                0,
-                                                nullptr,
-                                                nullptr,
-                                                nullptr);
-    if (!sws_ctx) {
+    SwsContext *swsCtx = sws_getContext(width,
+                                        height,
+                                        static_cast<AVPixelFormat>(frame->format),
+                                        width,
+                                        height,
+                                        AV_PIX_FMT_YUV420P,
+                                        SWS_BILINEAR,
+                                        nullptr,
+                                        nullptr,
+                                        nullptr);
+    if (!swsCtx) {
+        return false;
+    }
+
+    const int *coeffs = sws_getCoefficients(SWS_CS_DEFAULT);
+
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(static_cast<AVPixelFormat>(frame->format));
+    if (!desc) {
+        sws_freeContext(swsCtx);
+        return false;
+    }
+
+    const bool srcFullRange = (desc->flags & AV_PIX_FMT_FLAG_RGB) || frame->color_range == AVCOL_RANGE_JPEG;
+
+    ret = sws_setColorspaceDetails(swsCtx, coeffs, srcFullRange ? 1 : 0, coeffs, 1, 0, 1 << 16, 1 << 16);
+    if (ret < 0) {
+        sws_freeContext(swsCtx);
         return false;
     }
 
     // Perform RGB to YUV conversion
-    ret = sws_scale(sws_ctx, frame->data, frame->linesize, 0, height, yuvFrame->data, yuvFrame->linesize);
+    ret = sws_scale(swsCtx, frame->data, frame->linesize, 0, height, yuvFrame->data, yuvFrame->linesize);
     if (ret <= 0) {
-        sws_freeContext(sws_ctx);
+        sws_freeContext(swsCtx);
         return false;
     }
 
     // Cleanup
-    sws_freeContext(sws_ctx);
+    sws_freeContext(swsCtx);
 
     return true;
 }
 
 bool JpegEncoder::encodeJpeg(const std::string &outFilePath, const std::shared_ptr<AVFrame> &frame) {
-    if (!(frame && frame->height && frame->width && frame->linesize[0])) {
+    if (!(frame && frame->format >= 0 && frame->height && frame->width && frame->linesize[0])) {
         return false;
     }
 
-    auto pFormatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+    AVFormatContext *ctx = nullptr;
 
-    pFormatCtx->oformat = av_guess_format("mjpeg", nullptr, nullptr);
+    int ret = avformat_alloc_output_context2(&ctx, nullptr, "image2", outFilePath.c_str());
+    if (ret < 0 || !ctx) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to create JPEG output context");
+        return false;
+    }
 
-    if (avio_open(&pFormatCtx->pb, outFilePath.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
+    auto pFormatCtx = std::shared_ptr<AVFormatContext>(ctx, &avformat_free_context);
+
+    if (avio_open(&pFormatCtx->pb, outFilePath.c_str(), AVIO_FLAG_WRITE) < 0) {
         return false;
     }
 
     AVStream *pAVStream = avformat_new_stream(pFormatCtx.get(), nullptr);
     if (pAVStream == nullptr) {
+        avio_closep(&pFormatCtx->pb);
         return false;
     }
 
     const AVCodec *pCodec = avcodec_find_encoder(pFormatCtx->oformat->video_codec);
     if (!pCodec) {
+        avio_closep(&pFormatCtx->pb);
         return false;
     }
 
@@ -81,48 +108,66 @@ bool JpegEncoder::encodeJpeg(const std::string &outFilePath, const std::shared_p
     codecCtx->height = frame->height;
     codecCtx->time_base = AVRational{1, 25};
 
-    // Convert frame to YUV420P if it's not already in that format
     std::shared_ptr<AVFrame> yuvFrame;
-    if (frame->format != AV_PIX_FMT_YUVJ420P && frame->format != AV_PIX_FMT_YUV420P) {
+    const bool isYuv420pFullRange = frame->format == AV_PIX_FMT_YUV420P && frame->color_range == AVCOL_RANGE_JPEG;
+
+    // Convert frame to YUV420P if it's not already in that format
+    if (isYuv420pFullRange) {
+        yuvFrame = frame;
+    } else {
         if (!convertToYUV420P(frame, yuvFrame)) {
+            avio_closep(&pFormatCtx->pb);
             return false;
         }
-        codecCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
-    } else {
-        yuvFrame = frame; // If already YUV420P, use as is
     }
 
+    codecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    codecCtx->color_range = AVCOL_RANGE_JPEG;
+
     if (avcodec_open2(codecCtx.get(), pCodec, nullptr) < 0) {
+        avio_closep(&pFormatCtx->pb);
         return false;
     }
 
     avcodec_parameters_from_context(pAVStream->codecpar, codecCtx.get());
 
-    int ret{};
-
     ret = avformat_write_header(pFormatCtx.get(), nullptr);
     if (ret < 0) {
+        avio_closep(&pFormatCtx->pb);
         return false;
     }
-
-    int y_size = codecCtx->width * codecCtx->height;
 
     // Resize packet
     auto pkt = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
-    av_new_packet(pkt.get(), y_size);
 
     ret = avcodec_send_frame(codecCtx.get(), yuvFrame.get());
     if (ret < 0) {
+        avio_closep(&pFormatCtx->pb);
         return false;
     }
 
-    avcodec_receive_packet(codecCtx.get(), pkt.get());
+    ret = avcodec_receive_packet(codecCtx.get(), pkt.get());
 
-    av_write_frame(pFormatCtx.get(), pkt.get());
+    if (ret < 0) {
+        avio_closep(&pFormatCtx->pb);
+        return false;
+    }
 
-    av_write_trailer(pFormatCtx.get());
+    ret = av_write_frame(pFormatCtx.get(), pkt.get());
 
-    avio_close(pFormatCtx->pb);
+    if (ret < 0) {
+        avio_closep(&pFormatCtx->pb);
+        return false;
+    }
+
+    ret = av_write_trailer(pFormatCtx.get());
+
+    if (ret < 0) {
+        avio_closep(&pFormatCtx->pb);
+        return false;
+    }
+
+    avio_closep(&pFormatCtx->pb);
 
     return true;
 }

@@ -1,8 +1,4 @@
-﻿//
-// Created by liangzhuohua on 2022/2/28.
-//
-
-#pragma once
+﻿#pragma once
 
 #include <memory>
 #include <string>
