@@ -17,7 +17,7 @@ Mp4Encoder::~Mp4Encoder() {
     }
 }
 
-void Mp4Encoder::addTrack(AVStream *stream) {
+void Mp4Encoder::addTrack(AVStream *stream, const AVCodecContext *codecCtx) {
     if (!stream || !stream->codecpar) {
         return;
     }
@@ -30,13 +30,30 @@ void Mp4Encoder::addTrack(AVStream *stream) {
     if (ret < 0) {
         return;
     }
-    os->codecpar->codec_tag = 0;
+
+    // Copy extradata from codec context if missing from stream codecpar (critical for QuickTime Player MP4 metadata)
+    if (codecCtx && codecCtx->extradata && codecCtx->extradata_size > 0 && os->codecpar->extradata_size == 0) {
+        os->codecpar->extradata =
+            static_cast<uint8_t *>(av_mallocz(codecCtx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE));
+        if (os->codecpar->extradata) {
+            memcpy(os->codecpar->extradata, codecCtx->extradata, codecCtx->extradata_size);
+            os->codecpar->extradata_size = codecCtx->extradata_size;
+        }
+    }
+
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         audioIndex = os->index;
         originAudioTimeBase_ = stream->time_base;
+        os->codecpar->codec_tag = 0;
     } else if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         videoIndex = os->index;
         originVideoTimeBase_ = stream->time_base;
+        // macOS QuickTime Player strictly requires 'hvc1' fourcc tag for HEVC streams (instead of 'hev1')
+        if (stream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+            os->codecpar->codec_tag = MKTAG('h', 'v', 'c', '1');
+        } else {
+            os->codecpar->codec_tag = 0;
+        }
     }
 }
 
@@ -47,8 +64,8 @@ bool Mp4Encoder::start() {
     }
     // Write output stream header information
     AVDictionary *opts = nullptr;
-    // Fragmented MP4 flags for maximum resilience against crashes or unexpected termination
-    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov+default_base_moof", 0);
+    // Fragmented MP4 flags for maximum resilience against crashes + QuickTime compatibility (write_colr)
+    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov+default_base_moof+write_colr", 0);
     int ret = avformat_write_header(formatCtx_.get(), &opts);
     av_dict_free(&opts);
 

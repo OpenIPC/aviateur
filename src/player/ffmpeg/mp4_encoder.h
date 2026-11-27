@@ -15,7 +15,7 @@ public:
 
     void stop();
 
-    void addTrack(AVStream *stream);
+    void addTrack(AVStream *stream, const AVCodecContext *codecCtx = nullptr);
 
     void writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo);
 

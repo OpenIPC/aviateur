@@ -386,14 +386,14 @@ bool VideoPlayerFfmpeg::start_mp4_recording() {
 
     mp4Encoder_ = std::make_shared<Mp4Encoder>(filePath.str());
 
-    // Audio track not handled for now.
+    // Audio track.
     if (decoder->HasAudio()) {
-        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
+        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex], decoder->pAudioCodecCtx);
     }
 
-    // Add video track.
+    // Add video track with codec context extradata for QuickTime compatibility.
     if (decoder->HasVideo()) {
-        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
+        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex], decoder->pVideoCodecCtx);
     }
 
     if (!mp4Encoder_->start()) {
