@@ -147,6 +147,11 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
             [this, weakDecoder = std::weak_ptr(localDecoder)](int w, int h, AVPixelFormat fmt) {
                 const auto dec = weakDecoder.lock();
                 if (dec && w > 0 && h > 0) {
+                    // Auto-segment MP4 recording if resolution changes mid-recording
+                    if (mp4Encoder_ && (w != video_width() || h != video_height())) {
+                        restart_mp4_recording_segment();
+                    }
+
                     // The decoder may have fallen back to software decoding.
                     const std::string previous_decoder_name = current_decoder_name;
                     current_decoder_name = dec->hwDecoderName.value_or("Software");
@@ -224,6 +229,9 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                         if (localDecoder->OpenInput(url, forceSoftwareDecoding)) {
                             sendPacketErrorCount = 0;
                             readRetryCount = 0;
+                            if (mp4Encoder_) {
+                                restart_mp4_recording_segment();
+                            }
                         }
                     }
                 }
@@ -248,6 +256,9 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                         if (localDecoder->OpenInput(url, forceSoftwareDecoding)) {
                             GuiInterface::Instance().PutLog(LogLevel::Info,
                                                             "Input reopened successfully, waiting for data...");
+                            if (mp4Encoder_) {
+                                restart_mp4_recording_segment();
+                            }
                         }
                     }
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -555,4 +566,24 @@ bool VideoPlayerFfmpeg::hasAudio() const {
     }
 
     return decoder->HasAudio();
+}
+
+void VideoPlayerFfmpeg::restart_mp4_recording_segment() {
+    if (!mp4Encoder_) {
+        return;
+    }
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Auto-segmenting MP4 recording due to stream reconnect or resolution change");
+
+    std::string savedFile = stop_mp4_recording();
+    if (!savedFile.empty()) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Previous MP4 segment saved: {}", savedFile);
+        GuiInterface::Instance().ShowTip("recording segment saved", false);
+    }
+
+    if (start_mp4_recording()) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "New MP4 recording segment started automatically");
+    } else {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to start new MP4 recording segment");
+    }
 }

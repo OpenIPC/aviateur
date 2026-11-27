@@ -38,6 +38,8 @@ public:
     bool start_mp4_recording() override;
     std::string stop_mp4_recording() const override;
 
+    void restart_mp4_recording_segment();
+
     bool start_gif_recording() override;
     std::string stop_gif_recording() const override;
 
