@@ -48,6 +48,18 @@ void Mp4Encoder::addTrack(AVStream *stream, const AVCodecContext *codecCtx) {
     } else if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         videoIndex = os->index;
         originVideoTimeBase_ = stream->time_base;
+
+        // Ensure video dimensions and format are populated (RTP stream codecpar often starts with width/height == 0)
+        if (os->codecpar->width <= 0 || os->codecpar->height <= 0) {
+            if (codecCtx && codecCtx->width > 0 && codecCtx->height > 0) {
+                os->codecpar->width = codecCtx->width;
+                os->codecpar->height = codecCtx->height;
+            }
+        }
+        if (os->codecpar->format == AV_PIX_FMT_NONE && codecCtx) {
+            os->codecpar->format = codecCtx->pix_fmt;
+        }
+
         // macOS QuickTime Player strictly requires 'hvc1' fourcc tag for HEVC streams (instead of 'hev1')
         if (stream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
             os->codecpar->codec_tag = MKTAG('h', 'v', 'c', '1');

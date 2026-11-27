@@ -360,7 +360,12 @@ std::string VideoPlayerFfmpeg::capture_jpeg() {
 }
 
 bool VideoPlayerFfmpeg::start_mp4_recording() {
-    if (should_stop_playing_ && !lastFrame_) {
+    if (should_stop_playing_ || !decoder || !decoder->HasVideo()) {
+        return false;
+    }
+
+    if (decoder->GetWidth() <= 0 || decoder->GetHeight() <= 0) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "Cannot start MP4 recording: video dimensions not ready yet");
         return false;
     }
 
