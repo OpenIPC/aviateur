@@ -198,11 +198,16 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     }
 
                     // Push frame to the buffer queue.
-                    std::lock_guard lck(mtx);
-                    if (videoFrameQueue.size() > 1) {
-                        videoFrameQueue.pop();
+                    // Latest frame wins: discard stale frames to minimize latency.
+                    {
+                        std::lock_guard lck(mtx);
+
+                        while (!videoFrameQueue.empty()) {
+                            videoFrameQueue.pop();
+                        }
+
+                        videoFrameQueue.push(frame);
                     }
-                    videoFrameQueue.push(frame);
                 }
                 // Decoder error.
                 catch (const SendPacketException &e) {
@@ -395,23 +400,28 @@ bool VideoPlayerFfmpeg::start_mp4_recording() {
         return false;
     }
 
-    // Set NALU reception callback
-    decoder->gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
-        // Feed packet to encoder
-        mp4Encoder_->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
-    };
+    // Set NALU reception callback thread-safely
+    decoder->SetGotPktCallback([this](const std::shared_ptr<AVPacket> &packet) {
+        if (mp4Encoder_) {
+            mp4Encoder_->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
+        }
+    });
 
     return true;
 }
 
 std::string VideoPlayerFfmpeg::stop_mp4_recording() const {
+    if (decoder) {
+        decoder->SetGotPktCallback(nullptr);
+    }
     if (!mp4Encoder_) {
         return {};
     }
     mp4Encoder_->stop();
-    decoder->gotPktCallback = nullptr;
+    auto savePath = mp4Encoder_->saveFilePath_;
+    mp4Encoder_.reset();
 
-    return mp4Encoder_->saveFilePath_;
+    return savePath;
 }
 
 bool VideoPlayerFfmpeg::start_gif_recording() {
@@ -440,8 +450,8 @@ bool VideoPlayerFfmpeg::start_gif_recording() {
         return false;
     }
 
-    // Set decoded frame callback
-    decoder->gotVideoFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
+    // Set decoded frame callback thread-safely
+    decoder->SetGotVideoFrameCallback([this](const std::shared_ptr<AVFrame> &frame) {
         if (!gifEncoder_) {
             return;
         }
@@ -470,18 +480,22 @@ bool VideoPlayerFfmpeg::start_gif_recording() {
 #endif
 
         gifEncoder_->encodeFrame(frameForEncode);
-    };
+    });
 
     return true;
 }
 
 std::string VideoPlayerFfmpeg::stop_gif_recording() const {
-    decoder->gotVideoFrameCallback = nullptr;
+    if (decoder) {
+        decoder->SetGotVideoFrameCallback(nullptr);
+    }
     if (!gifEncoder_) {
         return "";
     }
     gifEncoder_->close();
-    return gifEncoder_->_saveFilePath;
+    auto savePath = gifEncoder_->_saveFilePath;
+    gifEncoder_.reset();
+    return savePath;
 }
 
 std::shared_ptr<FfmpegDecoder> VideoPlayerFfmpeg::getDecoder() const {

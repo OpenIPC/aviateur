@@ -56,9 +56,9 @@ protected:
 
     void disableAudio();
 
-    std::shared_ptr<Mp4Encoder> mp4Encoder_;
+    mutable std::shared_ptr<Mp4Encoder> mp4Encoder_;
 
-    std::shared_ptr<GifEncoder> gifEncoder_;
+    mutable std::shared_ptr<GifEncoder> gifEncoder_;
 
     bool hasAudio() const;
 

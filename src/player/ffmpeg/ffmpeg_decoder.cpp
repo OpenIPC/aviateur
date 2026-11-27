@@ -360,9 +360,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                             // Zero-copy path: pFrameVideo already contains the hardware-decoded frame
                             // No transfer needed - the CVPixelBuffer is directly accessible via data[3]
                         }
-                        if (gotVideoFrameCallback) {
-                            gotVideoFrameCallback(pFrameVideo);
-                        }
+                        invokeGotVideoFrameCallback(pFrameVideo);
 
                         latestVideoFrame = pFrameVideo;
                         continue;
@@ -422,7 +420,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             std::lock_guard lck(_releaseLock);
             if (!sourceIsOpened || !pVideoCodecCtx) return nullptr;
 
-            if (gotPktCallback) gotPktCallback(packet);
+            invokeGotPktCallback(packet);
             ret = avcodec_send_packet(pVideoCodecCtx, packet.get());
             if (ret < 0) {
                 char errStr[AV_ERROR_MAX_STRING_SIZE];
@@ -438,7 +436,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             std::lock_guard lck(_releaseLock);
             if (!sourceIsOpened || !pAudioCodecCtx) return nullptr;
 
-            if (gotPktCallback) gotPktCallback(packet);
+            invokeGotPktCallback(packet);
 
             if (audioDecodeBuffer.size() < MAX_AUDIO_PACKET) {
                 audioDecodeBuffer.resize(MAX_AUDIO_PACKET);
@@ -463,6 +461,38 @@ bool FfmpegDecoder::createHwCtx(AVCodecContext *ctx, const AVHWDeviceType type) 
     return true;
 }
 
+void FfmpegDecoder::SetGotPktCallback(std::function<void(const std::shared_ptr<AVPacket> &packet)> cb) {
+    std::lock_guard<std::mutex> lock(callbackMtx);
+    gotPktCallback = std::move(cb);
+}
+
+void FfmpegDecoder::SetGotVideoFrameCallback(std::function<void(const std::shared_ptr<AVFrame> &frame)> cb) {
+    std::lock_guard<std::mutex> lock(callbackMtx);
+    gotVideoFrameCallback = std::move(cb);
+}
+
+void FfmpegDecoder::invokeGotPktCallback(const std::shared_ptr<AVPacket> &packet) {
+    std::function<void(const std::shared_ptr<AVPacket> &packet)> cb;
+    {
+        std::lock_guard<std::mutex> lock(callbackMtx);
+        cb = gotPktCallback;
+    }
+    if (cb) {
+        cb(packet);
+    }
+}
+
+void FfmpegDecoder::invokeGotVideoFrameCallback(const std::shared_ptr<AVFrame> &frame) {
+    std::function<void(const std::shared_ptr<AVFrame> &frame)> cb;
+    {
+        std::lock_guard<std::mutex> lock(callbackMtx);
+        cb = gotVideoFrameCallback;
+    }
+    if (cb) {
+        cb(frame);
+    }
+}
+
 AVCodecContext *FfmpegDecoder::openHwDecoder(const AVCodecParameters *codecpar,
                                              const int frameWidth,
                                              const int frameHeight,
@@ -483,8 +513,13 @@ AVCodecContext *FfmpegDecoder::openHwDecoder(const AVCodecParameters *codecpar,
             ctx->height = frameHeight;
         }
 
-        // Disable multi-threaded frame decoding to minimize latency
+        // Minimize decoding latency
         ctx->thread_count = 1;
+        ctx->thread_type = FF_THREAD_SLICE;
+        ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+#ifdef AV_CODEC_FLAG2_FAST
+        ctx->flags2 |= AV_CODEC_FLAG2_FAST;
+#endif
         return ctx;
     };
 
@@ -579,8 +614,13 @@ AVCodecContext *FfmpegDecoder::openSwDecoder(const AVCodecParameters *codecpar) 
         return nullptr;
     }
 
-    // Disable multi-threaded frame decoding to minimize latency
+    // Minimize decoding latency
     ctx->thread_count = 1;
+    ctx->thread_type = FF_THREAD_SLICE;
+    ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+#ifdef AV_CODEC_FLAG2_FAST
+    ctx->flags2 |= AV_CODEC_FLAG2_FAST;
+#endif
 
     if (avcodec_open2(ctx, codec, nullptr) < 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "avcodec_open2 failed");

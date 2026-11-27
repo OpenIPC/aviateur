@@ -104,6 +104,14 @@ public:
     bool IsZeroCopyEnabled() const { return mZeroCopyEnabled; }
 #endif
 
+    void SetGotPktCallback(std::function<void(const std::shared_ptr<AVPacket> &packet)> cb);
+
+    void SetGotVideoFrameCallback(std::function<void(const std::shared_ptr<AVFrame> &frame)> cb);
+
+    void invokeGotPktCallback(const std::shared_ptr<AVPacket> &packet);
+
+    void invokeGotVideoFrameCallback(const std::shared_ptr<AVFrame> &frame);
+
 private:
     bool OpenVideo();
 
@@ -118,6 +126,7 @@ private:
     void writeAudioBuff(const uint8_t *aSample, size_t aSize);
 
     /// NALU callback (video/audio)
+    std::mutex callbackMtx;
     std::function<void(const std::shared_ptr<AVPacket> &packet)> gotPktCallback;
 
     std::function<void(const std::shared_ptr<AVFrame> &frame)> gotVideoFrameCallback;
