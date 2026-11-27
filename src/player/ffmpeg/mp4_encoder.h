@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "ffmpeg_include.h"
@@ -33,4 +34,6 @@ private:
     AVRational originAudioTimeBase_{};
 
     bool writtenKeyFrame_ = false;
+
+    std::mutex writeMtx_;
 };
