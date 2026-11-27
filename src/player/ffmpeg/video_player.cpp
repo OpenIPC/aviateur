@@ -130,8 +130,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
             return;
         }
 
-        current_decoder_name =
-            localDecoder->hwDecoderName.has_value() ? localDecoder->hwDecoderName.value() : "Software";
+        current_decoder_name = localDecoder->hwDecoderName.value_or("Software");
 
         if (!isMuted && localDecoder->HasAudio()) {
             enableAudio();
