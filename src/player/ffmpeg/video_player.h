@@ -38,7 +38,7 @@ public:
     bool start_mp4_recording() override;
     std::string stop_mp4_recording() const override;
 
-    void restart_mp4_recording_segment();
+    void handleRecordingSegmentChange();
 
     bool start_gif_recording() override;
     std::string stop_gif_recording() const override;
@@ -62,8 +62,11 @@ protected:
 
     mutable std::shared_ptr<GifEncoder> gifEncoder_;
 
+    mutable std::mutex mp4RecordingMtx_;
+
     bool hasAudio() const;
 
     std::atomic<bool> has_emitted_ready_ = false;
+    std::atomic<bool> restartRecordingAfterReconnect = false;
     std::string current_decoder_name;
 };

@@ -149,7 +149,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                 if (dec && w > 0 && h > 0) {
                     // Auto-segment MP4 recording if resolution changes mid-recording
                     if (mp4Encoder_ && (w != video_width() || h != video_height())) {
-                        restart_mp4_recording_segment();
+                        handleRecordingSegmentChange();
                     }
 
                     // The decoder may have fallen back to software decoding.
@@ -158,7 +158,7 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                     // If resolution or decoder changed, re-emit ready signal to update UI labels
                     if (!has_emitted_ready_ || w != video_width() || h != video_height() ||
                         current_decoder_name != previous_decoder_name) {
-                        GuiInterface::Instance().EmitDecoderReady(w, h, decoder->GetFramerate(), current_decoder_name);
+                        GuiInterface::Instance().EmitDecoderReady(w, h, dec->GetFramerate(), current_decoder_name);
                         has_emitted_ready_ = true;
                     }
                     update_video_info(w, h, fmt);
@@ -202,6 +202,15 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                         has_emitted_ready_ = true;
                     }
 
+                    if (restartRecordingAfterReconnect) {
+                        restartRecordingAfterReconnect = false;
+                        if (start_mp4_recording()) {
+                            GuiInterface::Instance().PutLog(LogLevel::Info, "New MP4 recording segment started after reconnect");
+                        } else {
+                            GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to start new MP4 recording segment after reconnect");
+                        }
+                    }
+
                     // Push frame to the buffer queue.
                     // Latest frame wins: discard stale frames to minimize latency.
                     {
@@ -224,14 +233,17 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
                         GuiInterface::Instance().ShowTip("codec error, reconnecting...", true);
                         isSignalLostNotified = true;
 
+                        if (mp4Encoder_) {
+                            GuiInterface::Instance().PutLog(LogLevel::Info, "Stopping current MP4 segment due to send packet error reconnect");
+                            stop_mp4_recording();
+                            restartRecordingAfterReconnect = true;
+                        }
+
                         localDecoder->CloseInput();
                         std::this_thread::sleep_for(std::chrono::seconds(1));
                         if (localDecoder->OpenInput(url, forceSoftwareDecoding)) {
                             sendPacketErrorCount = 0;
                             readRetryCount = 0;
-                            if (mp4Encoder_) {
-                                restart_mp4_recording_segment();
-                            }
                         }
                     }
                 }
@@ -250,15 +262,20 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
 
                     if (readRetryCount >= 2) {
                         // Re-open input to reset FFmpeg RTP state (SSRC, sequence numbers, etc.)
+                        if (mp4Encoder_) {
+                            GuiInterface::Instance().PutLog(LogLevel::Info, "Stopping current MP4 segment due to signal loss reconnect");
+                            stop_mp4_recording();
+                            restartRecordingAfterReconnect = true;
+                        }
+
                         localDecoder->CloseInput();
                         std::this_thread::sleep_for(std::chrono::seconds(1));
 
                         if (localDecoder->OpenInput(url, forceSoftwareDecoding)) {
                             GuiInterface::Instance().PutLog(LogLevel::Info,
                                                             "Input reopened successfully, waiting for data...");
-                            if (mp4Encoder_) {
-                                restart_mp4_recording_segment();
-                            }
+                            sendPacketErrorCount = 0;
+                            readRetryCount = 0;
                         }
                     }
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -275,6 +292,10 @@ void VideoPlayerFfmpeg::play(const std::string &playUrl, bool forceSoftwareDecod
 
 void VideoPlayerFfmpeg::stop() {
     should_stop_playing_ = true;
+
+    // Explicitly stop active recordings on player stop
+    stop_mp4_recording();
+    stop_gif_recording();
 
     if (decoder) {
         decoder->abortRequest = true;
@@ -302,7 +323,7 @@ void VideoPlayerFfmpeg::stop() {
 }
 
 void VideoPlayerFfmpeg::set_muted(bool muted) {
-    if (!decoder->HasAudio()) {
+    if (!decoder || !decoder->HasAudio()) {
         return;
     }
 
@@ -400,26 +421,40 @@ bool VideoPlayerFfmpeg::start_mp4_recording() {
     std::ofstream outfile(filePath.str());
     outfile.close();
 
-    mp4Encoder_ = std::make_shared<Mp4Encoder>(filePath.str());
+    auto encoder = std::make_shared<Mp4Encoder>(filePath.str());
 
     // Audio track.
     if (decoder->HasAudio()) {
-        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex], decoder->pAudioCodecCtx);
+        encoder->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex], decoder->pAudioCodecCtx);
     }
 
     // Add video track with codec context extradata for QuickTime compatibility.
     if (decoder->HasVideo()) {
-        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex], decoder->pVideoCodecCtx);
+        encoder->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex], decoder->pVideoCodecCtx);
     }
 
-    if (!mp4Encoder_->start()) {
+    if (!encoder->start()) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to initialize MP4 encoder");
         return false;
     }
 
-    // Set NALU reception callback thread-safely
+    {
+        std::lock_guard<std::mutex> lock(mp4RecordingMtx_);
+        mp4Encoder_ = encoder;
+    }
+
+    // Set NALU reception callback thread-safely with local encoder snapshot pattern
     decoder->SetGotPktCallback([this](const std::shared_ptr<AVPacket> &packet) {
-        if (mp4Encoder_) {
-            mp4Encoder_->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
+        if (!packet || !decoder) {
+            return;
+        }
+        std::shared_ptr<Mp4Encoder> enc;
+        {
+            std::lock_guard<std::mutex> lock(mp4RecordingMtx_);
+            enc = mp4Encoder_;
+        }
+        if (enc) {
+            enc->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
         }
     });
 
@@ -430,14 +465,20 @@ std::string VideoPlayerFfmpeg::stop_mp4_recording() const {
     if (decoder) {
         decoder->SetGotPktCallback(nullptr);
     }
-    if (!mp4Encoder_) {
+
+    std::shared_ptr<Mp4Encoder> encoder;
+    {
+        std::lock_guard<std::mutex> lock(mp4RecordingMtx_);
+        encoder = mp4Encoder_;
+        mp4Encoder_.reset();
+    }
+
+    if (!encoder) {
         return {};
     }
-    mp4Encoder_->stop();
-    auto savePath = mp4Encoder_->saveFilePath_;
-    mp4Encoder_.reset();
 
-    return savePath;
+    encoder->stop();
+    return encoder->saveFilePath_;
 }
 
 bool VideoPlayerFfmpeg::start_gif_recording() {
@@ -568,8 +609,13 @@ bool VideoPlayerFfmpeg::hasAudio() const {
     return decoder->HasAudio();
 }
 
-void VideoPlayerFfmpeg::restart_mp4_recording_segment() {
-    if (!mp4Encoder_) {
+void VideoPlayerFfmpeg::handleRecordingSegmentChange() {
+    std::shared_ptr<Mp4Encoder> enc;
+    {
+        std::lock_guard<std::mutex> lock(mp4RecordingMtx_);
+        enc = mp4Encoder_;
+    }
+    if (!enc) {
         return;
     }
 
