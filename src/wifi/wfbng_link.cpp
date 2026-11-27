@@ -764,7 +764,7 @@ void WfbngLink::stop() {
         usb_thread.reset();
     }
 
-    // 销毁视频和 UDP 聚合器，强制关闭其持有的 Socket 端口
+    // Destroy video and UDP aggregators, forcibly close the socket ports they hold
     {
         std::lock_guard lock(agg_mutex);
         video_aggregator.reset();

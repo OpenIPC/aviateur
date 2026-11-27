@@ -9,7 +9,7 @@
     #include <mswsock.h>
     #include <windows.h>
 
-    // 确保没有全局 min/max 宏干扰
+    // Ensure no global min/max macros interfere
     #ifdef min
         #undef min
     #endif
@@ -51,7 +51,7 @@
         int msg_flags;
     };
 
-    // --- 使用 wfb_ 前缀的内联函数，彻底避免命名冲突 ---
+    // --- Inline functions using the wfb_ prefix to completely avoid naming collisions ---
 
     inline int wfb_close(int fd) {
         return closesocket((SOCKET)fd);
@@ -86,7 +86,7 @@
         _aligned_free(p);
     }
 
-    // --- POSIX 模拟 ---
+    // --- POSIX emulation ---
 
     #ifndef CMSG_FIRSTHDR
         #define CMSG_FIRSTHDR(mhdr) (NULL)

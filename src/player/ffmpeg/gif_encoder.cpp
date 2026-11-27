@@ -27,9 +27,9 @@ bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int fram
     _codecCtx->height = (int)(640.0 * height / width);
     _codecCtx->time_base = AVRational{1, frameRate};
 
-    // 根据需要创建颜色空间转换器
+    // Create color space converter as needed
     if (_codecCtx->pix_fmt != pixelFormat) {
-        // 颜色转换器
+        // Color converter
         _imgConvertCtx = sws_getCachedContext(_imgConvertCtx,
                                               width,
                                               height,
@@ -97,7 +97,7 @@ bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
                 return false;
             }
         }
-        // 转换为GIF编码需要的颜色和高度
+        // Convert to color and dimensions required for GIF encoding
         int h = sws_scale(_imgConvertCtx,
                           frame->data,
                           frame->linesize,
@@ -112,18 +112,18 @@ bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
 
     AVFrame *frameToSend = (_codecCtx->pix_fmt != frame->format) ? _tmpFrame.get() : frame.get();
 
-    // 记录帧编码时间
+    // Record frame encoding time
     _lastEncodeTime =
         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
             .count();
 
-    // 发送帧到编码上下文
+    // Send frame to encoding context
     int ret = avcodec_send_frame(_codecCtx.get(), frameToSend);
     if (ret < 0) {
         return false;
     }
 
-    // 获取已经编码完成的帧 (可能有多帧输出)
+    // Receive encoded frames (may have multiple output frames)
     std::shared_ptr<AVPacket> pkt =
         std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p) { av_packet_free(&p); });
 
@@ -135,7 +135,7 @@ bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
             return false;
         }
 
-        // 写文件
+        // Write packet to file
         av_write_frame(_formatCtx.get(), pkt.get());
         av_packet_unref(pkt.get());
     }

@@ -36,9 +36,9 @@ protected:
     std::shared_ptr<AVFormatContext> _formatCtx;
 
     std::shared_ptr<AVCodecContext> _codecCtx;
-    // 色彩空间转换
+    // Color space conversion
     SwsContext *_imgConvertCtx{};
-    // 颜色转换临时frame
+    // Temporary frame for color conversion
     std::shared_ptr<AVFrame> _tmpFrame;
     std::vector<uint8_t> _buff;
 

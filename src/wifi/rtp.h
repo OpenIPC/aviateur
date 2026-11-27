@@ -9,46 +9,46 @@
 class RtpHeader {
 public:
 #if defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || defined(_WIN32) && REG_DWORD == REG_DWORD_BIG_ENDIAN
-    // 版本号，固定为2
+    // Version number, fixed to 2
     uint32_t version : 2;
     // padding
     uint32_t padding : 1;
-    // 扩展
+    // Extension
     uint32_t ext : 1;
-    // csrc
+    // CSRC count
     uint32_t csrc : 4;
-    // mark
+    // Marker
     uint32_t mark : 1;
-    // 负载类型
+    // Payload type
     uint32_t pt : 7;
 #else
-    // csrc
+    // CSRC count
     uint32_t csrc : 4;
-    // 扩展
+    // Extension
     uint32_t ext : 1;
     // padding
     uint32_t padding : 1;
-    // 版本号，固定为2
+    // Version number, fixed to 2
     uint32_t version : 2;
-    // 负载类型
+    // Payload type
     uint32_t pt : 7;
-    // mark
+    // Marker
     uint32_t mark : 1;
 #endif
-    // 序列号
+    // Sequence number
     uint32_t seq : 16;
-    // 时间戳
+    // Timestamp
     uint32_t stamp;
-    // ssrc
+    // SSRC
     uint32_t ssrc;
-    // 负载，如果有csrc和ext，前面为 4 * csrc + (4 + 4 * ext_len)
+    // Payload; if csrc and ext are present, offset includes 4 * csrc + (4 + 4 * ext_len)
     uint8_t payload;
 
 public:
 #define AV_RB16(x) ((((const uint8_t *)(x))[0] << 8) | ((const uint8_t *)(x))[1])
 
     size_t getCsrcSize() const {
-        // 每个csrc占用4字节
+        // Each CSRC takes 4 bytes
         return csrc << 2;
     }
 
@@ -60,18 +60,18 @@ public:
     }
 
     size_t getExtSize() const {
-        // rtp有ext
+        // RTP has extension
         if (!ext) {
             return 0;
         }
         auto ext_ptr = &payload + getCsrcSize();
         // uint16_t reserved = AV_RB16(ext_ptr);
-        // 每个ext占用4字节
+        // Each extension takes 4 bytes
         return AV_RB16(ext_ptr + 2) << 2;
     }
 
     uint16_t getExtReserved() const {
-        // rtp有ext
+        // RTP has extension
         if (!ext) {
             return 0;
         }
@@ -84,12 +84,12 @@ public:
             return nullptr;
         }
         auto ext_ptr = &payload + getCsrcSize();
-        // 多出的4个字节分别为reserved、ext_len
+        // The extra 4 bytes are reserved and ext_len respectively
         return ext_ptr + 4;
     }
 
     size_t getPayloadOffset() const {
-        // 有ext时，还需要忽略reserved、ext_len 4个字节
+        // When extension is present, also ignore the 4 bytes of reserved and ext_len
         return getCsrcSize() + (ext ? (4 + getExtSize()) : 0);
     }
 

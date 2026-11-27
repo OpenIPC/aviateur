@@ -86,7 +86,7 @@ public:
         return pVideoCodecCtx->pix_fmt;
     }
 
-    // 每帧音频样本数估算:按 25fps 视频每帧时长预分配,*2 为安全余量
+    // Estimate audio samples per frame: pre-allocate based on 25fps frame duration, *2 as a safety margin
     int GetAudioFrameSamples() const {
         return pAudioCodecCtx->sample_rate * 2 / 25;
     }
@@ -148,11 +148,11 @@ private:
 
     AVCodecContext *pAudioCodecCtx = nullptr;
 
-    // ffmpeg 音频样本格式转换
+    // FFmpeg audio sample format conversion context
     std::shared_ptr<SwrContext> swrCtx;
     AVSampleFormat lastAudioFrameFormat = AV_SAMPLE_FMT_NONE;
 
-    // 音频解码中间缓冲区(复用,避免每包重新分配)
+    // Audio decoding intermediate buffer (reused to avoid per-packet reallocation)
     std::vector<uint8_t> audioDecodeBuffer;
 
     int videoStreamIndex = -1;

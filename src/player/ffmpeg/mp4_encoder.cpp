@@ -34,11 +34,11 @@ void Mp4Encoder::addTrack(AVStream *stream) {
 }
 
 bool Mp4Encoder::start() {
-    // 初始化上下文
+    // Initialize context
     if (avio_open(&formatCtx_->pb, saveFilePath_.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
         return false;
     }
-    // 写输出流头信息
+    // Write output stream header information
     AVDictionary *opts = nullptr;
     av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
     int ret = avformat_write_header(formatCtx_.get(), &opts);
@@ -54,11 +54,11 @@ void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo)
         return;
     }
 #ifdef I_FRAME_FIRST
-    // 未获取视频关键帧前先忽略音频
+    // Ignore audio until the first video keyframe is obtained
     if (videoIndex >= 0 && !writtenKeyFrame && !isVideo) {
         return;
     }
-    // 跳过非关键帧，使关键帧前置
+    // Skip non-keyframe before keyframe is reached
     if (!writtenKeyFrame && pkt->flags & AV_PKT_FLAG_KEY) {
         return;
     }

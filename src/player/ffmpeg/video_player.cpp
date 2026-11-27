@@ -396,9 +396,9 @@ bool VideoPlayerFfmpeg::start_mp4_recording() {
         return false;
     }
 
-    // 设置获得NALU回调
+    // Set NALU reception callback
     decoder->gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
-        // 输入编码器
+        // Feed packet to encoder
         mp4Encoder_->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
     };
 
@@ -441,7 +441,7 @@ bool VideoPlayerFfmpeg::start_gif_recording() {
         return false;
     }
 
-    // 设置获得解码帧回调
+    // Set decoded frame callback
     decoder->gotVideoFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
         if (!gifEncoder_) {
             return;
@@ -449,7 +449,7 @@ bool VideoPlayerFfmpeg::start_gif_recording() {
         if (!gifEncoder_->isOpened()) {
             return;
         }
-        // 根据GIF帧率跳帧
+        // Skip frames according to GIF framerate
         uint64_t now =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
                 .count();
