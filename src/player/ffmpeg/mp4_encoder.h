@@ -6,6 +6,15 @@
 
 #include "ffmpeg_include.h"
 
+/**
+ * @brief MP4 encoder.
+ *
+ * Usage restrictions:
+ * 1. Each Mp4Encoder instance is intended for recording a single MP4 file.
+ * 2. Recording cannot be restarted after stop() has been called.
+ * 3. Create a new Mp4Encoder instance to record another MP4 file.
+ * 4. formatCtx_ is managed automatically by std::shared_ptr.
+ */
 class Mp4Encoder {
 public:
     explicit Mp4Encoder(const std::string &saveFilePath);
@@ -26,6 +35,8 @@ public:
 
 private:
     bool isOpen_ = false;
+
+    bool startedOnce_ = false;
 
     std::shared_ptr<AVFormatContext> formatCtx_;
 

@@ -3,12 +3,16 @@
 #include "src/gui_interface.h"
 
 Mp4Encoder::Mp4Encoder(const std::string &saveFilePath) {
-    formatCtx_ = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+    AVFormatContext *ctx = nullptr;
 
-    formatCtx_->oformat = av_guess_format("mp4", saveFilePath.c_str(), nullptr);
-    if (!formatCtx_->oformat) {
-        formatCtx_->oformat = av_guess_format("mov", nullptr, nullptr);
+    int ret = avformat_alloc_output_context2(&ctx, nullptr, "mp4", saveFilePath.c_str());
+
+    if (ret < 0 || !ctx) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to create MP4 output context");
+        return;
     }
+
+    formatCtx_ = std::shared_ptr<AVFormatContext>(ctx, &avformat_free_context);
 
     saveFilePath_ = saveFilePath;
 }
@@ -20,15 +24,17 @@ Mp4Encoder::~Mp4Encoder() {
 }
 
 void Mp4Encoder::addTrack(AVStream *stream, const AVCodecContext *codecCtx) {
-    if (!stream || !stream->codecpar) {
+    if (!formatCtx_ || !stream || !stream->codecpar) {
         return;
     }
+
     if (stream->time_base.num <= 0 || stream->time_base.den <= 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Mp4Encoder::addTrack failed: invalid time_base");
         return;
     }
 
-    std::lock_guard<std::mutex> lock(writeMtx_);
+    std::lock_guard lock(writeMtx_);
+
     if (isOpen_) {
         return;
     }
@@ -87,14 +93,21 @@ void Mp4Encoder::addTrack(AVStream *stream, const AVCodecContext *codecCtx) {
 }
 
 bool Mp4Encoder::start() {
-    std::lock_guard<std::mutex> lock(writeMtx_);
-    if (isOpen_ || !formatCtx_ || !formatCtx_->oformat) {
+    std::lock_guard lock(writeMtx_);
+
+    if (isOpen_ || startedOnce_ || !formatCtx_ || !formatCtx_->oformat) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "Mp4Encoder::start failed: invalid state or context");
         return false;
     }
 
-    if (int err = avio_open(&formatCtx_->pb, saveFilePath_.c_str(), AVIO_FLAG_WRITE); err < 0) {
-        char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
+    // A video track is required. Audio track is optional.
+    if (videoIndex < 0) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Mp4Encoder::start failed: missing video track");
+        return false;
+    }
+
+    if (const int err = avio_open(&formatCtx_->pb, saveFilePath_.c_str(), AVIO_FLAG_WRITE); err < 0) {
+        char errbuf[AV_ERROR_MAX_STRING_SIZE] = {};
         av_strerror(err, errbuf, sizeof(errbuf));
         GuiInterface::Instance().PutLog(LogLevel::Error, "avio_open failed for {}: {}", saveFilePath_, errbuf);
         return false;
@@ -104,11 +117,11 @@ bool Mp4Encoder::start() {
     AVDictionary *opts = nullptr;
     // Fragmented MP4 flags for maximum resilience against crashes + QuickTime compatibility (write_colr)
     av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov+default_base_moof+write_colr", 0);
-    int ret = avformat_write_header(formatCtx_.get(), &opts);
+    const int ret = avformat_write_header(formatCtx_.get(), &opts);
     av_dict_free(&opts);
 
     if (ret < 0) {
-        char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
+        char errbuf[AV_ERROR_MAX_STRING_SIZE] = {};
         av_strerror(ret, errbuf, sizeof(errbuf));
         GuiInterface::Instance().PutLog(LogLevel::Error, "avformat_write_header failed: {}", errbuf);
         if (formatCtx_->pb) {
@@ -116,8 +129,11 @@ bool Mp4Encoder::start() {
         }
         return false;
     }
+
     isOpen_ = true;
+    startedOnce_ = true;
     writtenKeyFrame_ = false;
+
     return true;
 }
 
@@ -126,12 +142,12 @@ void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo)
         return;
     }
 
-    std::lock_guard<std::mutex> lock(writeMtx_);
+    std::lock_guard lock(writeMtx_);
     if (!isOpen_ || !formatCtx_) {
         return;
     }
 
-    int streamIndex = isVideo ? videoIndex : audioIndex;
+    const int streamIndex = isVideo ? videoIndex : audioIndex;
     if (streamIndex < 0 || streamIndex >= static_cast<int>(formatCtx_->nb_streams)) {
         return;
     }
@@ -151,7 +167,7 @@ void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo)
 
     std::shared_ptr<AVPacket> newPkt(clonedPkt, [](AVPacket *p) { av_packet_free(&p); });
 
-    AVRational timeBase = isVideo ? originVideoTimeBase_ : originAudioTimeBase_;
+    const AVRational timeBase = isVideo ? originVideoTimeBase_ : originAudioTimeBase_;
     newPkt->stream_index = streamIndex;
     av_packet_rescale_ts(newPkt.get(), timeBase, formatCtx_->streams[streamIndex]->time_base);
     newPkt->pos = -1;
@@ -161,7 +177,7 @@ void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo)
 
     int ret = av_interleaved_write_frame(formatCtx_.get(), newPkt.get());
     if (ret < 0) {
-        char errStr[AV_ERROR_MAX_STRING_SIZE] = {0};
+        char errStr[AV_ERROR_MAX_STRING_SIZE] = {};
         av_strerror(ret, errStr, sizeof(errStr));
         GuiInterface::Instance().PutLog(LogLevel::Error, "av_interleaved_write_frame failed: {}", errStr);
         return;
@@ -173,7 +189,8 @@ void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo)
 }
 
 void Mp4Encoder::stop() {
-    std::lock_guard<std::mutex> lock(writeMtx_);
+    std::lock_guard lock(writeMtx_);
+
     if (!isOpen_) {
         return;
     }
@@ -182,7 +199,7 @@ void Mp4Encoder::stop() {
     if (formatCtx_) {
         int ret = av_write_trailer(formatCtx_.get());
         if (ret < 0) {
-            char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
+            char errbuf[AV_ERROR_MAX_STRING_SIZE] = {};
             av_strerror(ret, errbuf, sizeof(errbuf));
             GuiInterface::Instance().PutLog(LogLevel::Error, "av_write_trailer failed: {}", errbuf);
         }
