@@ -201,12 +201,10 @@ void SettingsContainer::on_ready() {
 
     {
         auto button = std::make_shared<vecgui::Button>();
-        button->set_container_sizing_h(vecgui::ContainerSizingFlag::ShrinkCenter);
-        button->set_container_sizing_v(vecgui::ContainerSizingFlag::ShrinkCenter);
+        button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         about_container->add_child(button);
-        auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("icon-github.svg"));
+        auto icon = std::make_shared<vecgui::VectorImage>(context, vecgui::get_asset_dir("icon-github.svg"), true);
         button->set_icon_normal(icon);
-        button->set_flat(true);
         button->set_text("GitHub");
 
         auto callback = [] { open_url(AVIATEUR_REPO_URL); };
@@ -214,7 +212,7 @@ void SettingsContainer::on_ready() {
     }
 
     {
-        auto exit_button = std::make_shared<vecgui::MenuButton>();
+        auto exit_button = std::make_shared<vecgui::Button>();
 
         exit_button->set_container_sizing_h(vecgui::ContainerSizingFlag::Fill);
         about_container->add_child(exit_button);
